@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Upload, FileText, User, Mail, Phone, MapPin, Briefcase, GraduationCap, Code, Download, Eye, Award, BadgeCheck, Info as InfoIcon, Settings, CheckCircle, XCircle } from 'lucide-react';
+import { Upload, FileText, User, Mail, Phone, MapPin, Briefcase, GraduationCap, Code, Download, Eye, Award, BadgeCheck, Info as InfoIcon, Settings, CheckCircle, XCircle, Menu, X } from 'lucide-react';
 import './ResumeParser.css';
 
 const ResumeParser = () => {
@@ -7,23 +7,26 @@ const ResumeParser = () => {
   const [parsedData, setParsedData] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [activeView, setActiveView] = useState('upload');
-  const [ollamaStatus, setOllamaStatus] = useState('checking');
+  const [aiStatus, setAiStatus] = useState('checking');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedData, setEditedData] = useState(null);
 
-  // Check Ollama status on component mount
+  // Check AI status on component mount
   useEffect(() => {
-    checkOllamaStatus();
+    checkAiStatus();
   }, []);
 
-  const checkOllamaStatus = async () => {
+  const checkAiStatus = async () => {
     try {
       const response = await fetch('http://localhost:11434/api/tags');
       if (response.ok) {
-        setOllamaStatus('connected');
+        setAiStatus('connected');
       } else {
-        setOllamaStatus('disconnected');
+        setAiStatus('disconnected');
       }
     } catch (error) {
-      setOllamaStatus('disconnected');
+      setAiStatus('disconnected');
     }
   };
 
@@ -77,71 +80,113 @@ const ResumeParser = () => {
     });
   };
 
-  // Parse using Ollama qwen2.5:1.5b
-  const parseWithOllama = async (text) => {
+  // Parse using AI
+  const parseWithAI = async (text) => {
     const promptText = "You are an expert resume parser. Extract structured information from the following resume text and return it as valid JSON.\n\nRESUME TEXT:\n" + text + "\n\nTASK: Parse the above resume and return ONLY a JSON object with this EXACT structure:\n\n{\n  \"personalInfo\": {\n    \"name\": \"string\",\n    \"email\": \"string\", \n    \"phone\": \"string\",\n    \"location\": \"string\"\n  },\n  \"experience\": [\n    {\n      \"position\": \"string\",\n      \"company\": \"string\", \n      \"duration\": \"string\",\n      \"description\": [\"string\"]\n    }\n  ],\n  \"education\": [\n    {\n      \"degree\": \"string\",\n      \"institution\": \"string\",\n      \"year\": \"string\",\n      \"description\": [\"string\"]\n    }\n  ],\n  \"projects\": [\n    {\n      \"title\": \"string\",\n      \"description\": [\"string\"]\n    }\n  ],\n  \"achievements\": [\n    {\n      \"title\": \"string\",\n      \"description\": [\"string\"]\n    }\n  ],\n  \"certificates\": [\n    {\n      \"title\": \"string\",\n      \"issuer\": \"string\",\n      \"year\": \"string\",\n      \"description\": [\"string\"]\n    }\n  ],\n  \"skills\": [\"string\"],\n  \"additionalInformation\": [\"string\"]\n}\n\nRULES:\n1. Return ONLY the JSON object, no other text\n2. Use empty strings for missing text fields\n3. Use empty arrays for missing array fields\n4. Extract ALL information present in the resume\n5. Be thorough and accurate\n\nJSON:";
 
-    const response = await fetch('http://localhost:11434/api/generate', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'qwen2.5:1.5b',
-        prompt: promptText,
-        stream: false,
-        options: {
-          temperature: 0.1,
-          top_p: 0.9,
-          num_predict: 2048,
-          repeat_penalty: 1.1
-        }
-      })
-    });
+    try {
+      const response = await fetch('http://localhost:11434/api/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'qwen2.5:1.5b',
+          prompt: promptText,
+          stream: false,
+          options: {
+            temperature: 0.1,
+            top_p: 0.9,
+            num_predict: 2048,
+            repeat_penalty: 1.1
+          }
+        })
+      });
 
-    if (!response.ok) {
-      throw new Error('Ollama API error: ' + response.status);
-    }
-
-    const data = await response.json();
-    const generatedText = data.response;
-    
-    if (!generatedText) {
-      throw new Error('No response from Ollama');
-    }
-
-    // Find JSON in the response
-    let jsonMatch = generatedText.match(/\{[\s\S]*\}/);
-    
-    if (!jsonMatch) {
-      const jsonStart = generatedText.indexOf('{');
-      const jsonEnd = generatedText.lastIndexOf('}');
-      if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
-        jsonMatch = [generatedText.substring(jsonStart, jsonEnd + 1)];
+      if (!response.ok) {
+        throw new Error(`AI service error: ${response.status} ${response.statusText}`);
       }
-    }
-    
-    if (!jsonMatch) {
-      throw new Error('No valid JSON found in response');
-    }
 
-    let jsonStr = jsonMatch[0].trim();
-    
-    if (jsonStr.includes('\n\n')) {
-      jsonStr = jsonStr.split('\n\n')[0];
+      const data = await response.json();
+      const generatedText = data.response;
+      
+      if (!generatedText) {
+        throw new Error('No response from AI service');
+      }
+
+      // Clean the response to extract JSON
+      let jsonStr = generatedText.trim();
+      
+      // Find JSON in the response
+      let jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
+      
+      if (!jsonMatch) {
+        const jsonStart = jsonStr.indexOf('{');
+        const jsonEnd = jsonStr.lastIndexOf('}');
+        if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
+          jsonStr = jsonStr.substring(jsonStart, jsonEnd + 1);
+        } else {
+          throw new Error('No valid JSON structure found in AI response');
+        }
+      } else {
+        jsonStr = jsonMatch[0];
+      }
+      
+      // Clean up common JSON formatting issues
+      jsonStr = jsonStr
+        .replace(/,\s*}/g, '}')  // Remove trailing commas
+        .replace(/,\s*]/g, ']')  // Remove trailing commas in arrays
+        .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters
+        .trim();
+      
+      try {
+        const parsedData = JSON.parse(jsonStr);
+        
+        // Validate structure
+        if (!parsedData || typeof parsedData !== 'object') {
+          throw new Error('Invalid JSON structure returned by AI');
+        }
+        
+        // Ensure all required fields exist with proper defaults
+        const validatedData = {
+          personalInfo: {
+            name: parsedData.personalInfo?.name || '',
+            email: parsedData.personalInfo?.email || '',
+            phone: parsedData.personalInfo?.phone || '',
+            location: parsedData.personalInfo?.location || ''
+          },
+          experience: Array.isArray(parsedData.experience) ? parsedData.experience : [],
+          education: Array.isArray(parsedData.education) ? parsedData.education : [],
+          projects: Array.isArray(parsedData.projects) ? parsedData.projects : [],
+          achievements: Array.isArray(parsedData.achievements) ? parsedData.achievements : [],
+          certificates: Array.isArray(parsedData.certificates) ? parsedData.certificates : [],
+          skills: Array.isArray(parsedData.skills) ? parsedData.skills : [],
+          additionalInformation: Array.isArray(parsedData.additionalInformation) ? parsedData.additionalInformation : []
+        };
+        
+        return validatedData;
+        
+      } catch (parseError) {
+        console.error('JSON Parse Error:', parseError);
+        console.error('Raw response:', generatedText);
+        console.error('Cleaned JSON string:', jsonStr);
+        throw new Error('Failed to parse AI response as valid JSON. The AI may need to be retrained or the model might be having issues.');
+      }
+      
+    } catch (error) {
+      console.error('AI Parsing Error:', error);
+      throw error;
     }
-    
-    return JSON.parse(jsonStr);
   };
 
   // Main parsing function
   const parseResumeData = async (text) => {
-    if (ollamaStatus !== 'connected') {
-      throw new Error('Ollama not connected. Please install Ollama and qwen2.5:1.5b model.');
+    if (aiStatus !== 'connected') {
+      throw new Error('AI service is not available. Please ensure Ollama is running and the qwen2.5:1.5b model is installed.');
     }
 
-    console.log('Using Ollama qwen2.5:1.5b for parsing...');
-    return await parseWithOllama(text);
+    console.log('Processing resume with AI...');
+    return await parseWithAI(text);
   };
 
   const handleFileUpload = useCallback(async (uploadedFile) => {
@@ -156,21 +201,36 @@ const ResumeParser = () => {
       } else if (uploadedFile.type.startsWith('image/')) {
         text = await extractTextFromImage(uploadedFile);
       } else {
-        throw new Error('Unsupported file type');
+        throw new Error('Unsupported file type. Please upload a PDF, JPG, or PNG file.');
+      }
+
+      if (!text || text.trim().length < 50) {
+        throw new Error('Unable to extract sufficient text from the file. Please ensure the file contains readable text.');
       }
 
       setExtractedText(text);
       const parsed = await parseResumeData(text);
       setParsedData(parsed);
+      setEditedData(parsed); // Initialize edited data
       setActiveView('results');
     } catch (error) {
       console.error('Error processing file:', error);
-      alert('Error processing file: ' + error.message);
+      let errorMessage = 'Processing failed. ';
+      
+      if (error.message.includes('JSON')) {
+        errorMessage += 'AI parsing failed - please try again. If the issue persists, the AI service may be having difficulties.';
+      } else if (error.message.includes('AI service')) {
+        errorMessage += 'AI service is not available. Please ensure Ollama is running with the qwen2.5:1.5b model.';
+      } else {
+        errorMessage += error.message;
+      }
+      
+      alert(errorMessage);
       setActiveView('upload');
     } finally {
       setIsProcessing(false);
     }
-  }, [ollamaStatus]);
+  }, [aiStatus]);
 
   const handleDrop = useCallback((e) => {
     e.preventDefault();
@@ -184,59 +244,443 @@ const ResumeParser = () => {
     e.preventDefault();
   }, []);
 
-  const downloadTemplate = () => {
-    if (!parsedData) return;
+  const downloadPDF = async () => {
+    if (!editedData) {
+      alert('No resume data available to download.');
+      return;
+    }
     
-    const resumeHtml = generateResumeTemplate(parsedData);
-    const blob = new Blob([resumeHtml], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'formatted-resume.html';
-    a.click();
-    URL.revokeObjectURL(url);
+    try {
+      // Create HTML content
+      const resumeHtml = generateTraditionalResumeTemplate(editedData);
+      
+      // Create a blob and download as HTML first (for debugging)
+      const blob = new Blob([resumeHtml], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      
+      // Open in new window for printing
+      const printWindow = window.open(url, '_blank', 'width=800,height=600');
+      
+      if (!printWindow) {
+        // Fallback: direct download
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${editedData.personalInfo?.name || 'Resume'}_Professional.html`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        alert('Resume downloaded as HTML. Open the file and use your browser\'s print function to save as PDF.');
+        return;
+      }
+      
+      // Wait for window to load then trigger print
+      printWindow.onload = () => {
+        setTimeout(() => {
+          printWindow.print();
+          // Don't close automatically - let user handle it
+        }, 1000);
+      };
+      
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Failed to generate PDF. Please try again or contact support if the issue persists.');
+    }
   };
 
-  const generateResumeTemplate = (data) => {
-    const skillsSection = data.skills.length > 0 ? 
-      '<div class="section"><h2>Skills</h2><div class="skills-grid">' + 
-      data.skills.map(skill => '<div class="skill-item">' + skill + '</div>').join('') + 
-      '</div></div>' : '';
+  const downloadTemplate = () => {
+    downloadPDF();
+  };
 
-    return '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Resume - ' + (data.personalInfo.name || 'Candidate') + '</title><style>body { font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; }.header { text-align: center; border-bottom: 3px solid #2563eb; padding-bottom: 20px; margin-bottom: 30px; }.header h1 { color: #1e40af; margin: 0; font-size: 2.5em; }.contact-info { display: flex; justify-content: center; gap: 20px; margin-top: 10px; flex-wrap: wrap; }.contact-item { display: flex; align-items: center; gap: 5px; }.section { margin-bottom: 30px; }.section h2 { color: #1e40af; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; }.experience-item, .education-item { margin-bottom: 20px; padding: 15px; background: #f8fafc; border-left: 4px solid #2563eb; }.job-title { font-weight: bold; color: #1e40af; }.company { color: #64748b; font-style: italic; }.duration { color: #64748b; font-size: 0.9em; }.skills-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }.skill-item { background: #e0e7ff; color: #3730a3; padding: 8px 12px; border-radius: 20px; text-align: center; }</style></head><body><div class="header"><h1>' + (data.personalInfo.name || 'Your Name') + '</h1><div class="contact-info">' + 
-    (data.personalInfo.email ? '<div class="contact-item">📧 ' + data.personalInfo.email + '</div>' : '') +
-    (data.personalInfo.phone ? '<div class="contact-item">📞 ' + data.personalInfo.phone + '</div>' : '') +
-    (data.personalInfo.location ? '<div class="contact-item">📍 ' + data.personalInfo.location + '</div>' : '') +
-    '</div></div>' + skillsSection + '</body></html>';
+  const handleEdit = () => {
+    setIsEditing(true);
+  };
+
+  const handleSave = () => {
+    setIsEditing(false);
+    setParsedData(editedData);
+  };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+    setEditedData(parsedData);
+  };
+
+  const updateField = (section, field, value, index = null) => {
+    setEditedData(prev => {
+      const newData = { ...prev };
+      
+      if (index !== null) {
+        // Handle array items (experience, education, projects, etc.)
+        if (!newData[section]) newData[section] = [];
+        if (!newData[section][index]) newData[section][index] = {};
+        
+        if (field === 'description' && Array.isArray(value)) {
+          // For description arrays
+          newData[section][index][field] = value;
+        } else {
+          // For other fields
+          newData[section][index][field] = value;
+        }
+      } else if (section === 'personalInfo') {
+        // Handle personal info
+        if (!newData.personalInfo) newData.personalInfo = {};
+        newData.personalInfo[field] = value;
+      } else if (section === 'skills') {
+        // Handle skills array
+        newData.skills = value.split(',').map(skill => skill.trim()).filter(Boolean);
+      }
+      
+      return newData;
+    });
+  };
+
+  const addNewItem = (section) => {
+    setEditedData(prev => {
+      const newData = { ...prev };
+      if (!newData[section]) newData[section] = [];
+      
+      switch (section) {
+        case 'experience':
+          newData[section].push({ position: '', company: '', duration: '', description: [''] });
+          break;
+        case 'education':
+          newData[section].push({ degree: '', institution: '', year: '', description: [''] });
+          break;
+        case 'projects':
+          newData[section].push({ title: '', description: [''] });
+          break;
+        case 'achievements':
+          newData[section].push({ title: '', description: [''] });
+          break;
+        case 'certificates':
+          newData[section].push({ title: '', issuer: '', year: '', description: [''] });
+          break;
+        default:
+          break;
+      }
+      return newData;
+    });
+  };
+
+  const removeItem = (section, index) => {
+    setEditedData(prev => {
+      const newData = { ...prev };
+      if (newData[section] && newData[section][index] !== undefined) {
+        newData[section].splice(index, 1);
+      }
+      return newData;
+    });
+  };
+
+  const generateTraditionalResumeTemplate = (data) => {
+    const name = data.personalInfo?.name || 'Your Name';
+    const email = data.personalInfo?.email || '';
+    const phone = data.personalInfo?.phone || '';
+    const location = data.personalInfo?.location || '';
+
+    // Contact info section
+    const contactInfo = [email, phone].filter(Boolean).join(' | ');
+
+    // Experience section (using our JSON structure)
+    const experienceSection = (data.experience && data.experience.length > 0) ? `
+      <div class="section">
+        <h2 class="section-title">PROFESSIONAL EXPERIENCE</h2>
+        ${data.experience.map(exp => `
+          <div class="entry">
+            <div class="entry-header">
+              <div class="position-company">
+                <strong>${exp.company || 'Company'}</strong>, ${exp.position || 'Position'}
+              </div>
+              <div class="duration">${exp.duration || 'Duration'}</div>
+            </div>
+            ${exp.description && exp.description.length > 0 ? `
+              <ul class="bullet-list">
+                ${exp.description.map(desc => `<li>${desc}</li>`).join('')}
+              </ul>
+            ` : ''}
+          </div>
+        `).join('')}
+      </div>
+    ` : '';
+
+    // Projects section (using our JSON structure)
+    const projectsSection = (data.projects && data.projects.length > 0) ? `
+      <div class="section">
+        <h2 class="section-title">KEY PROJECTS</h2>
+        ${data.projects.map(project => `
+          <div class="entry">
+            <div class="entry-header">
+              <div class="position-company">
+                <strong>${project.title || 'Project Title'}</strong>
+              </div>
+            </div>
+            ${project.description && project.description.length > 0 ? `
+              <ul class="bullet-list">
+                ${project.description.map(desc => `<li>${desc}</li>`).join('')}
+              </ul>
+            ` : ''}
+          </div>
+        `).join('')}
+      </div>
+    ` : '';
+
+    // Education section
+    const educationSection = (data.education && data.education.length > 0) ? `
+      <div class="section">
+        <h2 class="section-title">EDUCATION</h2>
+        ${data.education.map(edu => `
+          <div class="entry">
+            <div class="entry-header">
+              <div class="position-company">
+                <strong>${edu.institution || 'Institution'}</strong>
+              </div>
+              <div class="duration">${edu.year || 'Year'}</div>
+            </div>
+            <div class="education-details">${edu.degree || 'Degree'}</div>
+            ${edu.description && edu.description.length > 0 ? `
+              <ul class="bullet-list">
+                ${edu.description.map(desc => `<li>${desc}</li>`).join('')}
+              </ul>
+            ` : ''}
+          </div>
+        `).join('')}
+      </div>
+    ` : '';
+
+    // Skills section (formatted like your sample)
+    const skillsSection = (data.skills && data.skills.length > 0) ? `
+      <div class="section">
+        <h2 class="section-title">TECHNICAL SKILLS</h2>
+        <div class="skills-text">${data.skills.join(' | ')}</div>
+      </div>
+    ` : '';
+
+    // Achievements section (using our JSON structure)
+    const achievementsSection = (data.achievements && data.achievements.length > 0) ? `
+      <div class="section">
+        <h2 class="section-title">ACHIEVEMENTS & AWARDS</h2>
+        ${data.achievements.map(achievement => `
+          <div class="entry">
+            <div class="achievement-title"><strong>${achievement.title || 'Achievement'}</strong></div>
+            ${achievement.description && achievement.description.length > 0 ? `
+              <ul class="bullet-list">
+                ${achievement.description.map(desc => `<li>${desc}</li>`).join('')}
+              </ul>
+            ` : ''}
+          </div>
+        `).join('')}
+      </div>
+    ` : '';
+
+    // Certificates section (renamed to coursework like your sample)
+    const certificatesSection = (data.certificates && data.certificates.length > 0) ? `
+      <div class="section">
+        <h2 class="section-title">CERTIFICATIONS & COURSEWORK</h2>
+        <div class="coursework-text">${data.certificates.map(cert => `${cert.title} (${cert.issuer || 'Provider'})`).join(' | ')}</div>
+      </div>
+    ` : '';
+
+    // Additional info (can be memberships, languages, etc.)
+    const additionalSection = (data.additionalInformation && data.additionalInformation.length > 0) ? `
+      <div class="section">
+        <h2 class="section-title">ADDITIONAL INFORMATION</h2>
+        <div class="entry">
+          ${data.additionalInformation.map(info => `<div>${info}</div>`).join('')}
+        </div>
+      </div>
+    ` : '';
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume - ${name}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 11pt;
+            line-height: 1.3;
+            color: #000;
+            max-width: 8.5in;
+            margin: 0 auto;
+            padding: 0.5in;
+            background: white;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .name {
+            font-size: 18pt;
+            font-weight: bold;
+            color: #000;
+            margin-bottom: 5px;
+        }
+        
+        .contact {
+            font-size: 10pt;
+            color: #000;
+            margin-bottom: 15px;
+        }
+        
+        .section {
+            margin-bottom: 20px;
+        }
+        
+        .section-title {
+            font-size: 11pt;
+            font-weight: bold;
+            color: #4285f4;
+            text-transform: uppercase;
+            border-bottom: 1px solid #4285f4;
+            padding-bottom: 2px;
+            margin-bottom: 10px;
+            letter-spacing: 0.5px;
+        }
+        
+        .entry {
+            margin-bottom: 15px;
+        }
+        
+        .entry-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 5px;
+        }
+        
+        .position-company {
+            font-size: 11pt;
+            color: #000;
+            flex: 1;
+        }
+        
+        .duration {
+            font-size: 10pt;
+            color: #000;
+            font-style: italic;
+            text-align: right;
+            white-space: nowrap;
+            margin-left: 20px;
+        }
+        
+        .education-details {
+            font-size: 10pt;
+            color: #000;
+            margin-bottom: 5px;
+        }
+        
+        .achievement-title {
+            font-size: 10pt;
+            color: #000;
+            margin-bottom: 5px;
+        }
+        
+        .bullet-list {
+            margin: 5px 0 0 20px;
+            padding: 0;
+        }
+        
+        .bullet-list li {
+            font-size: 10pt;
+            line-height: 1.4;
+            margin-bottom: 3px;
+            color: #000;
+        }
+        
+        .skills-text, .coursework-text {
+            font-size: 10pt;
+            line-height: 1.4;
+            color: #000;
+        }
+        
+        @media print {
+            body {
+                margin: 0;
+                padding: 0.5in;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="name">${name}</div>
+        <div class="contact">${contactInfo}</div>
+    </div>
+
+    ${experienceSection}
+    ${projectsSection}
+    ${educationSection}
+    ${skillsSection}
+    ${achievementsSection}
+    ${certificatesSection}
+    ${additionalSection}
+
+</body>
+</html>`;
   };
 
   return (
     <div className="app-container">
+      {/* Navigation Bar */}
+      <nav className="navbar">
+        <div className="nav-content">
+          <div className="nav-brand">
+            <h2>JobDekho</h2>
+          </div>
+          <div className="nav-links">
+            <a href="#" className="nav-link active">Resume Parser</a>
+            <a href="#" className="nav-link">Jobs</a>
+            <a href="#" className="nav-link">Companies</a>
+            <a href="#" className="nav-link">Profile</a>
+          </div>
+          <button 
+            className="mobile-menu-btn"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
+        
+        {/* Mobile Menu */}
+        <div className={`mobile-menu ${mobileMenuOpen ? 'open' : ''}`}>
+          <a href="#" className="mobile-nav-link active">Resume Parser</a>
+          <a href="#" className="mobile-nav-link">Jobs</a>
+          <a href="#" className="mobile-nav-link">Companies</a>
+          <a href="#" className="mobile-nav-link">Profile</a>
+        </div>
+      </nav>
+
       <div className="app-content">
         <div className="header-section">
-          <h1 className="app-title">Resume Parser</h1>
-          <p className="app-subtitle">Local AI-powered resume parsing with Qwen2.5:1.5b</p>
+          <h1 className="app-title">Smart Resume Parser</h1>
+          <p className="app-subtitle">Transform your resume into a professional format and get instant analysis</p>
         </div>
 
-        <div className="api-status">
-          <div className={ollamaStatus === 'connected' ? 'api-enabled' : 'api-disabled'}>
-            {ollamaStatus === 'connected' ? (
+        <div className="status-section">
+          <div className={aiStatus === 'connected' ? 'status-enabled' : 'status-disabled'}>
+            {aiStatus === 'connected' ? (
               <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
-                <CheckCircle className="api-icon" />
-                Ollama Connected (qwen2.5:1.5b ready)
+                <CheckCircle className="status-icon" />
+                AI Parser Ready
               </div>
-            ) : ollamaStatus === 'checking' ? (
+            ) : aiStatus === 'checking' ? (
               <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
-                <Settings className="api-icon" />
-                Checking Ollama status...
+                <Settings className="status-icon" />
+                Checking service status...
               </div>
             ) : (
               <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
-                <XCircle className="api-icon" />
-                Ollama not connected - Need qwen2.5:1.5b model
-                <button onClick={checkOllamaStatus} className="api-setup-button">
-                  <Settings className="api-button-icon" />
-                  Retry Connection
+                <XCircle className="status-icon" />
+                Service unavailable - Limited functionality
+                <button onClick={checkAiStatus} className="status-retry-button">
+                  <Settings className="status-button-icon" />
+                  Retry
                 </button>
               </div>
             )}
@@ -250,7 +694,7 @@ const ResumeParser = () => {
               className={'nav-button ' + (activeView === 'upload' ? 'active' : '')}
             >
               <Upload className="nav-icon" />
-              Upload
+              Upload Resume
             </button>
             <button
               onClick={() => setActiveView('results')}
@@ -258,7 +702,7 @@ const ResumeParser = () => {
               disabled={!parsedData}
             >
               <Eye className="nav-icon" />
-              Results
+              View Results
             </button>
           </div>
         </div>
@@ -271,13 +715,9 @@ const ResumeParser = () => {
               className="upload-area"
             >
               <Upload className="upload-icon" />
-              <h3 className="upload-title">Drop your resume here</h3>
-              <p className="upload-subtitle">Supports PDF and image files (JPG, PNG)</p>
-              {ollamaStatus !== 'connected' && (
-                <p style={{ color: '#ff9800', fontSize: '0.9em', marginTop: '10px' }}>
-                  ⚠️ Ollama not connected. Please install Ollama and the qwen2.5:1.5b model.
-                </p>
-              )}
+              <h3 className="upload-title">Upload Your Resume</h3>
+              <p className="upload-subtitle">Drag and drop your resume here, or click to browse</p>
+              <p className="upload-formats">Supports PDF, JPG, and PNG files</p>
               <input
                 type="file"
                 accept=".pdf,image/*"
@@ -290,30 +730,19 @@ const ResumeParser = () => {
               </label>
             </div>
 
-            {ollamaStatus !== 'connected' && (
-              <div className="ollama-setup" style={{ 
-                marginTop: '30px', 
-                padding: '20px', 
-                backgroundColor: '#f8f9fa', 
-                borderRadius: '12px',
-                border: '1px solid #e9ecef'
-              }}>
-                <h3 style={{ color: '#333', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <Settings size={20} />
-                  Required: Install Ollama & Model
-                </h3>
-                <p style={{ color: '#666', marginBottom: '15px' }}>
-                  This app requires Ollama with the qwen2.5:1.5b model:
-                </p>
-                <ol style={{ color: '#666', paddingLeft: '20px', lineHeight: '1.6' }}>
-                  <li>Download Ollama from <a href="https://ollama.ai" target="_blank" rel="noopener noreferrer" style={{ color: '#1976d2' }}>ollama.ai</a></li>
-                  <li>Install and start Ollama</li>
-                  <li>Run: <code style={{ background: '#e9ecef', padding: '2px 6px', borderRadius: '4px' }}>ollama pull qwen2.5:1.5b</code></li>
-                  <li>Refresh this page to connect</li>
-                </ol>
-                <p style={{ color: '#666', fontSize: '0.9em', marginTop: '15px' }}>
-                  💡 Model size: ~1GB, Processing speed: 3-8 seconds
-                </p>
+            {aiStatus !== 'connected' && (
+              <div className="service-info">
+                <h3>❌ AI Service Required</h3>
+                <p>Please ensure Ollama is running with the qwen2.5:1.5b model installed. Resume parsing will not work without the AI service.</p>
+                <div style={{ marginTop: '15px', padding: '15px', background: '#f1f5f9', borderRadius: '8px' }}>
+                  <h4>Setup Instructions:</h4>
+                  <ol style={{ marginLeft: '20px', lineHeight: '1.6' }}>
+                    <li>Download and install Ollama from <a href="https://ollama.ai" target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb' }}>ollama.ai</a></li>
+                    <li>Run: <code style={{ background: '#e2e8f0', padding: '2px 6px', borderRadius: '4px' }}>ollama pull qwen2.5:1.5b</code></li>
+                    <li>Ensure Ollama is running in the background</li>
+                    <li>Click "Retry" above to reconnect</li>
+                  </ol>
+                </div>
               </div>
             )}
           </div>
@@ -323,211 +752,440 @@ const ResumeParser = () => {
           <div className="processing-section">
             <div className="spinner"></div>
             <h3 className="processing-title">Processing Your Resume</h3>
-            <p className="processing-subtitle">Using qwen2.5:1.5b for AI parsing...</p>
+            <p className="processing-subtitle">Analyzing content and extracting information...</p>
           </div>
         )}
 
         {activeView === 'results' && parsedData && (
           <div className="results-section">
-            <div className="results-card">
-              <div className="results-header">
-                <h2 className="results-title">Parsed Resume Data</h2>
-                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-                  <span style={{ 
-                    fontSize: '0.85rem', 
-                    color: '#4caf50', 
-                    backgroundColor: '#e8f5e8', 
-                    padding: '4px 8px', 
-                    borderRadius: '12px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px'
-                  }}>
-                    <CheckCircle size={14} />
-                    AI Parsed (qwen2.5:1.5b)
-                  </span>
-                  <button onClick={downloadTemplate} className="download-button">
-                    <Download className="button-icon" />
-                    Download Template
-                  </button>
+            {/* Resume Preview - Formatted like template */}
+            <div className="resume-preview">
+              <div className="resume-header">
+                <h1 className="resume-name">
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editedData?.personalInfo?.name || ''}
+                      onChange={(e) => updateField('personalInfo', 'name', e.target.value)}
+                      className="edit-input name-input"
+                    />
+                  ) : (
+                    editedData?.personalInfo?.name || 'Your Name'
+                  )}
+                </h1>
+                <div className="resume-contact">
+                  {isEditing ? (
+                    <>
+                      <input
+                        type="email"
+                        value={editedData?.personalInfo?.email || ''}
+                        onChange={(e) => updateField('personalInfo', 'email', e.target.value)}
+                        className="edit-input"
+                        placeholder="Email"
+                      />
+                      <span> | </span>
+                      <input
+                        type="tel"
+                        value={editedData?.personalInfo?.phone || ''}
+                        onChange={(e) => updateField('personalInfo', 'phone', e.target.value)}
+                        className="edit-input"
+                        placeholder="Phone"
+                      />
+                    </>
+                  ) : (
+                    `${editedData?.personalInfo?.email || ''} | ${editedData?.personalInfo?.phone || ''}`
+                  )}
                 </div>
               </div>
 
-              <div className="results-grid">
-                <div className="results-column">
-                  <div className="info-card personal-info accent-personal">
-                    <h3 className="card-title">
-                      <User className="card-icon" />
-                      Personal Information
-                    </h3>
-                    <div className="info-items">
-                      <div className="info-item">
-                        <User className="info-icon" />
-                        <span className="info-label">Name:</span>
-                        <span className="info-value">{parsedData.personalInfo.name || 'Not found'}</span>
+              {/* Professional Experience Section */}
+              {editedData?.experience && editedData.experience.length > 0 && (
+                <div className="resume-section">
+                  <h2 className="resume-section-title">PROFESSIONAL EXPERIENCE</h2>
+                  {editedData.experience.map((exp, index) => (
+                    <div key={index} className="resume-entry">
+                      <div className="resume-entry-header">
+                        <div className="resume-company-position">
+                          {isEditing ? (
+                            <>
+                              <input
+                                type="text"
+                                value={exp.company || ''}
+                                onChange={(e) => updateField('experience', 'company', e.target.value, index)}
+                                className="edit-input"
+                                placeholder="Company"
+                              />
+                              <span>, </span>
+                              <input
+                                type="text"
+                                value={exp.position || ''}
+                                onChange={(e) => updateField('experience', 'position', e.target.value, index)}
+                                className="edit-input"
+                                placeholder="Position"
+                              />
+                            </>
+                          ) : (
+                            <>
+                              <strong>{exp.company || 'Company'}</strong>, {exp.position || 'Position'}
+                            </>
+                          )}
+                        </div>
+                        <div className="resume-duration">
+                          {isEditing ? (
+                            <input
+                              type="text"
+                              value={exp.duration || ''}
+                              onChange={(e) => updateField('experience', 'duration', e.target.value, index)}
+                              className="edit-input duration-input"
+                              placeholder="Duration"
+                            />
+                          ) : (
+                            <em>{exp.duration || 'Duration'}</em>
+                          )}
+                        </div>
                       </div>
-                      <div className="info-item">
-                        <Mail className="info-icon" />
-                        <span className="info-label">Email:</span>
-                        <span className="info-value">{parsedData.personalInfo.email || 'Not found'}</span>
-                      </div>
-                      <div className="info-item">
-                        <Phone className="info-icon" />
-                        <span className="info-label">Phone:</span>
-                        <span className="info-value">{parsedData.personalInfo.phone || 'Not found'}</span>
-                      </div>
-                      <div className="info-item">
-                        <MapPin className="info-icon" />
-                        <span className="info-label">Location:</span>
-                        <span className="info-value">{parsedData.personalInfo.location || 'Not found'}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="info-card experience-info accent-experience">
-                    <h3 className="card-title">
-                      <Briefcase className="card-icon" />
-                      Experience ({parsedData.experience.length})
-                    </h3>
-                    <div className="experience-items">
-                      {parsedData.experience.length > 0 ? parsedData.experience.map((exp, index) => (
-                        <div key={index} className="experience-item">
-                          <div className="exp-position">{exp.position || 'Position not specified'}</div>
-                          <div className="exp-company">{exp.company || 'Company not specified'}</div>
-                          <div className="exp-duration">{exp.duration || 'Duration not specified'}</div>
-                          {exp.description && Array.isArray(exp.description) && exp.description.length > 0 && (
-                            <ul>
-                              {exp.description.map((desc, descIndex) => (
-                                <li key={descIndex}>{desc}</li>
-                              ))}
-                            </ul>
-                          )}
-                        </div>
-                      )) : <p className="no-data">No experience found</p>}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="results-column">
-                  <div className="info-card education-info accent-education">
-                    <h3 className="card-title">
-                      <GraduationCap className="card-icon" />
-                      Education ({parsedData.education.length})
-                    </h3>
-                    <div className="education-items">
-                      {parsedData.education.length > 0 ? parsedData.education.map((edu, index) => (
-                        <div key={index} className="education-item">
-                          <div className="edu-degree">{edu.degree || 'Degree not specified'}</div>
-                          <div className="edu-institution">{edu.institution || 'Institution not specified'}</div>
-                          <div className="edu-year">{edu.year || 'Year not specified'}</div>
-                          {edu.description && Array.isArray(edu.description) && edu.description.length > 0 && (
-                            <ul>
-                              {edu.description.map((desc, descIndex) => (
-                                <li key={descIndex}>{desc}</li>
-                              ))}
-                            </ul>
-                          )}
-                        </div>
-                      )) : <p className="no-data">No education found</p>}
-                    </div>
-                  </div>
-
-                  <div className="info-card skills-info accent-skills">
-                    <h3 className="card-title">
-                      <Code className="card-icon" />
-                      Skills ({parsedData.skills.length})
-                    </h3>
-                    <div className="skills-grid">
-                      {parsedData.skills && parsedData.skills.length > 0 ? parsedData.skills.map((skill, index) => (
-                        <span key={index} className="skill-tag">
-                          {skill}
-                        </span>
-                      )) : <p className="no-data">No skills found</p>}
-                    </div>
-                  </div>
-
-                  <div className="info-card projects-info accent-projects">
-                    <h3 className="card-title">
-                      <Code className="card-icon" />
-                      Projects ({parsedData.projects.length})
-                    </h3>
-                    <div className="projects-list">
-                      {parsedData.projects.length > 0 ? parsedData.projects.map((project, index) => (
-                        <div key={index} className="project-item">
-                          <div className="project-title">{project.title || 'Project title not specified'}</div>
-                          {project.description && Array.isArray(project.description) && project.description.length > 0 && (
-                            <ul>
-                              {project.description.map((desc, descIndex) => (
-                                <li key={descIndex}>{desc}</li>
-                              ))}
-                            </ul>
-                          )}
-                        </div>
-                      )) : <p className="no-data">No projects found</p>}
-                    </div>
-                  </div>
-
-                  <div className="info-card achievements-info accent-achievements">
-                    <h3 className="card-title">
-                      <Award className="card-icon" />
-                      Achievements ({parsedData.achievements.length})
-                    </h3>
-                    <div className="achievements-list">
-                      {parsedData.achievements.length > 0 ? parsedData.achievements.map((achievement, index) => (
-                        <div key={index} className="achievement-item">
-                          <div className="achievement-title">{achievement.title || 'Achievement title not specified'}</div>
-                          {achievement.description && Array.isArray(achievement.description) && achievement.description.length > 0 && (
-                            <ul>
-                              {achievement.description.map((desc, descIndex) => (
-                                <li key={descIndex}>{desc}</li>
-                              ))}
-                            </ul>
-                          )}
-                        </div>
-                      )) : <p className="no-data">No achievements found</p>}
-                    </div>
-                  </div>
-
-                  <div className="info-card certificates-info accent-certificates">
-                    <h3 className="card-title">
-                      <BadgeCheck className="card-icon" />
-                      Certificates ({parsedData.certificates.length})
-                    </h3>
-                    <div className="certificates-list">
-                      {parsedData.certificates.length > 0 ? parsedData.certificates.map((certificate, index) => (
-                        <div key={index} className="certificate-item">
-                          <div className="certificate-title">{certificate.title || 'Certificate title not specified'}</div>
-                          <div className="certificate-issuer">Issued by: {certificate.issuer || 'Issuer not specified'}</div>
-                          <div className="certificate-year">Year: {certificate.year || 'Year not specified'}</div>
-                          {certificate.description && Array.isArray(certificate.description) && certificate.description.length > 0 && (
-                            <ul>
-                              {certificate.description.map((desc, descIndex) => (
-                                <li key={descIndex}>{desc}</li>
-                              ))}
-                            </ul>
-                          )}
-                        </div>
-                      )) : <p className="no-data">No certificates found</p>}
-                    </div>
-                  </div>
-
-                  <div className="info-card additional-info accent-additional-info">
-                    <h3 className="card-title">
-                      <InfoIcon className="card-icon" />
-                      Additional Information
-                    </h3>
-                    <div className="additional-info-list">
-                      {parsedData.additionalInformation && parsedData.additionalInformation.length > 0 ? (
-                        <ul>
-                          {parsedData.additionalInformation.map((info, index) => (
-                            <li key={index}>{info}</li>
+                      {exp.description && Array.isArray(exp.description) && exp.description.length > 0 && (
+                        <ul className="resume-bullet-list">
+                          {exp.description.map((desc, descIndex) => (
+                            <li key={descIndex}>
+                              {isEditing ? (
+                                <textarea
+                                  value={desc}
+                                  onChange={(e) => {
+                                    const newDesc = [...exp.description];
+                                    newDesc[descIndex] = e.target.value;
+                                    updateField('experience', 'description', newDesc, index);
+                                  }}
+                                  className="edit-textarea"
+                                  rows="2"
+                                />
+                              ) : (
+                                desc
+                              )}
+                            </li>
                           ))}
                         </ul>
-                      ) : <p className="no-data">No additional information found</p>}
+                      )}
+                      {isEditing && (
+                        <button
+                          onClick={() => removeItem('experience', index)}
+                          className="remove-btn"
+                        >
+                          Remove
+                        </button>
+                      )}
                     </div>
+                  ))}
+                  {isEditing && (
+                    <button
+                      onClick={() => addNewItem('experience')}
+                      className="add-btn"
+                    >
+                      + Add Experience
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Education Section */}
+              {editedData?.education && editedData.education.length > 0 && (
+                <div className="resume-section">
+                  <h2 className="resume-section-title">EDUCATION</h2>
+                  {editedData.education.map((edu, index) => (
+                    <div key={index} className="resume-entry">
+                      <div className="resume-entry-header">
+                        <div className="resume-company-position">
+                          {isEditing ? (
+                            <input
+                              type="text"
+                              value={edu.institution || ''}
+                              onChange={(e) => updateField('education', 'institution', e.target.value, index)}
+                              className="edit-input"
+                              placeholder="Institution"
+                            />
+                          ) : (
+                            <strong>{edu.institution || 'Institution'}</strong>
+                          )}
+                        </div>
+                        <div className="resume-duration">
+                          {isEditing ? (
+                            <input
+                              type="text"
+                              value={edu.year || ''}
+                              onChange={(e) => updateField('education', 'year', e.target.value, index)}
+                              className="edit-input duration-input"
+                              placeholder="Year"
+                            />
+                          ) : (
+                            <em>{edu.year || 'Year'}</em>
+                          )}
+                        </div>
+                      </div>
+                      <div className="resume-education-details">
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            value={edu.degree || ''}
+                            onChange={(e) => updateField('education', 'degree', e.target.value, index)}
+                            className="edit-input"
+                            placeholder="Degree"
+                          />
+                        ) : (
+                          edu.degree || 'Degree'
+                        )}
+                      </div>
+                      {isEditing && (
+                        <button
+                          onClick={() => removeItem('education', index)}
+                          className="remove-btn"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  {isEditing && (
+                    <button
+                      onClick={() => addNewItem('education')}
+                      className="add-btn"
+                    >
+                      + Add Education
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Technical Skills Section */}
+              {editedData?.skills && editedData.skills.length > 0 && (
+                <div className="resume-section">
+                  <h2 className="resume-section-title">TECHNICAL SKILLS</h2>
+                  <div className="resume-skills-text">
+                    {isEditing ? (
+                      <textarea
+                        value={editedData.skills.join(', ')}
+                        onChange={(e) => updateField('skills', 'skills', e.target.value)}
+                        className="edit-textarea skills-textarea"
+                        placeholder="Enter skills separated by commas"
+                        rows="3"
+                      />
+                    ) : (
+                      editedData.skills.join(' | ')
+                    )}
                   </div>
                 </div>
-              </div>
+              )}
+
+              {/* Projects Section */}
+              {editedData?.projects && editedData.projects.length > 0 && (
+                <div className="resume-section">
+                  <h2 className="resume-section-title">KEY PROJECTS</h2>
+                  {editedData.projects.map((project, index) => (
+                    <div key={index} className="resume-entry">
+                      <div className="resume-project-title">
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            value={project.title || ''}
+                            onChange={(e) => updateField('projects', 'title', e.target.value, index)}
+                            className="edit-input"
+                            placeholder="Project Title"
+                          />
+                        ) : (
+                          <strong>{project.title || 'Project Title'}</strong>
+                        )}
+                      </div>
+                      {project.description && Array.isArray(project.description) && project.description.length > 0 && (
+                        <ul className="resume-bullet-list">
+                          {project.description.map((desc, descIndex) => (
+                            <li key={descIndex}>
+                              {isEditing ? (
+                                <textarea
+                                  value={desc}
+                                  onChange={(e) => {
+                                    const newDesc = [...project.description];
+                                    newDesc[descIndex] = e.target.value;
+                                    updateField('projects', 'description', newDesc, index);
+                                  }}
+                                  className="edit-textarea"
+                                  rows="2"
+                                />
+                              ) : (
+                                desc
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      {isEditing && (
+                        <button
+                          onClick={() => removeItem('projects', index)}
+                          className="remove-btn"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  {isEditing && (
+                    <button
+                      onClick={() => addNewItem('projects')}
+                      className="add-btn"
+                    >
+                      + Add Project
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Achievements Section */}
+              {editedData?.achievements && editedData.achievements.length > 0 && (
+                <div className="resume-section">
+                  <h2 className="resume-section-title">ACHIEVEMENTS & AWARDS</h2>
+                  {editedData.achievements.map((achievement, index) => (
+                    <div key={index} className="resume-entry">
+                      <div className="resume-project-title">
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            value={achievement.title || ''}
+                            onChange={(e) => updateField('achievements', 'title', e.target.value, index)}
+                            className="edit-input"
+                            placeholder="Achievement Title"
+                          />
+                        ) : (
+                          <strong>{achievement.title || 'Achievement Title'}</strong>
+                        )}
+                      </div>
+                      {achievement.description && Array.isArray(achievement.description) && achievement.description.length > 0 && (
+                        <ul className="resume-bullet-list">
+                          {achievement.description.map((desc, descIndex) => (
+                            <li key={descIndex}>
+                              {isEditing ? (
+                                <textarea
+                                  value={desc}
+                                  onChange={(e) => {
+                                    const newDesc = [...achievement.description];
+                                    newDesc[descIndex] = e.target.value;
+                                    updateField('achievements', 'description', newDesc, index);
+                                  }}
+                                  className="edit-textarea"
+                                  rows="2"
+                                />
+                              ) : (
+                                desc
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      {isEditing && (
+                        <button
+                          onClick={() => removeItem('achievements', index)}
+                          className="remove-btn"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  {isEditing && (
+                    <button
+                      onClick={() => addNewItem('achievements')}
+                      className="add-btn"
+                    >
+                      + Add Achievement
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Certificates Section */}
+              {editedData?.certificates && editedData.certificates.length > 0 && (
+                <div className="resume-section">
+                  <h2 className="resume-section-title">CERTIFICATIONS & COURSEWORK</h2>
+                  <div className="resume-skills-text">
+                    {isEditing ? (
+                      <textarea
+                        value={editedData.certificates.map(cert => `${cert.title} (${cert.issuer || 'Provider'})`).join(' | ')}
+                        onChange={(e) => {
+                          const items = e.target.value.split('|').map(item => item.trim());
+                          const newCerts = items.map(item => {
+                            const match = item.match(/^(.+?)\s*\((.+?)\)$/);
+                            if (match) {
+                              return { title: match[1].trim(), issuer: match[2].trim(), year: '', description: [] };
+                            }
+                            return { title: item, issuer: '', year: '', description: [] };
+                          });
+                          setEditedData(prev => ({ ...prev, certificates: newCerts }));
+                        }}
+                        className="edit-textarea skills-textarea"
+                        placeholder="Enter certifications as: Title (Issuer) | Title (Issuer)"
+                        rows="3"
+                      />
+                    ) : (
+                      editedData.certificates.map(cert => `${cert.title} (${cert.issuer || 'Provider'})`).join(' | ')
+                    )}
+                  </div>
+                  {isEditing && (
+                    <button
+                      onClick={() => addNewItem('certificates')}
+                      className="add-btn"
+                    >
+                      + Add Certificate
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Additional Information Section */}
+              {editedData?.additionalInformation && editedData.additionalInformation.length > 0 && (
+                <div className="resume-section">
+                  <h2 className="resume-section-title">ADDITIONAL INFORMATION</h2>
+                  <div className="resume-skills-text">
+                    {isEditing ? (
+                      <textarea
+                        value={editedData.additionalInformation.join(' | ')}
+                        onChange={(e) => {
+                          const items = e.target.value.split('|').map(item => item.trim()).filter(Boolean);
+                          setEditedData(prev => ({ ...prev, additionalInformation: items }));
+                        }}
+                        className="edit-textarea skills-textarea"
+                        placeholder="Enter additional information separated by |"
+                        rows="3"
+                      />
+                    ) : (
+                      editedData.additionalInformation.join(' | ')
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="resume-actions">
+              {isEditing ? (
+                <div className="edit-actions">
+                  <button onClick={handleSave} className="save-button">
+                    <CheckCircle className="button-icon" />
+                    Save Changes
+                  </button>
+                  <button onClick={handleCancel} className="cancel-button">
+                    <XCircle className="button-icon" />
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <div className="view-actions">
+                  <button onClick={handleEdit} className="edit-button">
+                    <Settings className="button-icon" />
+                    Edit Resume
+                  </button>
+                  <button onClick={downloadTemplate} className="download-button">
+                    <Download className="button-icon" />
+                    Download PDF
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
