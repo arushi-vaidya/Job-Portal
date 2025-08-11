@@ -1,7 +1,8 @@
 {
   "name": "resume-parser",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
+  "description": "Local AI-powered resume parser using Ollama - completely free and private",
   "dependencies": {
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.6.4",
@@ -17,7 +18,8 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "setup-ollama": "echo 'Visit https://ollama.ai to download and install Ollama, then run: ollama pull qwen2.5:7b'"
   },
   "eslintConfig": {
     "extends": [
@@ -41,5 +43,23 @@
     "autoprefixer": "^10.4.21",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.11"
+  },
+  "keywords": [
+    "resume",
+    "parser",
+    "ai",
+    "local",
+    "ollama",
+    "free",
+    "private",
+    "pdf",
+    "ocr"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "homepage": ".",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/resume-parser.git"
   }
 }
