@@ -1,7 +1,6 @@
 # 📄 Resume Parser - Local AI Edition
 
-A completely **free** and **private** resume parser that runs AI models locally on your computer.  
-Extract, structure, and beautifully present resume data from PDFs and images — all without sending data to external services.
+The cornerstone feature that transforms raw resume uploads into standardised formats and also extracts information from them using **Qwen AI**.
 
 ---
 
@@ -10,7 +9,7 @@ Extract, structure, and beautifully present resume data from PDFs and images —
 - **🤖 Local AI Parsing:** Uses Ollama for high-quality AI extraction with fallback to rule-based parsing
 - **📁 Multiple Formats:** Supports PDF and image files (JPG, PNG)
 - **📊 Rich Data Extraction:** Personal info, experience, education, projects, achievements, certificates, skills, and more
-
+- **📊 Returns pdf formats:** Returns your resume in a downloadable pdf format for future use.
 ---
 
 ## 🖼️ Screenshots
@@ -21,7 +20,7 @@ Extract, structure, and beautifully present resume data from PDFs and images —
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Quick Start 
 
 ###  Full AI Setup (Recommended)
 
@@ -67,22 +66,7 @@ resume-parser/
    - **With Ollama:** AI model processes text for structured JSON
    - **Without Ollama:** Rule-based extraction finds key information
 4. **📊 Display:** All sections shown in beautiful, responsive UI
-5. **📥 Download:** Get formatted HTML resume template
-
----
-
-## 🔧 Configuration Options
-
-### Model Selection
-When Ollama is connected, you can choose from available models in the dropdown.
-
-### Fallback Mode
-Without Ollama, the app automatically uses rule-based extraction that finds:
-- Email addresses and phone numbers
-- Basic name extraction
-- Common skills and technologies
-- Education institutions
-- Company names
+5. **📥 Download:** Get formatted pdf resume template
 
 ---
 
