@@ -170,7 +170,7 @@ const ResumeParser = () => {
         console.error('JSON Parse Error:', parseError);
         console.error('Raw response:', generatedText);
         console.error('Cleaned JSON string:', jsonStr);
-        throw new Error('Failed to parse AI response as valid JSON. The AI may need to be retrained or the model might be having issues.');
+        throw new Error('Failed to parse AI response as valid JSON. Please retry.');
       }
       
     } catch (error) {
@@ -182,7 +182,7 @@ const ResumeParser = () => {
   // Main parsing function
   const parseResumeData = async (text) => {
     if (aiStatus !== 'connected') {
-      throw new Error('AI service is not available. Please ensure Ollama is running and the qwen2.5:1.5b model is installed.');
+      throw new Error('Please try again later...');
     }
 
     console.log('Processing resume with AI...');
@@ -635,9 +635,6 @@ const ResumeParser = () => {
           </div>
           <div className="nav-links">
             <a href="#" className="nav-link active">Resume Parser</a>
-            <a href="#" className="nav-link">Jobs</a>
-            <a href="#" className="nav-link">Companies</a>
-            <a href="#" className="nav-link">Profile</a>
           </div>
           <button 
             className="mobile-menu-btn"
@@ -650,42 +647,18 @@ const ResumeParser = () => {
         {/* Mobile Menu */}
         <div className={`mobile-menu ${mobileMenuOpen ? 'open' : ''}`}>
           <a href="#" className="mobile-nav-link active">Resume Parser</a>
-          <a href="#" className="mobile-nav-link">Jobs</a>
-          <a href="#" className="mobile-nav-link">Companies</a>
-          <a href="#" className="mobile-nav-link">Profile</a>
+  
         </div>
       </nav>
 
       <div className="app-content">
-        <div className="header-section">
-          <h1 className="app-title">Smart Resume Parser</h1>
-          <p className="app-subtitle">Transform your resume into a professional format and get instant analysis</p>
-        </div>
-
-        <div className="status-section">
-          <div className={aiStatus === 'connected' ? 'status-enabled' : 'status-disabled'}>
-            {aiStatus === 'connected' ? (
-              <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
-                <CheckCircle className="status-icon" />
-                AI Parser Ready
-              </div>
-            ) : aiStatus === 'checking' ? (
-              <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
-                <Settings className="status-icon" />
-                Checking service status...
-              </div>
-            ) : (
-              <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
-                <XCircle className="status-icon" />
-                Service unavailable - Limited functionality
-                <button onClick={checkAiStatus} className="status-retry-button">
-                  <Settings className="status-button-icon" />
-                  Retry
-                </button>
-              </div>
-            )}
+        {/* Only show header section on upload and processing views, not on results */}
+        {activeView !== 'results' && (
+          <div className="header-section">
+            <h1 className="app-title">Smart Resume Parser</h1>
+            <p className="app-subtitle">Transform your resume into a professional format with AI-powered analysis</p>
           </div>
-        </div>
+        )}
 
         <div className="nav-buttons">
           <div className="nav-container">
@@ -734,11 +707,11 @@ const ResumeParser = () => {
               <div className="service-info">
                 <h3>❌ AI Service Required</h3>
                 <p>Please ensure Ollama is running with the qwen2.5:1.5b model installed. Resume parsing will not work without the AI service.</p>
-                <div style={{ marginTop: '15px', padding: '15px', background: '#f1f5f9', borderRadius: '8px' }}>
+                <div style={{ marginTop: '15px', padding: '15px', background: 'rgba(255, 255, 255, 0.1)', borderRadius: '12px', backdropFilter: 'blur(10px)' }}>
                   <h4>Setup Instructions:</h4>
                   <ol style={{ marginLeft: '20px', lineHeight: '1.6' }}>
-                    <li>Download and install Ollama from <a href="https://ollama.ai" target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb' }}>ollama.ai</a></li>
-                    <li>Run: <code style={{ background: '#e2e8f0', padding: '2px 6px', borderRadius: '4px' }}>ollama pull qwen2.5:1.5b</code></li>
+                    <li>Download and install Ollama from <a href="https://ollama.ai" target="_blank" rel="noopener noreferrer" style={{ color: '#64ffda' }}>ollama.ai</a></li>
+                    <li>Run: <code style={{ background: 'rgba(0, 0, 0, 0.3)', padding: '2px 6px', borderRadius: '4px', color: '#64ffda' }}>ollama pull qwen2.5:1.5b</code></li>
                     <li>Ensure Ollama is running in the background</li>
                     <li>Click "Retry" above to reconnect</li>
                   </ol>
@@ -752,7 +725,7 @@ const ResumeParser = () => {
           <div className="processing-section">
             <div className="spinner"></div>
             <h3 className="processing-title">Processing Your Resume</h3>
-            <p className="processing-subtitle">Analyzing content and extracting information...</p>
+            <p className="processing-subtitle">AI is analyzing content and extracting information...</p>
           </div>
         )}
 
