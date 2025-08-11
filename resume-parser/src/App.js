@@ -12,9 +12,37 @@ const ResumeParser = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedData, setEditedData] = useState(null);
 
+  // Global error handler
+  useEffect(() => {
+    const handleGlobalError = (event) => {
+      console.error('Global error caught:', event.error);
+      event.preventDefault();
+      return true;
+    };
+
+    const handleUnhandledRejection = (event) => {
+      console.error('Unhandled promise rejection:', event.reason);
+      event.preventDefault();
+      return true;
+    };
+
+    window.addEventListener('error', handleGlobalError);
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+
+    return () => {
+      window.removeEventListener('error', handleGlobalError);
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+    };
+  }, []);
+
   // Check AI status on component mount
   useEffect(() => {
-    checkAiStatus();
+    try {
+      checkAiStatus();
+    } catch (err) {
+      console.error('Failed to check AI status:', err);
+      setAiStatus('disconnected');
+    }
   }, []);
 
   const checkAiStatus = async () => {
@@ -25,66 +53,253 @@ const ResumeParser = () => {
       } else {
         setAiStatus('disconnected');
       }
-    } catch (error) {
+    } catch (err) {
+      console.error('AI status check failed:', err);
       setAiStatus('disconnected');
     }
+  };
+
+  // Clean and preprocess extracted text
+  const cleanExtractedText = (text) => {
+    return text
+      .replace(/\s+/g, ' ')                    // Normalize whitespace
+      .replace(/\t/g, ' ')                     // Replace tabs with spaces
+      .replace(/\n{3,}/g, '\n\n')             // Reduce excessive newlines
+      .replace(/[^\w\s@.\-+()]/g, ' ')        // Keep only alphanumeric, email, phone chars
+      .replace(/\s+([.@])/g, '$1')            // Fix spacing around email/phone chars
+      .replace(/([.@])\s+/g, '$1')            // Fix spacing around email/phone chars
+      .trim();
   };
 
   // Extract text from PDF using PDF.js (loaded from CDN)
   const extractTextFromPDF = async (file) => {
     return new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
-      script.onload = async () => {
-        try {
-          const pdfjsLib = window.pdfjsLib;
-          pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-          
-          const arrayBuffer = await file.arrayBuffer();
-          const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
-          let fullText = '';
-          
-          for (let i = 1; i <= pdf.numPages; i++) {
-            const page = await pdf.getPage(i);
-            const textContent = await page.getTextContent();
-            const pageText = textContent.items.map(item => item.str).join(' ');
-            fullText += pageText + '\n';
+      try {
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+        script.onload = async () => {
+          try {
+            const pdfjsLib = window.pdfjsLib;
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+            let fullText = '';
+            
+            for (let i = 1; i <= pdf.numPages; i++) {
+              const page = await pdf.getPage(i);
+              const textContent = await page.getTextContent();
+              const pageText = textContent.items
+                .map(item => item.str)
+                .join(' ')
+                .replace(/\s+/g, ' '); // Clean spacing per page
+              fullText += pageText + '\n';
+            }
+            
+            resolve(cleanExtractedText(fullText));
+          } catch (err) {
+            reject(new Error(`PDF extraction failed: ${err && err.message ? err.message : 'Unknown PDF error'}`));
           }
-          
-          resolve(fullText);
-        } catch (error) {
-          reject(error);
-        }
-      };
-      document.head.appendChild(script);
+        };
+        script.onerror = () => reject(new Error('Failed to load PDF.js library'));
+        document.head.appendChild(script);
+      } catch (err) {
+        reject(new Error(`PDF setup failed: ${err && err.message ? err.message : 'Unknown setup error'}`));
+      }
     });
   };
 
-  // Extract text from images using Tesseract.js
-  const extractTextFromImage = async (file) => {
+  // Extract text from DOCX using mammoth.js
+  const extractTextFromDOCX = async (file) => {
     return new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/4.1.1/tesseract.min.js';
-      script.onload = async () => {
-        try {
-          const { createWorker } = window.Tesseract;
-          const worker = await createWorker('eng');
-          const { data: { text } } = await worker.recognize(file);
-          await worker.terminate();
-          resolve(text);
-        } catch (error) {
-          reject(error);
+      try {
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js';
+        
+        script.onload = async () => {
+          try {
+            console.log('Mammoth.js loaded, processing DOCX...');
+            
+            // Check if mammoth is available
+            if (!window.mammoth) {
+              throw new Error('Mammoth.js failed to load properly');
+            }
+            
+            const arrayBuffer = await file.arrayBuffer();
+            const result = await window.mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+            
+            console.log('DOCX processing completed, text length:', result.value ? result.value.length : 0);
+            
+            if (!result.value || result.value.trim().length < 10) {
+              reject(new Error('Could not extract readable text from the DOCX file. Please ensure the document contains text content.'));
+              return;
+            }
+            
+            resolve(cleanExtractedText(result.value));
+          } catch (docxError) {
+            console.error('DOCX Error:', docxError);
+            reject(new Error(`DOCX processing failed: ${docxError?.message || 'Unknown DOCX error'}`));
+          }
+        };
+        
+        script.onerror = () => {
+          reject(new Error('Failed to load DOCX processing library. Please check your internet connection.'));
+        };
+        
+        // Add script to document
+        if (!document.head.querySelector('script[src*="mammoth"]')) {
+          document.head.appendChild(script);
+        } else {
+          // Library already loaded, trigger onload
+          script.onload();
         }
-      };
-      document.head.appendChild(script);
+        
+      } catch (setupError) {
+        console.error('DOCX Setup Error:', setupError);
+        reject(new Error(`DOCX setup failed: ${setupError?.message || 'Unknown setup error'}`));
+      }
     });
   };
 
-  // Parse using AI
+  // Helper function to validate and fix structure
+  const validateAndFixStructure = (data) => {
+    return {
+      personalInfo: {
+        name: (data.personalInfo?.name || '').toString().trim(),
+        email: (data.personalInfo?.email || '').toString().trim(),
+        phone: (data.personalInfo?.phone || '').toString().trim(),
+        location: (data.personalInfo?.location || '').toString().trim()
+      },
+      experience: Array.isArray(data.experience) ? data.experience.map(exp => ({
+        position: (exp.position || '').toString().trim(),
+        company: (exp.company || '').toString().trim(),
+        duration: (exp.duration || '').toString().trim(),
+        description: Array.isArray(exp.description) ? 
+          exp.description.map(d => d.toString().trim()).filter(Boolean) : []
+      })).filter(exp => exp.position || exp.company) : [],
+      education: Array.isArray(data.education) ? data.education.map(edu => ({
+        degree: (edu.degree || '').toString().trim(),
+        institution: (edu.institution || '').toString().trim(),
+        year: (edu.year || '').toString().trim(),
+        description: Array.isArray(edu.description) ? 
+          edu.description.map(d => d.toString().trim()).filter(Boolean) : []
+      })).filter(edu => edu.degree || edu.institution) : [],
+      projects: Array.isArray(data.projects) ? data.projects.map(proj => ({
+        title: (proj.title || '').toString().trim(),
+        description: Array.isArray(proj.description) ? 
+          proj.description.map(d => d.toString().trim()).filter(Boolean) : []
+      })).filter(proj => proj.title) : [],
+      achievements: Array.isArray(data.achievements) ? data.achievements.map(ach => ({
+        title: (ach.title || '').toString().trim(),
+        description: Array.isArray(ach.description) ? 
+          ach.description.map(d => d.toString().trim()).filter(Boolean) : []
+      })).filter(ach => ach.title) : [],
+      certificates: Array.isArray(data.certificates) ? data.certificates.map(cert => ({
+        title: (cert.title || '').toString().trim(),
+        issuer: (cert.issuer || '').toString().trim(),
+        year: (cert.year || '').toString().trim(),
+        description: Array.isArray(cert.description) ? 
+          cert.description.map(d => d.toString().trim()).filter(Boolean) : []
+      })).filter(cert => cert.title) : [],
+      skills: Array.isArray(data.skills) ? 
+        data.skills.map(s => s.toString().trim()).filter(Boolean) : [],
+      additionalInformation: Array.isArray(data.additionalInformation) ? 
+        data.additionalInformation.map(s => s.toString().trim()).filter(Boolean) : []
+    };
+  };
+
+  // Helper function to try fixing common JSON issues
+  const tryFixJSON = (jsonStr) => {
+    try {
+      // Common fixes for malformed JSON
+      let fixed = jsonStr
+        .replace(/,(\s*[}\]])/g, '$1')                    // Remove trailing commas
+        .replace(/([{,]\s*)(\w+):/g, '$1"$2":')          // Add quotes to unquoted keys
+        .replace(/:\s*'([^']*)'/g, ': "$1"')             // Replace single quotes with double
+        .replace(/:\s*([^",{\[\s][^,}\]]*)/g, ': "$1"')  // Quote unquoted string values
+        .replace(/\\"/g, '\\"')                          // Fix escaped quotes
+        .replace(/\n/g, ' ')                             // Remove newlines
+        .replace(/\s+/g, ' ')                            // Normalize whitespace
+        .replace(/,\s*}/g, '}')                          // Final comma cleanup
+        .replace(/,\s*]/g, ']')                          // Final comma cleanup
+        .trim();
+      
+      return JSON.parse(fixed);
+    } catch (e) {
+      console.error('Could not fix JSON:', e);
+      return null;
+    }
+  };
+
+  // Enhanced AI parsing with better prompting and error handling
   const parseWithAI = async (text) => {
-    const promptText = "You are an expert resume parser. Extract structured information from the following resume text and return it as valid JSON.\n\nRESUME TEXT:\n" + text + "\n\nTASK: Parse the above resume and return ONLY a JSON object with this EXACT structure:\n\n{\n  \"personalInfo\": {\n    \"name\": \"string\",\n    \"email\": \"string\", \n    \"phone\": \"string\",\n    \"location\": \"string\"\n  },\n  \"experience\": [\n    {\n      \"position\": \"string\",\n      \"company\": \"string\", \n      \"duration\": \"string\",\n      \"description\": [\"string\"]\n    }\n  ],\n  \"education\": [\n    {\n      \"degree\": \"string\",\n      \"institution\": \"string\",\n      \"year\": \"string\",\n      \"description\": [\"string\"]\n    }\n  ],\n  \"projects\": [\n    {\n      \"title\": \"string\",\n      \"description\": [\"string\"]\n    }\n  ],\n  \"achievements\": [\n    {\n      \"title\": \"string\",\n      \"description\": [\"string\"]\n    }\n  ],\n  \"certificates\": [\n    {\n      \"title\": \"string\",\n      \"issuer\": \"string\",\n      \"year\": \"string\",\n      \"description\": [\"string\"]\n    }\n  ],\n  \"skills\": [\"string\"],\n  \"additionalInformation\": [\"string\"]\n}\n\nRULES:\n1. Return ONLY the JSON object, no other text\n2. Use empty strings for missing text fields\n3. Use empty arrays for missing array fields\n4. Extract ALL information present in the resume\n5. Be thorough and accurate\n\nJSON:";
+    // Enhanced prompt with strict instructions
+    const promptText = `You are a precise resume parser. Extract information from the resume text and return ONLY valid JSON.
+
+RESUME TEXT:
+${text}
+
+STRICT INSTRUCTIONS:
+1. Extract ALL information accurately from the text above
+2. Return ONLY the JSON object below - no other text
+3. Use empty strings "" for missing text fields
+4. Use empty arrays [] for missing list fields
+5. Ensure ALL JSON is properly formatted with quotes
+6. Do NOT add explanations, markdown, or extra text
+
+REQUIRED JSON STRUCTURE:
+{
+  "personalInfo": {
+    "name": "",
+    "email": "",
+    "phone": "",
+    "location": ""
+  },
+  "experience": [
+    {
+      "position": "",
+      "company": "",
+      "duration": "",
+      "description": [""]
+    }
+  ],
+  "education": [
+    {
+      "degree": "",
+      "institution": "",
+      "year": "",
+      "description": [""]
+    }
+  ],
+  "projects": [
+    {
+      "title": "",
+      "description": [""]
+    }
+  ],
+  "achievements": [
+    {
+      "title": "",
+      "description": [""]
+    }
+  ],
+  "certificates": [
+    {
+      "title": "",
+      "issuer": "",
+      "year": "",
+      "description": [""]
+    }
+  ],
+  "skills": [],
+  "additionalInformation": []
+}
+
+JSON RESPONSE:`;
 
     try {
+      console.log('Sending request to Qwen with enhanced parameters...');
+      
       const response = await fetch('http://localhost:11434/api/generate', {
         method: 'POST',
         headers: {
@@ -95,10 +310,12 @@ const ResumeParser = () => {
           prompt: promptText,
           stream: false,
           options: {
-            temperature: 0.1,
-            top_p: 0.9,
-            num_predict: 2048,
-            repeat_penalty: 1.1
+            temperature: 0.0,        // Completely deterministic
+            top_p: 0.1,             // Very focused responses
+            top_k: 1,               // Only consider top choice
+            repeat_penalty: 1.0,     // No repeat penalty
+            num_predict: 2048,       // Adequate response length
+            stop: ["\n\n", "```", "END", "EXPLANATION"] // Stop tokens
           }
         })
       });
@@ -108,140 +325,276 @@ const ResumeParser = () => {
       }
 
       const data = await response.json();
-      const generatedText = data.response;
+      let generatedText = data.response?.trim();
       
       if (!generatedText) {
         throw new Error('No response from AI service');
       }
 
-      // Clean the response to extract JSON
-      let jsonStr = generatedText.trim();
+      console.log('Raw AI response length:', generatedText.length);
+
+      // More robust JSON extraction
+      let jsonStr = generatedText;
       
-      // Find JSON in the response
-      let jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
+      // Remove any markdown code blocks or extra formatting
+      jsonStr = jsonStr
+        .replace(/```json\s*|\s*```/g, '')
+        .replace(/^[^{]*/, '')  // Remove everything before first {
+        .replace(/[^}]*$/, ''); // Remove everything after last }
       
-      if (!jsonMatch) {
-        const jsonStart = jsonStr.indexOf('{');
-        const jsonEnd = jsonStr.lastIndexOf('}');
-        if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
-          jsonStr = jsonStr.substring(jsonStart, jsonEnd + 1);
-        } else {
-          throw new Error('No valid JSON structure found in AI response');
-        }
-      } else {
-        jsonStr = jsonMatch[0];
+      // Find the JSON object boundaries
+      const jsonStart = jsonStr.indexOf('{');
+      const jsonEnd = jsonStr.lastIndexOf('}');
+      
+      if (jsonStart === -1 || jsonEnd === -1 || jsonEnd <= jsonStart) {
+        console.error('No valid JSON found in response:', generatedText);
+        throw new Error('No valid JSON structure found in AI response');
       }
       
-      // Clean up common JSON formatting issues
+      jsonStr = jsonStr.substring(jsonStart, jsonEnd + 1);
+      
+      // Clean up the JSON string
       jsonStr = jsonStr
-        .replace(/,\s*}/g, '}')  // Remove trailing commas
-        .replace(/,\s*]/g, ']')  // Remove trailing commas in arrays
-        .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters
+        .replace(/,(\s*[}\]])/g, '$1')           // Remove trailing commas
+        .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control chars
+        .replace(/\r?\n/g, ' ')                  // Replace newlines with spaces
+        .replace(/\s+/g, ' ')                    // Normalize whitespace
         .trim();
+      
+      console.log('Cleaned JSON string length:', jsonStr.length);
       
       try {
         const parsedData = JSON.parse(jsonStr);
         
-        // Validate structure
-        if (!parsedData || typeof parsedData !== 'object') {
-          throw new Error('Invalid JSON structure returned by AI');
-        }
+        // Validate and fix the structure
+        const validatedData = validateAndFixStructure(parsedData);
         
-        // Ensure all required fields exist with proper defaults
-        const validatedData = {
-          personalInfo: {
-            name: parsedData.personalInfo?.name || '',
-            email: parsedData.personalInfo?.email || '',
-            phone: parsedData.personalInfo?.phone || '',
-            location: parsedData.personalInfo?.location || ''
-          },
-          experience: Array.isArray(parsedData.experience) ? parsedData.experience : [],
-          education: Array.isArray(parsedData.education) ? parsedData.education : [],
-          projects: Array.isArray(parsedData.projects) ? parsedData.projects : [],
-          achievements: Array.isArray(parsedData.achievements) ? parsedData.achievements : [],
-          certificates: Array.isArray(parsedData.certificates) ? parsedData.certificates : [],
-          skills: Array.isArray(parsedData.skills) ? parsedData.skills : [],
-          additionalInformation: Array.isArray(parsedData.additionalInformation) ? parsedData.additionalInformation : []
-        };
-        
+        console.log('Successfully parsed resume data with', 
+          Object.keys(validatedData).length, 'sections');
         return validatedData;
         
       } catch (parseError) {
         console.error('JSON Parse Error:', parseError);
-        console.error('Raw response:', generatedText);
-        console.error('Cleaned JSON string:', jsonStr);
-        throw new Error('Failed to parse AI response as valid JSON. Please retry.');
+        console.error('Problematic JSON string:', jsonStr);
+        
+        // Try to fix common JSON issues
+        const fixedJson = tryFixJSON(jsonStr);
+        if (fixedJson) {
+          console.log('Successfully fixed and parsed JSON');
+          return validateAndFixStructure(fixedJson);
+        }
+        
+        // If all else fails, try a simpler retry
+        console.log('Attempting simplified retry...');
+        return await retryWithSimplifiedPrompt(text);
       }
       
     } catch (error) {
       console.error('AI Parsing Error:', error);
-      throw error;
+      // Safe error handling for AI parsing
+      const safeErrorMsg = error && typeof error.message === 'string' ? error.message : 'AI parsing failed';
+      throw new Error(safeErrorMsg);
     }
   };
 
-  // Main parsing function
+  // Simplified retry function for when main parsing fails
+  const retryWithSimplifiedPrompt = async (text) => {
+    const simplePrompt = `Extract resume information as JSON:
+
+${text}
+
+Return only this JSON format:
+{"personalInfo":{"name":"","email":"","phone":"","location":""},"experience":[],"education":[],"projects":[],"achievements":[],"certificates":[],"skills":[],"additionalInformation":[]}`;
+
+    try {
+      const response = await fetch('http://localhost:11434/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'qwen2.5:1.5b',
+          prompt: simplePrompt,
+          stream: false,
+          options: {
+            temperature: 0.0,
+            top_p: 0.05,
+            num_predict: 1024
+          }
+        })
+      });
+
+      const data = await response.json();
+      const jsonStr = data.response?.trim() || '{}';
+      
+      const jsonMatch = jsonStr.match(/\{.*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        return validateAndFixStructure(parsed);
+      }
+      
+      throw new Error('Simplified retry also failed');
+    } catch (error) {
+      console.error('Simplified retry failed:', error);
+      // Return minimal structure as last resort
+      return {
+        personalInfo: { name: '', email: '', phone: '', location: '' },
+        experience: [],
+        education: [],
+        projects: [],
+        achievements: [],
+        certificates: [],
+        skills: [],
+        additionalInformation: []
+      };
+    }
+  };
+
+  // Main parsing function with validation
   const parseResumeData = async (text) => {
     if (aiStatus !== 'connected') {
-      throw new Error('Please try again later...');
+      throw new Error('AI service is not connected');
     }
 
-    console.log('Processing resume with AI...');
-    return await parseWithAI(text);
+    // Validate input text
+    const cleanedText = cleanExtractedText(text);
+    if (!cleanedText || cleanedText.length < 50) {
+      throw new Error('Insufficient text content for processing');
+    }
+
+    console.log('Processing resume with cleaned text length:', cleanedText.length);
+    return await parseWithAI(cleanedText);
   };
 
   const handleFileUpload = useCallback(async (uploadedFile) => {
-    setIsProcessing(true);
-    setActiveView('processing');
-
     try {
+      setIsProcessing(true);
+      setActiveView('processing');
+
+      console.log('Processing file:', uploadedFile?.name || 'unknown', 'Type:', uploadedFile?.type || 'unknown');
       let text = '';
       
+      if (!uploadedFile) {
+        throw new Error('No file provided');
+      }
+
       if (uploadedFile.type === 'application/pdf') {
+        console.log('Extracting text from PDF...');
         text = await extractTextFromPDF(uploadedFile);
-      } else if (uploadedFile.type.startsWith('image/')) {
-        text = await extractTextFromImage(uploadedFile);
+      } else if (uploadedFile.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || 
+                 uploadedFile.name?.toLowerCase().endsWith('.docx')) {
+        console.log('Extracting text from DOCX...');
+        text = await extractTextFromDOCX(uploadedFile);
       } else {
-        throw new Error('Unsupported file type. Please upload a PDF, JPG, or PNG file.');
+        throw new Error('Unsupported file type. Please upload a PDF or DOCX file.');
+      }
+
+      console.log('Extracted text length:', text ? text.length : 0);
+      if (text && text.length > 200) {
+        console.log('Text preview:', text.substring(0, 200) + '...');
       }
 
       if (!text || text.trim().length < 50) {
-        throw new Error('Unable to extract sufficient text from the file. Please ensure the file contains readable text.');
+        throw new Error('Unable to extract sufficient text from the file. Please ensure the file contains readable text and try again.');
       }
 
       setExtractedText(text);
+      console.log('Starting AI parsing...');
       const parsed = await parseResumeData(text);
-      setParsedData(parsed);
-      setEditedData(parsed); // Initialize edited data
-      setActiveView('results');
-    } catch (error) {
-      console.error('Error processing file:', error);
-      let errorMessage = 'Processing failed. ';
       
-      if (error.message.includes('JSON')) {
-        errorMessage += 'AI parsing failed - please try again. If the issue persists, the AI service may be having difficulties.';
-      } else if (error.message.includes('AI service')) {
-        errorMessage += 'AI service is not available. Please ensure Ollama is running with the qwen2.5:1.5b model.';
-      } else {
-        errorMessage += error.message;
+      console.log('Parsing completed successfully');
+      setParsedData(parsed);
+      setEditedData(parsed);
+      setActiveView('results');
+      
+    } catch (err) {
+      console.error('Error processing file:', err);
+      
+      // Ultra-safe error handling
+      let errorMessage = 'Processing failed: ';
+      let errorMsg = 'Unknown error occurred';
+      
+      try {
+        if (err) {
+          if (typeof err === 'string') {
+            errorMsg = err;
+          } else if (err && typeof err === 'object') {
+            if (typeof err.message === 'string' && err.message.length > 0) {
+              errorMsg = err.message;
+            } else if (typeof err.toString === 'function') {
+              try {
+                errorMsg = err.toString();
+              } catch (e) {
+                errorMsg = 'Error object toString failed';
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Error extracting error message:', e);
+        errorMsg = 'Error processing failed';
       }
       
-      alert(errorMessage);
+      try {
+        if (typeof errorMsg === 'string' && errorMsg.length > 0) {
+          const lowerMsg = errorMsg.toLowerCase();
+          if (lowerMsg.indexOf('pdf extraction') !== -1) {
+            errorMessage += 'Could not read the PDF file. Please ensure it\'s not password-protected and contains selectable text.';
+          } else if (lowerMsg.indexOf('docx') !== -1) {
+            errorMessage += 'Could not read the DOCX file. Please ensure it\'s a valid Word document with readable text content.';
+          } else if (lowerMsg.indexOf('json') !== -1) {
+            errorMessage += 'AI parsing encountered an issue. This may be due to complex resume formatting. Please try again or simplify your resume layout.';
+          } else if (lowerMsg.indexOf('ai service') !== -1) {
+            errorMessage += 'AI service is not available. Please ensure Ollama is running with the qwen2.5:1.5b model.';
+          } else if (lowerMsg.indexOf('failed to load') !== -1) {
+            errorMessage += 'Failed to load required libraries. Please check your internet connection and try again.';
+          } else if (lowerMsg.indexOf('insufficient text') !== -1) {
+            errorMessage += 'Not enough readable text found in the file. Please ensure your resume has clear, readable content.';
+          } else if (lowerMsg.indexOf('unsupported file type') !== -1) {
+            errorMessage += 'Please upload a PDF or DOCX file only.';
+          } else {
+            errorMessage += errorMsg;
+          }
+        } else {
+          errorMessage += 'An unexpected error occurred during processing.';
+        }
+      } catch (e) {
+        console.error('Error processing error message:', e);
+        errorMessage = 'An unexpected error occurred. Please try again.';
+      }
+      
+      try {
+        alert(errorMessage);
+      } catch (e) {
+        console.error('Alert failed:', e);
+      }
+      
       setActiveView('upload');
     } finally {
-      setIsProcessing(false);
+      try {
+        setIsProcessing(false);
+      } catch (e) {
+        console.error('Failed to set processing state:', e);
+      }
     }
   }, [aiStatus]);
 
   const handleDrop = useCallback((e) => {
-    e.preventDefault();
-    const droppedFile = e.dataTransfer.files[0];
-    if (droppedFile) {
-      handleFileUpload(droppedFile);
+    try {
+      e.preventDefault();
+      const droppedFile = e.dataTransfer?.files?.[0];
+      if (droppedFile) {
+        handleFileUpload(droppedFile);
+      }
+    } catch (err) {
+      console.error('Drop handler error:', err);
     }
   }, [handleFileUpload]);
 
   const handleDragOver = useCallback((e) => {
-    e.preventDefault();
+    try {
+      e.preventDefault();
+    } catch (err) {
+      console.error('Drag over handler error:', err);
+    }
   }, []);
 
   const downloadPDF = async () => {
@@ -251,18 +604,13 @@ const ResumeParser = () => {
     }
     
     try {
-      // Create HTML content
       const resumeHtml = generateTraditionalResumeTemplate(editedData);
-      
-      // Create a blob and download as HTML first (for debugging)
       const blob = new Blob([resumeHtml], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       
-      // Open in new window for printing
       const printWindow = window.open(url, '_blank', 'width=800,height=600');
       
       if (!printWindow) {
-        // Fallback: direct download
         const a = document.createElement('a');
         a.href = url;
         a.download = `${editedData.personalInfo?.name || 'Resume'}_Professional.html`;
@@ -275,17 +623,16 @@ const ResumeParser = () => {
         return;
       }
       
-      // Wait for window to load then trigger print
       printWindow.onload = () => {
         setTimeout(() => {
           printWindow.print();
-          // Don't close automatically - let user handle it
         }, 1000);
       };
       
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      alert('Failed to generate PDF. Please try again or contact support if the issue persists.');
+    } catch (err) {
+      console.error('Error generating PDF:', err);
+      const errorMsg = err && typeof err.message === 'string' ? err.message : 'Unknown download error';
+      alert(`Failed to generate PDF: ${errorMsg}. Please try again.`);
     }
   };
 
@@ -312,23 +659,18 @@ const ResumeParser = () => {
       const newData = { ...prev };
       
       if (index !== null) {
-        // Handle array items (experience, education, projects, etc.)
         if (!newData[section]) newData[section] = [];
         if (!newData[section][index]) newData[section][index] = {};
         
         if (field === 'description' && Array.isArray(value)) {
-          // For description arrays
           newData[section][index][field] = value;
         } else {
-          // For other fields
           newData[section][index][field] = value;
         }
       } else if (section === 'personalInfo') {
-        // Handle personal info
         if (!newData.personalInfo) newData.personalInfo = {};
         newData.personalInfo[field] = value;
       } else if (section === 'skills') {
-        // Handle skills array
         newData.skills = value.split(',').map(skill => skill.trim()).filter(Boolean);
       }
       
@@ -380,10 +722,8 @@ const ResumeParser = () => {
     const phone = data.personalInfo?.phone || '';
     const location = data.personalInfo?.location || '';
 
-    // Contact info section
     const contactInfo = [email, phone].filter(Boolean).join(' | ');
 
-    // Experience section (using our JSON structure)
     const experienceSection = (data.experience && data.experience.length > 0) ? `
       <div class="section">
         <h2 class="section-title">PROFESSIONAL EXPERIENCE</h2>
@@ -405,7 +745,6 @@ const ResumeParser = () => {
       </div>
     ` : '';
 
-    // Projects section (using our JSON structure)
     const projectsSection = (data.projects && data.projects.length > 0) ? `
       <div class="section">
         <h2 class="section-title">KEY PROJECTS</h2>
@@ -426,7 +765,6 @@ const ResumeParser = () => {
       </div>
     ` : '';
 
-    // Education section
     const educationSection = (data.education && data.education.length > 0) ? `
       <div class="section">
         <h2 class="section-title">EDUCATION</h2>
@@ -449,7 +787,6 @@ const ResumeParser = () => {
       </div>
     ` : '';
 
-    // Skills section (formatted like your sample)
     const skillsSection = (data.skills && data.skills.length > 0) ? `
       <div class="section">
         <h2 class="section-title">TECHNICAL SKILLS</h2>
@@ -457,7 +794,6 @@ const ResumeParser = () => {
       </div>
     ` : '';
 
-    // Achievements section (using our JSON structure)
     const achievementsSection = (data.achievements && data.achievements.length > 0) ? `
       <div class="section">
         <h2 class="section-title">ACHIEVEMENTS & AWARDS</h2>
@@ -474,7 +810,6 @@ const ResumeParser = () => {
       </div>
     ` : '';
 
-    // Certificates section (renamed to coursework like your sample)
     const certificatesSection = (data.certificates && data.certificates.length > 0) ? `
       <div class="section">
         <h2 class="section-title">CERTIFICATIONS & COURSEWORK</h2>
@@ -482,7 +817,6 @@ const ResumeParser = () => {
       </div>
     ` : '';
 
-    // Additional info (can be memberships, languages, etc.)
     const additionalSection = (data.additionalInformation && data.additionalInformation.length > 0) ? `
       <div class="section">
         <h2 class="section-title">ADDITIONAL INFORMATION</h2>
@@ -647,7 +981,6 @@ const ResumeParser = () => {
         {/* Mobile Menu */}
         <div className={`mobile-menu ${mobileMenuOpen ? 'open' : ''}`}>
           <a href="#" className="mobile-nav-link active">Resume Parser</a>
-  
         </div>
       </nav>
 
@@ -690,10 +1023,10 @@ const ResumeParser = () => {
               <Upload className="upload-icon" />
               <h3 className="upload-title">Upload Your Resume</h3>
               <p className="upload-subtitle">Drag and drop your resume here, or click to browse</p>
-              <p className="upload-formats">Supports PDF, JPG, and PNG files</p>
+              <p className="upload-formats">Supports PDF and DOCX files</p>
               <input
                 type="file"
-                accept=".pdf,image/*"
+                accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                 onChange={(e) => e.target.files[0] && handleFileUpload(e.target.files[0])}
                 className="file-input"
                 id="file-upload"
@@ -713,7 +1046,7 @@ const ResumeParser = () => {
                     <li>Download and install Ollama from <a href="https://ollama.ai" target="_blank" rel="noopener noreferrer" style={{ color: '#64ffda' }}>ollama.ai</a></li>
                     <li>Run: <code style={{ background: 'rgba(0, 0, 0, 0.3)', padding: '2px 6px', borderRadius: '4px', color: '#64ffda' }}>ollama pull qwen2.5:1.5b</code></li>
                     <li>Ensure Ollama is running in the background</li>
-                    <li>Click "Retry" above to reconnect</li>
+                    <li>Refresh the page to reconnect</li>
                   </ol>
                 </div>
               </div>
