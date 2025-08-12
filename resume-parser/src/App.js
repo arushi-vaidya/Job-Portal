@@ -1,16 +1,53 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Upload, FileText, User, Mail, Phone, MapPin, Briefcase, GraduationCap, Code, Download, Eye, Award, BadgeCheck, Info as InfoIcon, Settings, CheckCircle, XCircle, Menu, X } from 'lucide-react';
+import { Upload, Download, Eye, Menu, X, Edit3, Save, Plus, Trash2 } from 'lucide-react';
 import './ResumeParser.css';
 
 const ResumeParser = () => {
-  const [extractedText, setExtractedText] = useState('');
   const [parsedData, setParsedData] = useState(null);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [editableData, setEditableData] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
   const [activeView, setActiveView] = useState('upload');
   const [aiStatus, setAiStatus] = useState('checking');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedData, setEditedData] = useState(null);
+  
+  // Safari detection
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  
+  // Safari-compatible button handlers
+  const handleAddExperience = () => {
+    console.log('=== HANDLE ADD EXPERIENCE CALLED ===');
+    addNewItem('experience');
+  };
+  
+  const handleAddEducation = () => {
+    console.log('=== HANDLE ADD EDUCATION CALLED ===');
+    addNewItem('education');
+  };
+  
+  const handleAddProject = () => {
+    console.log('=== HANDLE ADD PROJECT CALLED ===');
+    addNewItem('projects');
+  };
+  
+  const handleAddAchievement = () => {
+    console.log('=== HANDLE ADD ACHIEVEMENT CALLED ===');
+    addNewItem('achievements');
+  };
+  
+  const handleAddCertificate = () => {
+    console.log('=== HANDLE ADD CERTIFICATE CALLED ===');
+    addNewItem('certificates');
+  };
+  
+  const handleAddSkill = () => {
+    console.log('=== HANDLE ADD SKILL CALLED ===');
+    addNewSkill();
+  };
+  
+  const handleAddAdditionalInfo = () => {
+    console.log('=== HANDLE ADD ADDITIONAL INFO CALLED ===');
+    addNewAdditionalInfo();
+  };
 
   // Global error handler
   useEffect(() => {
@@ -44,6 +81,13 @@ const ResumeParser = () => {
       setAiStatus('disconnected');
     }
   }, []);
+
+  // Initialize editableData when parsedData changes
+  useEffect(() => {
+    if (parsedData && !editableData) {
+      setEditableData(JSON.parse(JSON.stringify(parsedData)));
+    }
+  }, [parsedData, editableData]);
 
   const checkAiStatus = async () => {
     try {
@@ -466,7 +510,6 @@ Return only this JSON format:
 
   const handleFileUpload = useCallback(async (uploadedFile) => {
     try {
-      setIsProcessing(true);
       setActiveView('processing');
 
       console.log('Processing file:', uploadedFile?.name || 'unknown', 'Type:', uploadedFile?.type || 'unknown');
@@ -496,13 +539,11 @@ Return only this JSON format:
         throw new Error('Unable to extract sufficient text from the file. Please ensure the file contains readable text and try again.');
       }
 
-      setExtractedText(text);
       console.log('Starting AI parsing...');
       const parsed = await parseResumeData(text);
       
       console.log('Parsing completed successfully');
       setParsedData(parsed);
-      setEditedData(parsed);
       setActiveView('results');
       
     } catch (err) {
@@ -568,12 +609,6 @@ Return only this JSON format:
       }
       
       setActiveView('upload');
-    } finally {
-      try {
-        setIsProcessing(false);
-      } catch (e) {
-        console.error('Failed to set processing state:', e);
-      }
     }
   }, [aiStatus]);
 
@@ -598,13 +633,13 @@ Return only this JSON format:
   }, []);
 
   const downloadPDF = async () => {
-    if (!editedData) {
+    if (!parsedData) {
       alert('No resume data available to download.');
       return;
     }
     
     try {
-      const resumeHtml = generateTraditionalResumeTemplate(editedData);
+      const resumeHtml = generateTraditionalResumeTemplate(parsedData);
       const blob = new Blob([resumeHtml], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       
@@ -613,7 +648,7 @@ Return only this JSON format:
       if (!printWindow) {
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${editedData.personalInfo?.name || 'Resume'}_Professional.html`;
+        a.download = `${parsedData.personalInfo?.name || 'Resume'}_Professional.html`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -640,78 +675,306 @@ Return only this JSON format:
     downloadPDF();
   };
 
-  const handleEdit = () => {
-    setIsEditing(true);
+  // Handle entering edit mode
+  const handleEditMode = () => {
+    // Always create a fresh copy when entering edit mode
+    console.log('Entering edit mode, parsedData:', parsedData);
+    
+    if (!parsedData) {
+      console.error('No parsed data available for editing');
+      alert('No resume data available to edit. Please upload and parse a resume first.');
+      return;
+    }
+    
+    try {
+      const freshData = JSON.parse(JSON.stringify(parsedData));
+      console.log('Fresh editable data:', freshData);
+      setEditableData(freshData);
+      setIsEditing(true);
+    } catch (error) {
+      console.error('Error creating editable data:', error);
+      alert('Error entering edit mode. Please try again.');
+    }
   };
 
-  const handleSave = () => {
+  // Handle saving changes
+  const handleSaveChanges = () => {
+    setParsedData(editableData);
     setIsEditing(false);
-    setParsedData(editedData);
+    alert('Changes saved successfully!');
   };
 
-  const handleCancel = () => {
+  // Handle canceling edits
+  const handleCancelEdit = () => {
+    setEditableData(null);
     setIsEditing(false);
-    setEditedData(parsedData);
   };
 
-  const updateField = (section, field, value, index = null) => {
-    setEditedData(prev => {
-      const newData = { ...prev };
-      
-      if (index !== null) {
-        if (!newData[section]) newData[section] = [];
-        if (!newData[section][index]) newData[section][index] = {};
-        
-        if (field === 'description' && Array.isArray(value)) {
+  // Update editable data
+  const updateEditableData = (section, field, value, index = null) => {
+    console.log(`Updating ${section}.${field}${index !== null ? `[${index}]` : ''} to:`, value);
+    
+    setEditableData(prev => {
+      try {
+        const newData = JSON.parse(JSON.stringify(prev));
+        if (index !== null) {
+          if (!newData[section]) {
+            newData[section] = [];
+          }
+          if (!newData[section][index]) {
+            newData[section][index] = {};
+          }
           newData[section][index][field] = value;
         } else {
-          newData[section][index][field] = value;
+          if (!newData[section]) {
+            newData[section] = {};
+          }
+          newData[section][field] = value;
         }
-      } else if (section === 'personalInfo') {
-        if (!newData.personalInfo) newData.personalInfo = {};
-        newData.personalInfo[field] = value;
-      } else if (section === 'skills') {
-        newData.skills = value.split(',').map(skill => skill.trim()).filter(Boolean);
+        console.log('Updated data:', newData);
+        return newData;
+      } catch (error) {
+        console.error('Error updating editable data:', error);
+        return prev;
       }
-      
-      return newData;
     });
   };
 
+  // Add new item to a section
   const addNewItem = (section) => {
-    setEditedData(prev => {
-      const newData = { ...prev };
-      if (!newData[section]) newData[section] = [];
+    console.log('=== ADD NEW ITEM CALLED ===');
+    console.log('Section:', section);
+    console.log('Current editableData:', editableData);
+    console.log('Current isEditing:', isEditing);
+    
+    if (!isEditing) {
+      console.error('Not in edit mode');
+      alert('Please enter edit mode first before adding items.');
+      return;
+    }
+    
+    if (!editableData) {
+      console.error('No editable data available');
+      alert('No editable data available. Please try refreshing the page.');
+      return;
+    }
+    
+    try {
+      setEditableData(prev => {
+        console.log('Previous editable data:', prev);
+        
+        if (!prev) {
+          console.error('Previous data is null');
+          return prev;
+        }
+        
+        const newData = JSON.parse(JSON.stringify(prev));
+        console.log('Cloned data:', newData);
+        
+        // Ensure the section array exists
+        if (!newData[section]) {
+          console.log(`Creating new array for section: ${section}`);
+          newData[section] = [];
+        }
+        
+        const newItem = getDefaultItem(section);
+        console.log('New item to add:', newItem);
+        
+        newData[section].push(newItem);
+        console.log(`Added item to ${section}. New length:`, newData[section].length);
+        console.log('Final updated data:', newData);
+        
+        return newData;
+      });
       
-      switch (section) {
-        case 'experience':
-          newData[section].push({ position: '', company: '', duration: '', description: [''] });
-          break;
-        case 'education':
-          newData[section].push({ degree: '', institution: '', year: '', description: [''] });
-          break;
-        case 'projects':
-          newData[section].push({ title: '', description: [''] });
-          break;
-        case 'achievements':
-          newData[section].push({ title: '', description: [''] });
-          break;
-        case 'certificates':
-          newData[section].push({ title: '', issuer: '', year: '', description: [''] });
-          break;
-        default:
-          break;
+      // Force a re-render for Safari
+      if (isSafari) {
+        setTimeout(() => {
+          console.log('Safari: Forcing re-render after add');
+          setEditableData(current => current);
+        }, 100);
       }
+      
+    } catch (error) {
+      console.error('Error in addNewItem:', error);
+      alert(`Error adding new item: ${error.message}`);
+    }
+  };
+
+  // Remove item from a section
+  const removeItem = (section, index) => {
+    setEditableData(prev => {
+      const newData = JSON.parse(JSON.stringify(prev));
+      newData[section].splice(index, 1);
       return newData;
     });
   };
 
-  const removeItem = (section, index) => {
-    setEditedData(prev => {
-      const newData = { ...prev };
-      if (newData[section] && newData[section][index] !== undefined) {
-        newData[section].splice(index, 1);
+  // Get default item structure for different sections
+  const getDefaultItem = (section) => {
+    switch (section) {
+      case 'experience':
+        return { position: '', company: '', duration: '', description: [''] };
+      case 'education':
+        return { degree: '', institution: '', year: '', description: [''] };
+      case 'projects':
+        return { title: '', description: [''] };
+      case 'achievements':
+        return { title: '', description: [''] };
+      case 'certificates':
+        return { title: '', issuer: '', year: '', description: [''] };
+      default:
+        return {};
+    }
+  };
+
+  // Add new description line
+  const addDescriptionLine = (section, index) => {
+    setEditableData(prev => {
+      const newData = JSON.parse(JSON.stringify(prev));
+      newData[section][index].description.push('');
+      return newData;
+    });
+  };
+
+  // Remove description line
+  const removeDescriptionLine = (section, itemIndex, descIndex) => {
+    setEditableData(prev => {
+      const newData = JSON.parse(JSON.stringify(prev));
+      newData[section][itemIndex].description.splice(descIndex, 1);
+      return newData;
+    });
+  };
+
+  // Update description line
+  const updateDescriptionLine = (section, itemIndex, descIndex, value) => {
+    setEditableData(prev => {
+      const newData = JSON.parse(JSON.stringify(prev));
+      newData[section][itemIndex].description[descIndex] = value;
+      return newData;
+    });
+  };
+
+  // Add new skill
+  const addNewSkill = () => {
+    console.log('=== ADD NEW SKILL CALLED ===');
+    
+    if (!isEditing) {
+      console.error('Not in edit mode');
+      alert('Please enter edit mode first before adding skills.');
+      return;
+    }
+    
+    if (!editableData) {
+      console.error('No editable data available');
+      alert('No editable data available. Please try refreshing the page.');
+      return;
+    }
+    
+    try {
+      setEditableData(prev => {
+        console.log('Previous editable data:', prev);
+        
+        if (!prev) {
+          console.error('Previous data is null');
+          return prev;
+        }
+        
+        const newData = JSON.parse(JSON.stringify(prev));
+        
+        // Ensure skills array exists
+        if (!newData.skills) {
+          console.log('Creating new skills array');
+          newData.skills = [];
+        }
+        
+        newData.skills.push('');
+        console.log('Added new skill. Total skills:', newData.skills.length);
+        
+        return newData;
+      });
+      
+      // Force a re-render for Safari
+      if (isSafari) {
+        setTimeout(() => {
+          console.log('Safari: Forcing re-render after adding skill');
+          setEditableData(current => current);
+        }, 100);
       }
+      
+    } catch (error) {
+      console.error('Error adding new skill:', error);
+      alert(`Error adding new skill: ${error.message}`);
+    }
+  };
+
+  // Remove skill
+  const removeSkill = (index) => {
+    setEditableData(prev => {
+      const newData = JSON.parse(JSON.stringify(prev));
+      newData.skills.splice(index, 1);
+      return newData;
+    });
+  };
+
+  // Add new additional information
+  const addNewAdditionalInfo = () => {
+    console.log('=== ADD NEW ADDITIONAL INFO CALLED ===');
+    
+    if (!isEditing) {
+      console.error('Not in edit mode');
+      alert('Please enter edit mode first before adding additional info.');
+      return;
+    }
+    
+    if (!editableData) {
+      console.error('No editable data available');
+      alert('No editable data available. Please try refreshing the page.');
+      return;
+    }
+    
+    try {
+      setEditableData(prev => {
+        console.log('Previous editable data:', prev);
+        
+        if (!prev) {
+          console.error('Previous data is null');
+          return prev;
+        }
+        
+        const newData = JSON.parse(JSON.stringify(prev));
+        
+        // Ensure additionalInformation array exists
+        if (!newData.additionalInformation) {
+          console.log('Creating new additionalInformation array');
+          newData.additionalInformation = [];
+        }
+        
+        newData.additionalInformation.push('');
+        console.log('Added new additional info. Total items:', newData.additionalInformation.length);
+        
+        return newData;
+      });
+      
+      // Force a re-render for Safari
+      if (isSafari) {
+        setTimeout(() => {
+          console.log('Safari: Forcing re-render after adding additional info');
+          setEditableData(current => current);
+        }, 100);
+      }
+      
+    } catch (error) {
+      console.error('Error adding new additional info:', error);
+      alert(`Error adding new additional info: ${error.message}`);
+    }
+  };
+
+  // Remove additional information
+  const removeAdditionalInfo = (index) => {
+    setEditableData(prev => {
+      const newData = JSON.parse(JSON.stringify(prev));
+      newData.additionalInformation.splice(index, 1);
       return newData;
     });
   };
@@ -722,7 +985,7 @@ Return only this JSON format:
     const phone = data.personalInfo?.phone || '';
     const location = data.personalInfo?.location || '';
 
-    const contactInfo = [email, phone].filter(Boolean).join(' | ');
+    const contactInfo = [email, phone, location].filter(Boolean).join(' | ');
 
     const experienceSection = (data.experience && data.experience.length > 0) ? `
       <div class="section">
@@ -1064,6 +1327,81 @@ Return only this JSON format:
 
         {activeView === 'results' && parsedData && (
           <div className="results-section">
+            {/* Edit Mode Toggle */}
+            <div className="edit-mode-toggle">
+              {!isEditing ? (
+                <button onClick={handleEditMode} className="edit-button">
+                  <Edit3 className="button-icon" />
+                  Edit Resume
+                </button>
+              ) : (
+                <div className="edit-controls">
+                  <button onClick={handleSaveChanges} className="save-button">
+                    <Save className="button-icon" />
+                    Save Changes
+                  </button>
+                  <button onClick={handleCancelEdit} className="cancel-button">
+                    Cancel
+                  </button>
+                </div>
+              )}
+              
+              {/* Debug Info */}
+              <div style={{ marginTop: '10px', fontSize: '12px', color: '#666' }}>
+                <div>Edit Mode: {isEditing ? 'ON' : 'OFF'}</div>
+                <div>Has Parsed Data: {parsedData ? 'YES' : 'NO'}</div>
+                <div>Has Editable Data: {editableData ? 'YES' : 'NO'}</div>
+                <div>Active View: {activeView}</div>
+                <div>Browser: {isSafari ? 'Safari' : 'Other'}</div>
+                <div>User Agent: {navigator.userAgent.substring(0, 50)}...</div>
+              </div>
+              
+              {/* Safari-specific refresh button */}
+              {isSafari && isEditing && (
+                <button 
+                  onClick={() => {
+                    console.log('Force refreshing editable data for Safari');
+                    setEditableData(JSON.parse(JSON.stringify(parsedData)));
+                  }} 
+                  style={{ 
+                    marginTop: '10px', 
+                    padding: '5px 10px', 
+                    fontSize: '11px',
+                    background: '#ff6b6b',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  🔄 Safari Refresh
+                </button>
+              )}
+              
+              {/* Test Add Button */}
+              {isEditing && (
+                <button 
+                  onClick={() => {
+                    console.log('=== TEST ADD BUTTON CLICKED ===');
+                    addNewItem('experience');
+                  }} 
+                  style={{ 
+                    marginTop: '10px', 
+                    marginLeft: '10px',
+                    padding: '5px 10px', 
+                    fontSize: '11px',
+                    background: '#4CAF50',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  🧪 Test Add Experience
+                </button>
+              )}
+            </div>
+
             {/* Resume Preview - Formatted like template */}
             <div className="resume-preview">
               <div className="resume-header">
@@ -1071,62 +1409,94 @@ Return only this JSON format:
                   {isEditing ? (
                     <input
                       type="text"
-                      value={editedData?.personalInfo?.name || ''}
-                      onChange={(e) => updateField('personalInfo', 'name', e.target.value)}
-                      className="edit-input name-input"
+                      value={editableData?.personalInfo?.name || ''}
+                      onChange={(e) => {
+                        console.log('Updating name to:', e.target.value);
+                        updateEditableData('personalInfo', 'name', e.target.value);
+                      }}
+                      onInput={(e) => {
+                        // Safari sometimes needs onInput for immediate updates
+                        console.log('Input event - updating name to:', e.target.value);
+                        updateEditableData('personalInfo', 'name', e.target.value);
+                      }}
+                      className="editable-input name-input"
+                      placeholder="Your Name"
                     />
                   ) : (
-                    editedData?.personalInfo?.name || 'Your Name'
+                    parsedData?.personalInfo?.name || 'Your Name'
                   )}
                 </h1>
                 <div className="resume-contact">
                   {isEditing ? (
-                    <>
+                    <div className="contact-inputs">
                       <input
                         type="email"
-                        value={editedData?.personalInfo?.email || ''}
-                        onChange={(e) => updateField('personalInfo', 'email', e.target.value)}
-                        className="edit-input"
+                        value={editableData?.personalInfo?.email || ''}
+                        onChange={(e) => updateEditableData('personalInfo', 'email', e.target.value)}
+                        className="editable-input contact-input"
                         placeholder="Email"
                       />
-                      <span> | </span>
+                      <span className="contact-separator">|</span>
                       <input
                         type="tel"
-                        value={editedData?.personalInfo?.phone || ''}
-                        onChange={(e) => updateField('personalInfo', 'phone', e.target.value)}
-                        className="edit-input"
+                        value={editableData?.personalInfo?.phone || ''}
+                        onChange={(e) => updateEditableData('personalInfo', 'phone', e.target.value)}
+                        className="editable-input contact-input"
                         placeholder="Phone"
                       />
-                    </>
+                      <span className="contact-separator">|</span>
+                      <input
+                        type="text"
+                        value={editableData?.personalInfo?.location || ''}
+                        onChange={(e) => updateEditableData('personalInfo', 'location', e.target.value)}
+                        className="editable-input contact-input"
+                        placeholder="Location"
+                      />
+                    </div>
                   ) : (
-                    `${editedData?.personalInfo?.email || ''} | ${editedData?.personalInfo?.phone || ''}`
+                    `${parsedData?.personalInfo?.email || ''} | ${parsedData?.personalInfo?.phone || ''} | ${parsedData?.personalInfo?.location || ''}`
                   )}
                 </div>
               </div>
 
               {/* Professional Experience Section */}
-              {editedData?.experience && editedData.experience.length > 0 && (
-                <div className="resume-section">
+              <div className="resume-section">
+                <div className="section-header-with-actions">
                   <h2 className="resume-section-title">PROFESSIONAL EXPERIENCE</h2>
-                  {editedData.experience.map((exp, index) => (
+                  {isEditing && (
+                    <button onClick={handleAddExperience} className="add-item-button">
+                      <Plus className="button-icon" />
+                      Add Experience
+                    </button>
+                  )}
+                </div>
+                {((isEditing ? editableData?.experience : parsedData?.experience) || []).length > 0 ? (
+                  (isEditing ? editableData.experience : parsedData.experience).map((exp, index) => (
                     <div key={index} className="resume-entry">
+                      {isEditing && (
+                        <div className="entry-actions">
+                          <button onClick={() => removeItem('experience', index)} className="remove-item-button">
+                            <Trash2 className="button-icon" />
+                          </button>
+                        </div>
+                      )}
                       <div className="resume-entry-header">
                         <div className="resume-company-position">
                           {isEditing ? (
                             <>
                               <input
                                 type="text"
-                                value={exp.company || ''}
-                                onChange={(e) => updateField('experience', 'company', e.target.value, index)}
-                                className="edit-input"
+                                value={editableData?.experience[index]?.company || ''}
+                                onChange={(e) => updateEditableData('experience', 'company', e.target.value, index)}
+                                className="editable-input company-input"
                                 placeholder="Company"
                               />
-                              <span>, </span>
+                              <span className="separator">,</span>
                               <input
                                 type="text"
-                                value={exp.position || ''}
-                                onChange={(e) => updateField('experience', 'position', e.target.value, index)}
-                                className="edit-input"
+                                value={editableData?.experience[index]?.position || ''}
+                                onChange={(e) => updateEditableData('experience', 'position', e.target.value, index)}
+                                className="editable-input position-input"
                                 placeholder="Position"
                               />
                             </>
@@ -1140,9 +1510,9 @@ Return only this JSON format:
                           {isEditing ? (
                             <input
                               type="text"
-                              value={exp.duration || ''}
-                              onChange={(e) => updateField('experience', 'duration', e.target.value, index)}
-                              className="edit-input duration-input"
+                              value={editableData?.experience[index]?.duration || ''}
+                              onChange={(e) => updateEditableData('experience', 'duration', e.target.value, index)}
+                              className="editable-input duration-input"
                               placeholder="Duration"
                             />
                           ) : (
@@ -1150,63 +1520,80 @@ Return only this JSON format:
                           )}
                         </div>
                       </div>
-                      {exp.description && Array.isArray(exp.description) && exp.description.length > 0 && (
-                        <ul className="resume-bullet-list">
-                          {exp.description.map((desc, descIndex) => (
-                            <li key={descIndex}>
-                              {isEditing ? (
-                                <textarea
+                      <div className="description-section">
+                        {isEditing ? (
+                          <div className="description-inputs">
+                            {(editableData?.experience[index]?.description || []).map((desc, descIndex) => (
+                              <div key={descIndex} className="description-line">
+                                <input
+                                  type="text"
                                   value={desc}
-                                  onChange={(e) => {
-                                    const newDesc = [...exp.description];
-                                    newDesc[descIndex] = e.target.value;
-                                    updateField('experience', 'description', newDesc, index);
-                                  }}
-                                  className="edit-textarea"
-                                  rows="2"
+                                  onChange={(e) => updateDescriptionLine('experience', index, descIndex, e.target.value)}
+                                  className="editable-input description-input"
+                                  placeholder="Description line"
                                 />
-                              ) : (
-                                desc
-                              )}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                      {isEditing && (
-                        <button
-                          onClick={() => removeItem('experience', index)}
-                          className="remove-btn"
-                        >
-                          Remove
-                        </button>
-                      )}
+                                <button 
+                                  onClick={() => removeDescriptionLine('experience', index, descIndex)}
+                                  className="remove-line-button"
+                                  disabled={(editableData?.experience[index]?.description || []).length <= 1}
+                                >
+                                  <Trash2 className="button-icon" />
+                                </button>
+                              </div>
+                            ))}
+                            <button onClick={() => addDescriptionLine('experience', index)} className="add-line-button">
+                              <Plus className="button-icon" />
+                              Add Line
+                            </button>
+                          </div>
+                        ) : (
+                          exp.description && Array.isArray(exp.description) && exp.description.length > 0 && (
+                            <ul className="resume-bullet-list">
+                              {exp.description.map((desc, descIndex) => (
+                                <li key={descIndex}>{desc}</li>
+                              ))}
+                            </ul>
+                          )
+                        )}
+                      </div>
                     </div>
-                  ))}
+                  ))
+                ) : (
+                  <div className="empty-section">
+                    {isEditing ? 'No experience entries yet. Click "Add Experience" to add one.' : 'No experience information available.'}
+                  </div>
+                )}
+              </div>
+
+              {/* Education Section */}
+              <div className="resume-section">
+                <div className="section-header-with-actions">
+                  <h2 className="resume-section-title">EDUCATION</h2>
                   {isEditing && (
-                    <button
-                      onClick={() => addNewItem('experience')}
-                      className="add-btn"
-                    >
-                      + Add Experience
+                    <button onClick={handleAddEducation} className="add-item-button">
+                      <Plus className="button-icon" />
+                      Add Education
                     </button>
                   )}
                 </div>
-              )}
-
-              {/* Education Section */}
-              {editedData?.education && editedData.education.length > 0 && (
-                <div className="resume-section">
-                  <h2 className="resume-section-title">EDUCATION</h2>
-                  {editedData.education.map((edu, index) => (
+                {((isEditing ? editableData?.education : parsedData?.education) || []).length > 0 ? (
+                  (isEditing ? editableData.education : parsedData.education).map((edu, index) => (
                     <div key={index} className="resume-entry">
+                      {isEditing && (
+                        <div className="entry-actions">
+                          <button onClick={() => removeItem('education', index)} className="remove-item-button">
+                            <Trash2 className="button-icon" />
+                          </button>
+                        </div>
+                      )}
                       <div className="resume-entry-header">
                         <div className="resume-company-position">
                           {isEditing ? (
                             <input
                               type="text"
-                              value={edu.institution || ''}
-                              onChange={(e) => updateField('education', 'institution', e.target.value, index)}
-                              className="edit-input"
+                              value={editableData?.education[index]?.institution || ''}
+                              onChange={(e) => updateEditableData('education', 'institution', e.target.value, index)}
+                              className="editable-input institution-input"
                               placeholder="Institution"
                             />
                           ) : (
@@ -1217,9 +1604,9 @@ Return only this JSON format:
                           {isEditing ? (
                             <input
                               type="text"
-                              value={edu.year || ''}
-                              onChange={(e) => updateField('education', 'year', e.target.value, index)}
-                              className="edit-input duration-input"
+                              value={editableData?.education[index]?.year || ''}
+                              onChange={(e) => updateEditableData('education', 'year', e.target.value, index)}
+                              className="editable-input year-input"
                               placeholder="Year"
                             />
                           ) : (
@@ -1231,9 +1618,9 @@ Return only this JSON format:
                         {isEditing ? (
                           <input
                             type="text"
-                            value={edu.degree || ''}
-                            onChange={(e) => updateField('education', 'degree', e.target.value, index)}
-                            className="edit-input"
+                            value={editableData?.education[index]?.degree || ''}
+                            onChange={(e) => updateEditableData('education', 'degree', e.target.value, index)}
+                            className="editable-input degree-input"
                             placeholder="Degree"
                           />
                         ) : (
@@ -1241,257 +1628,353 @@ Return only this JSON format:
                         )}
                       </div>
                       {isEditing && (
-                        <button
-                          onClick={() => removeItem('education', index)}
-                          className="remove-btn"
-                        >
-                          Remove
-                        </button>
+                        <div className="description-section">
+                          <div className="description-inputs">
+                            {(editableData?.education[index]?.description || []).map((desc, descIndex) => (
+                              <div key={descIndex} className="description-line">
+                                <input
+                                  type="text"
+                                  value={desc}
+                                  onChange={(e) => updateDescriptionLine('education', index, descIndex, e.target.value)}
+                                  className="editable-input description-input"
+                                  placeholder="Description line"
+                                />
+                                <button 
+                                  onClick={() => removeDescriptionLine('education', index, descIndex)}
+                                  className="remove-line-button"
+                                  disabled={(editableData?.education[index]?.description || []).length <= 1}
+                                >
+                                  <Trash2 className="button-icon" />
+                                </button>
+                              </div>
+                            ))}
+                            <button onClick={() => addDescriptionLine('education', index)} className="add-line-button">
+                              <Plus className="button-icon" />
+                              Add Line
+                            </button>
+                          </div>
+                        </div>
                       )}
                     </div>
-                  ))}
+                  ))
+                ) : (
+                  <div className="empty-section">
+                    {isEditing ? 'No education entries yet. Click "Add Education" to add one.' : 'No education information available.'}
+                  </div>
+                )}
+              </div>
+
+              {/* Technical Skills Section */}
+              <div className="resume-section">
+                <div className="section-header-with-actions">
+                  <h2 className="resume-section-title">TECHNICAL SKILLS</h2>
                   {isEditing && (
-                    <button
-                      onClick={() => addNewItem('education')}
-                      className="add-btn"
-                    >
-                      + Add Education
+                    <button onClick={handleAddSkill} className="add-item-button">
+                      <Plus className="button-icon" />
+                      Add Skill
                     </button>
                   )}
                 </div>
-              )}
-
-              {/* Technical Skills Section */}
-              {editedData?.skills && editedData.skills.length > 0 && (
-                <div className="resume-section">
-                  <h2 className="resume-section-title">TECHNICAL SKILLS</h2>
+                {((isEditing ? editableData?.skills : parsedData?.skills) || []).length > 0 ? (
                   <div className="resume-skills-text">
                     {isEditing ? (
-                      <textarea
-                        value={editedData.skills.join(', ')}
-                        onChange={(e) => updateField('skills', 'skills', e.target.value)}
-                        className="edit-textarea skills-textarea"
-                        placeholder="Enter skills separated by commas"
-                        rows="3"
-                      />
+                      <div className="skills-inputs">
+                        {(isEditing ? editableData.skills : parsedData.skills).map((skill, index) => (
+                          <div key={index} className="skill-input">
+                            <input
+                              type="text"
+                              value={skill}
+                              onChange={(e) => {
+                                setEditableData(prev => {
+                                  const newData = JSON.parse(JSON.stringify(prev));
+                                  newData.skills[index] = e.target.value;
+                                  return newData;
+                                });
+                              }}
+                              className="editable-input skill-input-field"
+                              placeholder="Skill"
+                            />
+                            <button onClick={() => removeSkill(index)} className="remove-skill-button">
+                              <Trash2 className="button-icon" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
                     ) : (
-                      editedData.skills.join(' | ')
+                      (isEditing ? editableData.skills : parsedData.skills).join(' | ')
                     )}
                   </div>
-                </div>
-              )}
+                ) : (
+                  <div className="empty-section">
+                    {isEditing ? 'No skills yet. Click "Add Skill" to add one.' : 'No skills information available.'}
+                  </div>
+                )}
+              </div>
 
               {/* Projects Section */}
-              {editedData?.projects && editedData.projects.length > 0 && (
-                <div className="resume-section">
+              <div className="resume-section">
+                <div className="section-header-with-actions">
                   <h2 className="resume-section-title">KEY PROJECTS</h2>
-                  {editedData.projects.map((project, index) => (
+                  {isEditing && (
+                    <button onClick={handleAddProject} className="add-item-button">
+                      <Plus className="button-icon" />
+                      Add Project
+                    </button>
+                  )}
+                </div>
+                {((isEditing ? editableData?.projects : parsedData?.projects) || []).length > 0 ? (
+                  (isEditing ? editableData.projects : parsedData.projects).map((project, index) => (
                     <div key={index} className="resume-entry">
+                      {isEditing && (
+                        <div className="entry-actions">
+                          <button onClick={() => removeItem('projects', index)} className="remove-item-button">
+                            <Trash2 className="button-icon" />
+                          </button>
+                        </div>
+                      )}
                       <div className="resume-project-title">
                         {isEditing ? (
                           <input
                             type="text"
-                            value={project.title || ''}
-                            onChange={(e) => updateField('projects', 'title', e.target.value, index)}
-                            className="edit-input"
+                            value={editableData?.projects[index]?.title || ''}
+                            onChange={(e) => updateEditableData('projects', 'title', e.target.value, index)}
+                            className="editable-input project-title-input"
                             placeholder="Project Title"
                           />
                         ) : (
                           <strong>{project.title || 'Project Title'}</strong>
                         )}
                       </div>
-                      {project.description && Array.isArray(project.description) && project.description.length > 0 && (
-                        <ul className="resume-bullet-list">
-                          {project.description.map((desc, descIndex) => (
-                            <li key={descIndex}>
-                              {isEditing ? (
-                                <textarea
+                      <div className="description-section">
+                        {isEditing ? (
+                          <div className="description-inputs">
+                            {(editableData?.projects[index]?.description || []).map((desc, descIndex) => (
+                              <div key={descIndex} className="description-line">
+                                <input
+                                  type="text"
                                   value={desc}
-                                  onChange={(e) => {
-                                    const newDesc = [...project.description];
-                                    newDesc[descIndex] = e.target.value;
-                                    updateField('projects', 'description', newDesc, index);
-                                  }}
-                                  className="edit-textarea"
-                                  rows="2"
+                                  onChange={(e) => updateDescriptionLine('projects', index, descIndex, e.target.value)}
+                                  className="editable-input description-input"
+                                  placeholder="Description line"
                                 />
-                              ) : (
-                                desc
-                              )}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                      {isEditing && (
-                        <button
-                          onClick={() => removeItem('projects', index)}
-                          className="remove-btn"
-                        >
-                          Remove
-                        </button>
-                      )}
+                                <button 
+                                  onClick={() => removeDescriptionLine('projects', index, descIndex)}
+                                  className="remove-line-button"
+                                  disabled={(editableData?.projects[index]?.description || []).length <= 1}
+                                >
+                                  <Trash2 className="button-icon" />
+                                </button>
+                              </div>
+                            ))}
+                            <button onClick={() => addDescriptionLine('projects', index)} className="add-line-button">
+                              <Plus className="button-icon" />
+                              Add Line
+                            </button>
+                          </div>
+                        ) : (
+                          project.description && Array.isArray(project.description) && project.description.length > 0 && (
+                            <ul className="resume-bullet-list">
+                              {project.description.map((desc, descIndex) => (
+                                <li key={descIndex}>{desc}</li>
+                              ))}
+                            </ul>
+                          )
+                        )}
+                      </div>
                     </div>
-                  ))}
+                  ))
+                ) : (
+                  <div className="empty-section">
+                    {isEditing ? 'No projects yet. Click "Add Project" to add one.' : 'No projects information available.'}
+                  </div>
+                )}
+              </div>
+
+              {/* Achievements Section */}
+              <div className="resume-section">
+                <div className="section-header-with-actions">
+                  <h2 className="resume-section-title">ACHIEVEMENTS & AWARDS</h2>
                   {isEditing && (
-                    <button
-                      onClick={() => addNewItem('projects')}
-                      className="add-btn"
-                    >
-                      + Add Project
+                    <button onClick={handleAddAchievement} className="add-item-button">
+                      <Plus className="button-icon" />
+                      Add Achievement
                     </button>
                   )}
                 </div>
-              )}
-
-              {/* Achievements Section */}
-              {editedData?.achievements && editedData.achievements.length > 0 && (
-                <div className="resume-section">
-                  <h2 className="resume-section-title">ACHIEVEMENTS & AWARDS</h2>
-                  {editedData.achievements.map((achievement, index) => (
+                {((isEditing ? editableData?.achievements : parsedData?.achievements) || []).length > 0 ? (
+                  (isEditing ? editableData.achievements : parsedData.achievements).map((achievement, index) => (
                     <div key={index} className="resume-entry">
+                      {isEditing && (
+                        <div className="entry-actions">
+                          <button onClick={() => removeItem('achievements', index)} className="remove-item-button">
+                            <Trash2 className="button-icon" />
+                          </button>
+                        </div>
+                      )}
                       <div className="resume-project-title">
                         {isEditing ? (
                           <input
                             type="text"
-                            value={achievement.title || ''}
-                            onChange={(e) => updateField('achievements', 'title', e.target.value, index)}
-                            className="edit-input"
+                            value={editableData?.achievements[index]?.title || ''}
+                            onChange={(e) => updateEditableData('achievements', 'title', e.target.value, index)}
+                            className="editable-input achievement-title-input"
                             placeholder="Achievement Title"
                           />
                         ) : (
                           <strong>{achievement.title || 'Achievement Title'}</strong>
                         )}
                       </div>
-                      {achievement.description && Array.isArray(achievement.description) && achievement.description.length > 0 && (
-                        <ul className="resume-bullet-list">
-                          {achievement.description.map((desc, descIndex) => (
-                            <li key={descIndex}>
-                              {isEditing ? (
-                                <textarea
+                      <div className="description-section">
+                        {isEditing ? (
+                          <div className="description-inputs">
+                            {(editableData?.achievements[index]?.description || []).map((desc, descIndex) => (
+                              <div key={descIndex} className="description-line">
+                                <input
+                                  type="text"
                                   value={desc}
-                                  onChange={(e) => {
-                                    const newDesc = [...achievement.description];
-                                    newDesc[descIndex] = e.target.value;
-                                    updateField('achievements', 'description', newDesc, index);
-                                  }}
-                                  className="edit-textarea"
-                                  rows="2"
+                                  onChange={(e) => updateDescriptionLine('achievements', index, descIndex, e.target.value)}
+                                  className="editable-input description-input"
+                                  placeholder="Description line"
                                 />
-                              ) : (
-                                desc
-                              )}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                      {isEditing && (
-                        <button
-                          onClick={() => removeItem('achievements', index)}
-                          className="remove-btn"
-                        >
-                          Remove
-                        </button>
-                      )}
+                                <button 
+                                  onClick={() => removeDescriptionLine('achievements', index, descIndex)}
+                                  className="remove-line-button"
+                                  disabled={(editableData?.achievements[index]?.description || []).length <= 1}
+                                >
+                                  <Trash2 className="button-icon" />
+                                </button>
+                              </div>
+                            ))}
+                            <button onClick={() => addDescriptionLine('achievements', index)} className="add-line-button">
+                              <Plus className="button-icon" />
+                              Add Line
+                            </button>
+                          </div>
+                        ) : (
+                          achievement.description && Array.isArray(achievement.description) && achievement.description.length > 0 && (
+                            <ul className="resume-bullet-list">
+                              {achievement.description.map((desc, descIndex) => (
+                                <li key={descIndex}>{desc}</li>
+                              ))}
+                            </ul>
+                          )
+                        )}
+                      </div>
                     </div>
-                  ))}
-                  {isEditing && (
-                    <button
-                      onClick={() => addNewItem('achievements')}
-                      className="add-btn"
-                    >
-                      + Add Achievement
-                    </button>
-                  )}
-                </div>
-              )}
+                  ))
+                ) : (
+                  <div className="empty-section">
+                    {isEditing ? 'No achievements yet. Click "Add Achievement" to add one.' : 'No achievements information available.'}
+                  </div>
+                )}
+              </div>
 
               {/* Certificates Section */}
-              {editedData?.certificates && editedData.certificates.length > 0 && (
-                <div className="resume-section">
+              <div className="resume-section">
+                <div className="section-header-with-actions">
                   <h2 className="resume-section-title">CERTIFICATIONS & COURSEWORK</h2>
-                  <div className="resume-skills-text">
-                    {isEditing ? (
-                      <textarea
-                        value={editedData.certificates.map(cert => `${cert.title} (${cert.issuer || 'Provider'})`).join(' | ')}
-                        onChange={(e) => {
-                          const items = e.target.value.split('|').map(item => item.trim());
-                          const newCerts = items.map(item => {
-                            const match = item.match(/^(.+?)\s*\((.+?)\)$/);
-                            if (match) {
-                              return { title: match[1].trim(), issuer: match[2].trim(), year: '', description: [] };
-                            }
-                            return { title: item, issuer: '', year: '', description: [] };
-                          });
-                          setEditedData(prev => ({ ...prev, certificates: newCerts }));
-                        }}
-                        className="edit-textarea skills-textarea"
-                        placeholder="Enter certifications as: Title (Issuer) | Title (Issuer)"
-                        rows="3"
-                      />
-                    ) : (
-                      editedData.certificates.map(cert => `${cert.title} (${cert.issuer || 'Provider'})`).join(' | ')
-                    )}
-                  </div>
                   {isEditing && (
-                    <button
-                      onClick={() => addNewItem('certificates')}
-                      className="add-btn"
-                    >
-                      + Add Certificate
+                    <button onClick={handleAddCertificate} className="add-item-button">
+                      <Plus className="button-icon" />
+                      Add Certificate
                     </button>
                   )}
                 </div>
-              )}
-
-              {/* Additional Information Section */}
-              {editedData?.additionalInformation && editedData.additionalInformation.length > 0 && (
-                <div className="resume-section">
-                  <h2 className="resume-section-title">ADDITIONAL INFORMATION</h2>
+                {((isEditing ? editableData?.certificates : parsedData?.certificates) || []).length > 0 ? (
                   <div className="resume-skills-text">
                     {isEditing ? (
-                      <textarea
-                        value={editedData.additionalInformation.join(' | ')}
-                        onChange={(e) => {
-                          const items = e.target.value.split('|').map(item => item.trim()).filter(Boolean);
-                          setEditedData(prev => ({ ...prev, additionalInformation: items }));
-                        }}
-                        className="edit-textarea skills-textarea"
-                        placeholder="Enter additional information separated by |"
-                        rows="3"
-                      />
+                      <div className="certificates-inputs">
+                        {(isEditing ? editableData.certificates : parsedData.certificates).map((cert, index) => (
+                          <div key={index} className="certificate-input">
+                            <input
+                              type="text"
+                              value={editableData?.certificates[index]?.title || ''}
+                              onChange={(e) => updateEditableData('certificates', 'title', e.target.value, index)}
+                              className="editable-input cert-title-input"
+                              placeholder="Certificate Title"
+                            />
+                            <span className="separator">(</span>
+                            <input
+                              type="text"
+                              value={editableData?.certificates[index]?.issuer || ''}
+                              onChange={(e) => updateEditableData('certificates', 'issuer', e.target.value, index)}
+                              className="editable-input cert-issuer-input"
+                              placeholder="Issuer"
+                            />
+                            <span className="separator">)</span>
+                            <button onClick={() => removeItem('certificates', index)} className="remove-cert-button">
+                              <Trash2 className="button-icon" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
                     ) : (
-                      editedData.additionalInformation.join(' | ')
+                      (isEditing ? editableData.certificates : parsedData.certificates).map(cert => `${cert.title} (${cert.issuer || 'Provider'})`).join(' | ')
                     )}
                   </div>
+                ) : (
+                  <div className="empty-section">
+                    {isEditing ? 'No certificates yet. Click "Add Certificate" to add one.' : 'No certificates information available.'}
+                  </div>
+                )}
+              </div>
+
+              {/* Additional Information Section */}
+              <div className="resume-section">
+                <div className="section-header-with-actions">
+                  <h2 className="resume-section-title">ADDITIONAL INFORMATION</h2>
+                  {isEditing && (
+                    <button onClick={handleAddAdditionalInfo} className="add-item-button">
+                      <Plus className="button-icon" />
+                      Add Info
+                    </button>
+                  )}
                 </div>
-              )}
+                {((isEditing ? editableData?.additionalInformation : parsedData?.additionalInformation) || []).length > 0 ? (
+                  <div className="resume-skills-text">
+                    {isEditing ? (
+                      <div className="additional-info-inputs">
+                        {(isEditing ? editableData.additionalInformation : parsedData.additionalInformation).map((info, index) => (
+                          <div key={index} className="additional-info-input">
+                            <input
+                              type="text"
+                              value={info}
+                              onChange={(e) => {
+                                setEditableData(prev => {
+                                  const newData = JSON.parse(JSON.stringify(prev));
+                                  newData.additionalInformation[index] = e.target.value;
+                                  return newData;
+                                });
+                              }}
+                              className="editable-input additional-info-input-field"
+                              placeholder="Additional information"
+                            />
+                            <button onClick={() => removeAdditionalInfo(index)} className="remove-info-button">
+                              <Trash2 className="button-icon" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      (isEditing ? editableData.additionalInformation : parsedData.additionalInformation).join(' | ')
+                    )}
+                  </div>
+                ) : (
+                  <div className="empty-section">
+                    {isEditing ? 'No additional information yet. Click "Add Info" to add one.' : 'No additional information available.'}
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Action Buttons */}
+            {/* Action Buttons - Only Download */}
             <div className="resume-actions">
-              {isEditing ? (
-                <div className="edit-actions">
-                  <button onClick={handleSave} className="save-button">
-                    <CheckCircle className="button-icon" />
-                    Save Changes
-                  </button>
-                  <button onClick={handleCancel} className="cancel-button">
-                    <XCircle className="button-icon" />
-                    Cancel
-                  </button>
-                </div>
-              ) : (
-                <div className="view-actions">
-                  <button onClick={handleEdit} className="edit-button">
-                    <Settings className="button-icon" />
-                    Edit Resume
-                  </button>
-                  <button onClick={downloadTemplate} className="download-button">
-                    <Download className="button-icon" />
-                    Download PDF
-                  </button>
-                </div>
-              )}
+              <div className="view-actions">
+                <button onClick={downloadTemplate} className="download-button">
+                  <Download className="button-icon" />
+                  Download PDF
+                </button>
+              </div>
             </div>
           </div>
         )}
