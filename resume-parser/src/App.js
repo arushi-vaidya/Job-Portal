@@ -1,5 +1,6 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { Upload, Download, Eye, Menu, X, Edit3, Save, Plus, Trash2 } from 'lucide-react';
+
+                                import React, { useState, useCallback, useEffect } from 'react';
+import { Upload, Download, Eye, Menu, X, Edit3, Save, Plus, Trash2, FileText, RefreshCw } from 'lucide-react';
 import './ResumeParser.css';
 
 const ResumeParser = () => {
@@ -9,6 +10,8 @@ const ResumeParser = () => {
   const [activeView, setActiveView] = useState('upload');
   const [aiStatus, setAiStatus] = useState('checking');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [manualMode, setManualMode] = useState(false);
+  const [uploadError, setUploadError] = useState(null);
   
   // Safari detection
   const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
@@ -18,23 +21,24 @@ const ResumeParser = () => {
     console.log('=== HANDLE ADD EXPERIENCE CALLED ===');
     addNewItem('experience');
   };
+  
   const handleRemoveSkill = (index) => {
-  console.log('=== HANDLE REMOVE SKILL CALLED ===');
-  console.log('Index to remove:', index);
-  removeSkill(index);
-};
+    console.log('=== HANDLE REMOVE SKILL CALLED ===');
+    console.log('Index to remove:', index);
+    removeSkill(index);
+  };
 
-const handleRemoveCertificate = (index) => {
-  console.log('=== HANDLE REMOVE CERTIFICATE CALLED ===');
-  console.log('Index to remove:', index);
-  removeItem('certificates', index);
-};
+  const handleRemoveCertificate = (index) => {
+    console.log('=== HANDLE REMOVE CERTIFICATE CALLED ===');
+    console.log('Index to remove:', index);
+    removeItem('certificates', index);
+  };
 
-const handleRemoveAdditionalInfo = (index) => {
-  console.log('=== HANDLE REMOVE ADDITIONAL INFO CALLED ===');
-  console.log('Index to remove:', index);
-  removeAdditionalInfo(index);
-};
+  const handleRemoveAdditionalInfo = (index) => {
+    console.log('=== HANDLE REMOVE ADDITIONAL INFO CALLED ===');
+    console.log('Index to remove:', index);
+    removeAdditionalInfo(index);
+  };
 
   const handleAddEducation = () => {
     console.log('=== HANDLE ADD EDUCATION CALLED ===');
@@ -118,6 +122,42 @@ const handleRemoveAdditionalInfo = (index) => {
       console.error('AI status check failed:', err);
       setAiStatus('disconnected');
     }
+  };
+
+  // Create empty resume structure for manual entry
+  const createEmptyResume = () => {
+    return {
+      personalInfo: { 
+        name: '', 
+        email: '', 
+        phone: '', 
+        location: '' 
+      },
+      experience: [],
+      education: [],
+      projects: [],
+      achievements: [],
+      certificates: [],
+      skills: [],
+      additionalInformation: []
+    };
+  };
+
+  // Handle manual resume entry
+  const handleManualEntry = () => {
+    const emptyResume = createEmptyResume();
+    setParsedData(emptyResume);
+    setEditableData(emptyResume);
+    setIsEditing(true);
+    setManualMode(true);
+    setActiveView('results');
+    setUploadError(null);
+  };
+
+  // Handle retry after upload failure
+  const handleRetryUpload = () => {
+    setUploadError(null);
+    setActiveView('upload');
   };
 
   // Clean and preprocess extracted text
@@ -528,6 +568,7 @@ Return only this JSON format:
   const handleFileUpload = useCallback(async (uploadedFile) => {
     try {
       setActiveView('processing');
+      setUploadError(null);
 
       console.log('Processing file:', uploadedFile?.name || 'unknown', 'Type:', uploadedFile?.type || 'unknown');
       let text = '';
@@ -562,6 +603,7 @@ Return only this JSON format:
       console.log('Parsing completed successfully');
       setParsedData(parsed);
       setActiveView('results');
+      setManualMode(false);
       
     } catch (err) {
       console.error('Error processing file:', err);
@@ -599,7 +641,7 @@ Return only this JSON format:
           } else if (lowerMsg.indexOf('docx') !== -1) {
             errorMessage += 'Could not read the DOCX file. Please ensure it\'s a valid Word document with readable text content.';
           } else if (lowerMsg.indexOf('json') !== -1) {
-            errorMessage += 'AI parsing encountered an issue. This may be due to complex resume formatting. Please try again or simplify your resume layout.';
+            errorMessage += 'AI parsing encountered an issue. This may be due to complex resume formatting.';
           } else if (lowerMsg.indexOf('ai service') !== -1) {
             errorMessage += 'AI service is not available. Please ensure Ollama is running with the qwen2.5:1.5b model.';
           } else if (lowerMsg.indexOf('failed to load') !== -1) {
@@ -619,12 +661,7 @@ Return only this JSON format:
         errorMessage = 'An unexpected error occurred. Please try again.';
       }
       
-      try {
-        alert(errorMessage);
-      } catch (e) {
-        console.error('Alert failed:', e);
-      }
-      
+      setUploadError(errorMessage);
       setActiveView('upload');
     }
   }, [aiStatus]);
@@ -718,12 +755,21 @@ Return only this JSON format:
   const handleSaveChanges = () => {
     setParsedData(editableData);
     setIsEditing(false);
+    setManualMode(false);
     alert('Changes saved successfully!');
   };
 
   // Handle canceling edits
   const handleCancelEdit = () => {
-    setEditableData(null);
+    if (manualMode) {
+      // If in manual mode and canceling, go back to upload
+      setParsedData(null);
+      setEditableData(null);
+      setActiveView('upload');
+      setManualMode(false);
+    } else {
+      setEditableData(null);
+    }
     setIsEditing(false);
   };
 
@@ -927,64 +973,64 @@ Return only this JSON format:
 
   // Remove skill
   const removeSkill = (index) => {
-  console.log('=== REMOVE SKILL CALLED ===');
-  console.log('Removing skill at index:', index);
-  console.log('Current editableData:', editableData);
-  
-  if (!isEditing) {
-    console.error('Not in edit mode');
-    alert('Please enter edit mode first before removing skills.');
-    return;
-  }
-  
-  if (!editableData) {
-    console.error('No editable data available');
-    alert('No editable data available. Please try refreshing the page.');
-    return;
-  }
-  
-  try {
-    setEditableData(prev => {
-      console.log('Previous editable data:', prev);
-      
-      if (!prev) {
-        console.error('Previous data is null');
-        return prev;
-      }
-      
-      const newData = JSON.parse(JSON.stringify(prev));
-      
-      // Ensure skills array exists
-      if (!newData.skills) {
-        console.log('No skills array found');
-        return prev;
-      }
-      
-      if (index < 0 || index >= newData.skills.length) {
-        console.error('Invalid index:', index, 'Skills length:', newData.skills.length);
-        return prev;
-      }
-      
-      console.log('Before removal:', newData.skills);
-      newData.skills.splice(index, 1);
-      console.log('After removal:', newData.skills);
-      
-      return newData;
-    });
+    console.log('=== REMOVE SKILL CALLED ===');
+    console.log('Removing skill at index:', index);
+    console.log('Current editableData:', editableData);
     
-    // Force a re-render for Safari
-    if (isSafari) {
-      setTimeout(() => {
-        console.log('Safari: Forcing re-render after remove');
-        setEditableData(current => current);
-      }, 100);
+    if (!isEditing) {
+      console.error('Not in edit mode');
+      alert('Please enter edit mode first before removing skills.');
+      return;
     }
     
-  } catch (error) {
-    console.error('Error removing skill:', error);
-    alert(`Error removing skill: ${error.message}`);
-  }
-};
+    if (!editableData) {
+      console.error('No editable data available');
+      alert('No editable data available. Please try refreshing the page.');
+      return;
+    }
+    
+    try {
+      setEditableData(prev => {
+        console.log('Previous editable data:', prev);
+        
+        if (!prev) {
+          console.error('Previous data is null');
+          return prev;
+        }
+        
+        const newData = JSON.parse(JSON.stringify(prev));
+        
+        // Ensure skills array exists
+        if (!newData.skills) {
+          console.log('No skills array found');
+          return prev;
+        }
+        
+        if (index < 0 || index >= newData.skills.length) {
+          console.error('Invalid index:', index, 'Skills length:', newData.skills.length);
+          return prev;
+        }
+        
+        console.log('Before removal:', newData.skills);
+        newData.skills.splice(index, 1);
+        console.log('After removal:', newData.skills);
+        
+        return newData;
+      });
+      
+      // Force a re-render for Safari
+      if (isSafari) {
+        setTimeout(() => {
+          console.log('Safari: Forcing re-render after remove');
+          setEditableData(current => current);
+        }, 100);
+      }
+      
+    } catch (error) {
+      console.error('Error removing skill:', error);
+      alert(`Error removing skill: ${error.message}`);
+    }
+  };
 
   // Add new additional information
   const addNewAdditionalInfo = () => {
@@ -1041,64 +1087,64 @@ Return only this JSON format:
 
   // Remove additional information
   const removeAdditionalInfo = (index) => {
-  console.log('=== REMOVE ADDITIONAL INFO CALLED ===');
-  console.log('Removing additional info at index:', index);
-  console.log('Current editableData:', editableData);
-  
-  if (!isEditing) {
-    console.error('Not in edit mode');
-    alert('Please enter edit mode first before removing additional information.');
-    return;
-  }
-  
-  if (!editableData) {
-    console.error('No editable data available');
-    alert('No editable data available. Please try refreshing the page.');
-    return;
-  }
-  
-  try {
-    setEditableData(prev => {
-      console.log('Previous editable data:', prev);
-      
-      if (!prev) {
-        console.error('Previous data is null');
-        return prev;
-      }
-      
-      const newData = JSON.parse(JSON.stringify(prev));
-      
-      // Ensure additionalInformation array exists
-      if (!newData.additionalInformation) {
-        console.log('No additionalInformation array found');
-        return prev;
-      }
-      
-      if (index < 0 || index >= newData.additionalInformation.length) {
-        console.error('Invalid index:', index, 'Additional info length:', newData.additionalInformation.length);
-        return prev;
-      }
-      
-      console.log('Before removal:', newData.additionalInformation);
-      newData.additionalInformation.splice(index, 1);
-      console.log('After removal:', newData.additionalInformation);
-      
-      return newData;
-    });
+    console.log('=== REMOVE ADDITIONAL INFO CALLED ===');
+    console.log('Removing additional info at index:', index);
+    console.log('Current editableData:', editableData);
     
-    // Force a re-render for Safari
-    if (isSafari) {
-      setTimeout(() => {
-        console.log('Safari: Forcing re-render after remove additional info');
-        setEditableData(current => current);
-      }, 100);
+    if (!isEditing) {
+      console.error('Not in edit mode');
+      alert('Please enter edit mode first before removing additional information.');
+      return;
     }
     
-  } catch (error) {
-    console.error('Error removing additional info:', error);
-    alert(`Error removing additional info: ${error.message}`);
-  }
-};
+    if (!editableData) {
+      console.error('No editable data available');
+      alert('No editable data available. Please try refreshing the page.');
+      return;
+    }
+    
+    try {
+      setEditableData(prev => {
+        console.log('Previous editable data:', prev);
+        
+        if (!prev) {
+          console.error('Previous data is null');
+          return prev;
+        }
+        
+        const newData = JSON.parse(JSON.stringify(prev));
+        
+        // Ensure additionalInformation array exists
+        if (!newData.additionalInformation) {
+          console.log('No additionalInformation array found');
+          return prev;
+        }
+        
+        if (index < 0 || index >= newData.additionalInformation.length) {
+          console.error('Invalid index:', index, 'Additional info length:', newData.additionalInformation.length);
+          return prev;
+        }
+        
+        console.log('Before removal:', newData.additionalInformation);
+        newData.additionalInformation.splice(index, 1);
+        console.log('After removal:', newData.additionalInformation);
+        
+        return newData;
+      });
+      
+      // Force a re-render for Safari
+      if (isSafari) {
+        setTimeout(() => {
+          console.log('Safari: Forcing re-render after remove additional info');
+          setEditableData(current => current);
+        }, 100);
+      }
+      
+    } catch (error) {
+      console.error('Error removing additional info:', error);
+      alert(`Error removing additional info: ${error.message}`);
+    }
+  };
 
   const generateTraditionalResumeTemplate = (data) => {
     const name = data.personalInfo?.name || 'Your Name';
@@ -1373,7 +1419,7 @@ Return only this JSON format:
         {activeView !== 'results' && (
           <div className="header-section">
             <h1 className="app-title">Smart Resume Parser</h1>
-            <p className="app-subtitle">Transform your resume into a professional format with AI-powered analysis</p>
+            <p className="app-subtitle">Transform your resume into a professional format with AI-powered analysis or manual entry</p>
           </div>
         )}
 
@@ -1386,6 +1432,10 @@ Return only this JSON format:
               <Upload className="nav-icon" />
               Upload Resume
             </button>
+            <button onClick={handleManualEntry}  className = 'nav-button'>
+                    <FileText className="button-icon" />
+                    Manual Entry
+                  </button>
             <button
               onClick={() => setActiveView('results')}
               className={'nav-button ' + (activeView === 'results' ? 'active' : '') + (!parsedData ? ' disabled' : '')}
@@ -1399,30 +1449,67 @@ Return only this JSON format:
 
         {activeView === 'upload' && (
           <div className="upload-section">
-            <div
-              onDrop={handleDrop}
-              onDragOver={handleDragOver}
-              className="upload-area"
-            >
-              <Upload className="upload-icon" />
-              <h3 className="upload-title">Upload Your Resume</h3>
-              <p className="upload-subtitle">Drag and drop your resume here, or click to browse</p>
-              <p className="upload-formats">Supports PDF and DOCX files</p>
-              <input
-                type="file"
-                accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                onChange={(e) => e.target.files[0] && handleFileUpload(e.target.files[0])}
-                className="file-input"
-                id="file-upload"
-              />
-              <label htmlFor="file-upload" className="upload-button">
-                Choose File
-              </label>
-            </div>
+            {uploadError && (
+              <div className="upload-error">
+                <div className="error-content">
+                  <h3>❌ Upload Failed</h3>
+                  <p>{uploadError}</p>
+                  <div className="error-actions">
+                    <button onClick={handleRetryUpload} className="retry-button">
+                      <RefreshCw className="button-icon" />
+                      Try Again
+                    </button>
+                    <button onClick={handleManualEntry} className="manual-entry-button">
+                      <FileText className="button-icon" />
+                      Enter Manually
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {!uploadError && (
+              <>
+                <div
+                  onDrop={handleDrop}
+                  onDragOver={handleDragOver}
+                  className="upload-area"
+                >
+                  <Upload className="upload-icon" />
+                  <h3 className="upload-title">Upload Your Resume</h3>
+                  <p className="upload-subtitle">Drag and drop your resume here, or click to browse</p>
+                  <p className="upload-formats">Supports PDF and DOCX files</p>
+                  <input
+                    type="file"
+                    accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    onChange={(e) => e.target.files[0] && handleFileUpload(e.target.files[0])}
+                    className="file-input"
+                    id="file-upload"
+                  />
+                  <label htmlFor="file-upload" className="upload-button">
+                    Choose File
+                  </label>
+                </div>
 
-            {aiStatus !== 'connected' && (
+
+
+
+                  
+                  
+
+              </>
+            )}
+
+            {aiStatus !== 'connected' && !uploadError && (
               <div className="service-info">
-                <h3>❌ AI Failed... Try Manual entry</h3>
+                <h3>⚠️ AI Service Unavailable</h3>
+                <p>
+                  The AI parsing service is not currently available. You can still create and edit resumes manually using the "Create Resume Manually" option above.
+                </p>
+                <button onClick={checkAiStatus} className="status-retry-button">
+                  <RefreshCw className="status-button-icon" />
+                  Check AI Status
+                </button>
               </div>
             )}
           </div>
@@ -1452,7 +1539,7 @@ Return only this JSON format:
                     Save Changes
                   </button>
                   <button onClick={handleCancelEdit} className="cancel-button">
-                    Cancel
+                    {manualMode ? 'Cancel & Return' : 'Cancel'}
                   </button>
                 </div>
               )}
@@ -1721,77 +1808,88 @@ Return only this JSON format:
               </div>
 
               {/* Technical Skills Section */}
-              {((isEditing ? editableData?.skills : parsedData?.skills) || []).length > 0 ? (
-  <div className="resume-skills-text">
-    {isEditing ? (
-      <div className="skills-inputs">
-        {(isEditing ? editableData.skills : parsedData.skills).map((skill, index) => (
-          <div key={`skill-${index}-${skill}`} className="skill-input">
-            <input
-              type="text"
-              value={skill}
-              onChange={(e) => {
-                console.log(`Updating skill at index ${index} to:`, e.target.value);
-                setEditableData(prev => {
-                  const newData = JSON.parse(JSON.stringify(prev));
-                  if (!newData.skills) newData.skills = [];
-                  newData.skills[index] = e.target.value;
-                  return newData;
-                });
-              }}
-              onInput={(e) => {
-                // Safari sometimes needs onInput for immediate updates
-                console.log(`Input event - updating skill at index ${index} to:`, e.target.value);
-                setEditableData(prev => {
-                  const newData = JSON.parse(JSON.stringify(prev));
-                  if (!newData.skills) newData.skills = [];
-                  newData.skills[index] = e.target.value;
-                  return newData;
-                });
-              }}
-              className="editable-input skill-input-field"
-              placeholder="Skill"
-            />
-            <button 
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('Remove skill button clicked for index:', index);
-                handleRemoveSkill(index);
-              }}
-              onMouseDown={(e) => {
-                // Safari-specific event handling
-                e.preventDefault();
-                console.log('Mouse down on remove skill button for index:', index);
-              }}
-              className="remove-skill-button"
-              type="button"
-              style={{
-                // Safari-specific styles
-                WebkitAppearance: 'none',
-                WebkitUserSelect: 'none',
-                WebkitTapHighlightColor: 'transparent',
-                WebkitTouchCallout: 'none',
-                WebkitTransform: 'translateZ(0)',
-                transform: 'translateZ(0)',
-                position: 'relative',
-                zIndex: 1
-              }}
-            >
-              <Trash2 className="button-icon" />
-            </button>
-          </div>
-        ))}
-      </div>
-    ) : (
-      (isEditing ? editableData.skills : parsedData.skills).join(' | ')
-    )}
-  </div>
-) : (
-  <div className="empty-section">
-    {isEditing ? 'No skills yet. Click "Add Skill" to add one.' : 'No skills information available.'}
-  </div>
-)}
+              <div className="resume-section">
+                <div className="section-header-with-actions">
+                  <h2 className="resume-section-title">TECHNICAL SKILLS</h2>
+                  {isEditing && (
+                    <button onClick={handleAddSkill} className="add-item-button">
+                      <Plus className="button-icon" />
+                      Add Skill
+                    </button>
+                  )}
+                </div>
+                {((isEditing ? editableData?.skills : parsedData?.skills) || []).length > 0 ? (
+                  <div className="resume-skills-text">
+                    {isEditing ? (
+                      <div className="skills-inputs">
+                        {(isEditing ? editableData.skills : parsedData.skills).map((skill, index) => (
+                          <div key={`skill-${index}-${skill}`} className="skill-input">
+                            <input
+                              type="text"
+                              value={skill}
+                              onChange={(e) => {
+                                console.log(`Updating skill at index ${index} to:`, e.target.value);
+                                setEditableData(prev => {
+                                  const newData = JSON.parse(JSON.stringify(prev));
+                                  if (!newData.skills) newData.skills = [];
+                                  newData.skills[index] = e.target.value;
+                                  return newData;
+                                });
+                              }}
+                              onInput={(e) => {
+                                // Safari sometimes needs onInput for immediate updates
+                                console.log(`Input event - updating skill at index ${index} to:`, e.target.value);
+                                setEditableData(prev => {
+                                  const newData = JSON.parse(JSON.stringify(prev));
+                                  if (!newData.skills) newData.skills = [];
+                                  newData.skills[index] = e.target.value;
+                                  return newData;
+                                });
+                              }}
+                              className="editable-input skill-input-field"
+                              placeholder="Skill"
+                            />
+                            <button 
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                console.log('Remove skill button clicked for index:', index);
+                                handleRemoveSkill(index);
+                              }}
+                              onMouseDown={(e) => {
+                                // Safari-specific event handling
+                                e.preventDefault();
+                                console.log('Mouse down on remove skill button for index:', index);
+                              }}
+                              className="remove-skill-button"
+                              type="button"
+                              style={{
+                                // Safari-specific styles
+                                WebkitAppearance: 'none',
+                                WebkitUserSelect: 'none',
+                                WebkitTapHighlightColor: 'transparent',
+                                WebkitTouchCallout: 'none',
+                                WebkitTransform: 'translateZ(0)',
+                                transform: 'translateZ(0)',
+                                position: 'relative',
+                                zIndex: 1
+                              }}
+                            >
+                              <Trash2 className="button-icon" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      (isEditing ? editableData.skills : parsedData.skills).join(' | ')
+                    )}
+                  </div>
+                ) : (
+                  <div className="empty-section">
+                    {isEditing ? 'No skills yet. Click "Add Skill" to add one.' : 'No skills information available.'}
+                  </div>
+                )}
+              </div>
 
               {/* Projects Section */}
               <div className="resume-section">
@@ -1952,84 +2050,95 @@ Return only this JSON format:
               </div>
 
               {/* Certificates Section */}
-              {((isEditing ? editableData?.certificates : parsedData?.certificates) || []).length > 0 ? (
-  <div className="resume-skills-text">
-    {isEditing ? (
-      <div className="certificates-inputs">
-        {(isEditing ? editableData.certificates : parsedData.certificates).map((cert, index) => (
-          <div key={`cert-${index}-${cert.title}`} className="certificate-input">
-            <input
-              type="text"
-              value={editableData?.certificates[index]?.title || ''}
-              onChange={(e) => {
-                console.log(`Updating cert title at index ${index} to:`, e.target.value);
-                updateEditableData('certificates', 'title', e.target.value, index);
-              }}
-              onInput={(e) => {
-                // Safari sometimes needs onInput for immediate updates
-                console.log(`Input event - updating cert title at index ${index} to:`, e.target.value);
-                updateEditableData('certificates', 'title', e.target.value, index);
-              }}
-              className="editable-input cert-title-input"
-              placeholder="Certificate Title"
-            />
-            <span className="separator">(</span>
-            <input
-              type="text"
-              value={editableData?.certificates[index]?.issuer || ''}
-              onChange={(e) => {
-                console.log(`Updating cert issuer at index ${index} to:`, e.target.value);
-                updateEditableData('certificates', 'issuer', e.target.value, index);
-              }}
-              onInput={(e) => {
-                // Safari sometimes needs onInput for immediate updates
-                console.log(`Input event - updating cert issuer at index ${index} to:`, e.target.value);
-                updateEditableData('certificates', 'issuer', e.target.value, index);
-              }}
-              className="editable-input cert-issuer-input"
-              placeholder="Issuer"
-            />
-            <span className="separator">)</span>
-            <button 
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('Remove certificate button clicked for index:', index);
-                handleRemoveCertificate(index);
-              }}
-              onMouseDown={(e) => {
-                // Safari-specific event handling
-                e.preventDefault();
-                console.log('Mouse down on remove certificate button for index:', index);
-              }}
-              className="remove-cert-button"
-              type="button"
-              style={{
-                // Safari-specific styles
-                WebkitAppearance: 'none',
-                WebkitUserSelect: 'none',
-                WebkitTapHighlightColor: 'transparent',
-                WebkitTouchCallout: 'none',
-                WebkitTransform: 'translateZ(0)',
-                transform: 'translateZ(0)',
-                position: 'relative',
-                zIndex: 1
-              }}
-            >
-              <Trash2 className="button-icon" />
-            </button>
-          </div>
-        ))}
-      </div>
-    ) : (
-      (isEditing ? editableData.certificates : parsedData.certificates).map(cert => `${cert.title} (${cert.issuer || 'Provider'})`).join(' | ')
-    )}
-  </div>
-) : (
-  <div className="empty-section">
-    {isEditing ? 'No certificates yet. Click "Add Certificate" to add one.' : 'No certificates information available.'}
-  </div>
-)}
+              <div className="resume-section">
+                <div className="section-header-with-actions">
+                  <h2 className="resume-section-title">CERTIFICATIONS & COURSEWORK</h2>
+                  {isEditing && (
+                    <button onClick={handleAddCertificate} className="add-item-button">
+                      <Plus className="button-icon" />
+                      Add Certificate
+                    </button>
+                  )}
+                </div>
+                {((isEditing ? editableData?.certificates : parsedData?.certificates) || []).length > 0 ? (
+                  <div className="resume-skills-text">
+                    {isEditing ? (
+                      <div className="certificates-inputs">
+                        {(isEditing ? editableData.certificates : parsedData.certificates).map((cert, index) => (
+                          <div key={`cert-${index}-${cert.title}`} className="certificate-input">
+                            <input
+                              type="text"
+                              value={editableData?.certificates[index]?.title || ''}
+                              onChange={(e) => {
+                                console.log(`Updating cert title at index ${index} to:`, e.target.value);
+                                updateEditableData('certificates', 'title', e.target.value, index);
+                              }}
+                              onInput={(e) => {
+                                // Safari sometimes needs onInput for immediate updates
+                                console.log(`Input event - updating cert title at index ${index} to:`, e.target.value);
+                                updateEditableData('certificates', 'title', e.target.value, index);
+                              }}
+                              className="editable-input cert-title-input"
+                              placeholder="Certificate Title"
+                            />
+                            <span className="separator">(</span>
+                            <input
+                              type="text"
+                              value={editableData?.certificates[index]?.issuer || ''}
+                              onChange={(e) => {
+                                console.log(`Updating cert issuer at index ${index} to:`, e.target.value);
+                                updateEditableData('certificates', 'issuer', e.target.value, index);
+                              }}
+                              onInput={(e) => {
+                                // Safari sometimes needs onInput for immediate updates
+                                console.log(`Input event - updating cert issuer at index ${index} to:`, e.target.value);
+                                updateEditableData('certificates', 'issuer', e.target.value, index);
+                              }}
+                              className="editable-input cert-issuer-input"
+                              placeholder="Issuer"
+                            />
+                            <span className="separator">)</span>
+                            <button 
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                console.log('Remove certificate button clicked for index:', index);
+                                handleRemoveCertificate(index);
+                              }}
+                              onMouseDown={(e) => {
+                                // Safari-specific event handling
+                                e.preventDefault();
+                                console.log('Mouse down on remove certificate button for index:', index);
+                              }}
+                              className="remove-cert-button"
+                              type="button"
+                              style={{
+                                // Safari-specific styles
+                                WebkitAppearance: 'none',
+                                WebkitUserSelect: 'none',
+                                WebkitTapHighlightColor: 'transparent',
+                                WebkitTouchCallout: 'none',
+                                WebkitTransform: 'translateZ(0)',
+                                transform: 'translateZ(0)',
+                                position: 'relative',
+                                zIndex: 1
+                              }}
+                            >
+                              <Trash2 className="button-icon" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      (isEditing ? editableData.certificates : parsedData.certificates).map(cert => `${cert.title} (${cert.issuer || 'Provider'})`).join(' | ')
+                    )}
+                  </div>
+                ) : (
+                  <div className="empty-section">
+                    {isEditing ? 'No certificates yet. Click "Add Certificate" to add one.' : 'No certificates information available.'}
+                  </div>
+                )}
+              </div>
 
               {/* Additional Information Section */}
               <div className="resume-section">
@@ -2061,6 +2170,34 @@ Return only this JSON format:
                               className="editable-input additional-info-input-field"
                               placeholder="Additional information"
                             />
+                            <button 
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                console.log('Remove additional info button clicked for index:', index);
+                                handleRemoveAdditionalInfo(index);
+                              }}
+                              onMouseDown={(e) => {
+                                // Safari-specific event handling
+                                e.preventDefault();
+                                console.log('Mouse down on remove additional info button for index:', index);
+                              }}
+                              className="remove-info-button"
+                              type="button"
+                              style={{
+                                // Safari-specific styles
+                                WebkitAppearance: 'none',
+                                WebkitUserSelect: 'none',
+                                WebkitTapHighlightColor: 'transparent',
+                                WebkitTouchCallout: 'none',
+                                WebkitTransform: 'translateZ(0)',
+                                transform: 'translateZ(0)',
+                                position: 'relative',
+                                zIndex: 1
+                              }}
+                            >
+                              <Trash2 className="button-icon" />
+                            </button>
                           </div>
                         ))}
                       </div>
