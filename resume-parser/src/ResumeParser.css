@@ -1,4 +1,4 @@
-/* JobDekho - Premium Colorful UI with Sophisticated Design */
+/* JobDekho*/
 
 /* Reset and base styles */
 * {
@@ -227,10 +227,10 @@ body {
 /* Vibrant Header */
 .header-section {
   text-align: center;
-  margin-bottom: var(--spacing-4xl);
+  margin-bottom: var(--spacing-2xl); 
   background: var(--bg-primary);
   border-radius: var(--border-radius-2xl);
-  padding: var(--spacing-4xl) var(--spacing-2xl);
+  padding: var(--spacing-2xl) var(--spacing-xl); 
   border: 2px solid transparent;
   background-clip: padding-box;
   box-shadow: var(--shadow-2xl);
@@ -451,14 +451,17 @@ body {
 
 /* Colorful Premium Cards */
 .upload-section, .processing-section {
+  .upload-section {
   background: var(--bg-primary);
   border-radius: var(--border-radius-2xl);
   box-shadow: var(--shadow-2xl);
-  padding: var(--spacing-4xl);
+  padding: var(--spacing-2xl); 
   border: 2px solid transparent;
   background-clip: padding-box;
   position: relative;
   margin-bottom: var(--spacing-xl);
+}
+
 }
 
 .upload-section::before {
@@ -489,7 +492,7 @@ body {
 .upload-area {
   border: 2px dashed var(--primary-purple);
   border-radius: var(--border-radius-xl);
-  padding: var(--spacing-4xl);
+  padding: var(--spacing-2xl); 
   text-align: center;
   cursor: pointer;
   transition: all 0.4s ease;
@@ -522,10 +525,10 @@ body {
 }
 
 .upload-icon {
-  width: 72px;
-  height: 72px;
+  width: 56px; 
+  height: 56px; 
   color: var(--primary-purple);
-  margin: 0 auto var(--spacing-xl);
+  margin: 0 auto var(--spacing-lg);
   transition: all 0.4s ease;
   filter: drop-shadow(0 4px 12px rgba(139, 92, 246, 0.3));
 }
@@ -555,7 +558,7 @@ body {
 .upload-formats {
   color: var(--text-muted);
   font-size: 0.95rem;
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: var(--spacing-lg); 
 }
 
 .file-input {
@@ -1325,11 +1328,11 @@ body {
   }
   
   .header-section {
-    padding: var(--spacing-xl);
+    padding: var(--spacing-xl); 
   }
   
   .upload-section, .processing-section {
-    padding: var(--spacing-xl);
+     padding: var(--spacing-xl);
   }
   
   .nav-container {
@@ -1346,8 +1349,8 @@ body {
   }
   
   .upload-icon {
-    width: 56px;
-    height: 56px;
+    width: 48px; 
+    height: 48px;
   }
   
   .upload-title {
@@ -2333,3 +2336,393 @@ body {
     transition: none;
   }
 }
+
+
+/* Additional Info Popup Styles */
+.popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: var(--spacing-lg);
+  animation: fadeIn 0.3s ease;
+}
+
+.popup-content {
+  background: var(--bg-primary);
+  border-radius: var(--border-radius-2xl);
+  box-shadow: var(--shadow-2xl);
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  animation: slideInScale 0.4s ease;
+}
+
+.popup-content::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 2px;
+  background: var(--gradient-primary);
+  border-radius: var(--border-radius-2xl);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: xor;
+  -webkit-mask-composite: xor;
+}
+
+.popup-header {
+  text-align: center;
+  padding: var(--spacing-xl) var(--spacing-xl) var(--spacing-lg);
+  border-bottom: 2px solid var(--border-light);
+  background: var(--gradient-surface);
+  border-radius: var(--border-radius-2xl) var(--border-radius-2xl) 0 0;
+}
+
+.popup-header h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: var(--spacing-sm);
+}
+
+.popup-header p {
+  color: var(--text-secondary);
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.popup-form {
+  padding: var(--spacing-xl);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+}
+
+.form-group {
+  margin-bottom: var(--spacing-lg);
+}
+
+.form-group label {
+  display: block;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-sm);
+  font-size: 0.95rem;
+}
+
+.popup-input {
+  width: 100%;
+  padding: var(--spacing-md);
+  border: 2px solid var(--border-light);
+  border-radius: var(--border-radius-md);
+  font-size: 1rem;
+  font-family: inherit;
+  color: var(--text-primary);
+  background: var(--bg-accent);
+  transition: all 0.3s ease;
+  
+  /* Safari-specific fixes */
+  -webkit-appearance: none;
+  -webkit-border-radius: var(--border-radius-md);
+  -webkit-transition: all 0.3s ease;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+}
+
+.popup-input:focus {
+  outline: none;
+  border-color: var(--primary-purple);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+  background: var(--bg-primary);
+  
+  /* Safari-specific focus styles */
+  -webkit-box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+}
+
+.popup-input::placeholder {
+  color: var(--text-muted);
+}
+
+.add-hobby-button {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--gradient-secondary);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius-md);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  
+  /* Safari-specific fixes */
+  -webkit-appearance: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  position: relative;
+  z-index: 1;
+}
+
+.add-hobby-button:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg);
+}
+
+.hobby-input {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--border-light);
+  transition: all 0.3s ease;
+}
+
+.hobby-input:hover {
+  background: var(--bg-accent);
+  border-color: var(--border-medium);
+  box-shadow: var(--shadow-sm);
+}
+
+.remove-hobby-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: var(--error-red);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+  
+  /* Safari-specific fixes */
+  -webkit-appearance: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  position: relative;
+  z-index: 1;
+}
+
+.remove-hobby-button:hover {
+  background: #dc2626;
+  transform: scale(1.1);
+}
+
+.popup-actions {
+  display: flex;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg) var(--spacing-xl) var(--spacing-xl);
+  border-top: 2px solid var(--border-light);
+  background: var(--bg-secondary);
+  border-radius: 0 0 var(--border-radius-2xl) var(--border-radius-2xl);
+}
+
+.skip-button, .submit-button {
+  flex: 1;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border: none;
+  border-radius: var(--border-radius-lg);
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.skip-button {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border: 2px solid var(--border-medium);
+}
+
+.skip-button:hover {
+  background: var(--bg-accent);
+  color: var(--text-primary);
+  border-color: var(--border-purple);
+}
+
+.submit-button {
+  background: var(--gradient-primary);
+  color: white;
+  box-shadow: var(--shadow-purple);
+}
+
+.submit-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  transition: left 0.6s ease;
+}
+
+.submit-button:hover::before {
+  left: 100%;
+}
+
+.submit-button:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .popup-overlay {
+    padding: var(--spacing-md);
+  }
+  
+  .popup-content {
+    max-height: 95vh;
+  }
+  
+  .popup-header {
+    padding: var(--spacing-lg);
+  }
+  
+  .popup-form {
+    padding: var(--spacing-lg);
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+  }
+  
+  .popup-actions {
+    flex-direction: column;
+    padding: var(--spacing-lg);
+  }
+  
+  .skip-button, .submit-button {
+    width: 100%;
+  }
+  
+  .hobby-input {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--spacing-sm);
+  }
+  
+  .remove-hobby-button {
+    align-self: flex-end;
+    width: 100%;
+    height: 36px;
+  }
+}
+
+@media (max-width: 480px) {
+  .popup-overlay {
+    padding: var(--spacing-sm);
+  }
+  
+  .popup-header {
+    padding: var(--spacing-md);
+  }
+  
+  .popup-form {
+    padding: var(--spacing-md);
+  }
+  
+  .popup-header h3 {
+    font-size: 1.25rem;
+  }
+  
+  .popup-input {
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+}
+
+/* Enhanced focus states for accessibility */
+.popup-input:focus,
+.add-hobby-button:focus,
+.remove-hobby-button:focus,
+.skip-button:focus,
+.submit-button:focus {
+  outline: 2px solid var(--accent-blue);
+  outline-offset: 2px;
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  .popup-content {
+    border-width: 3px;
+  }
+  
+  .popup-input {
+    border-width: 2px;
+  }
+  
+  .hobby-input {
+    border-width: 2px;
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .popup-overlay, .popup-content {
+    animation: none;
+  }
+  
+  .submit-button::before {
+    transition: none;
+  }
+  
+  .popup-input, .add-hobby-button, .remove-hobby-button, .skip-button, .submit-button {
+    transition: none;
+  }
+}
+

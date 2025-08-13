@@ -1,5 +1,4 @@
-
-                                import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Upload, Download, Eye, Menu, X, Edit3, Save, Plus, Trash2, FileText, RefreshCw } from 'lucide-react';
 import './ResumeParser.css';
 
@@ -12,6 +11,15 @@ const ResumeParser = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [manualMode, setManualMode] = useState(false);
   const [uploadError, setUploadError] = useState(null);
+  const [showAdditionalInfoPopup, setShowAdditionalInfoPopup] = useState(false);
+  const [additionalInfo, setAdditionalInfo] = useState({
+    currentSalary: '',
+    linkedinLink: '',
+    githubLink: '',
+    hometown: '',
+    currentLocation: '',
+    hobbies: []
+  });
   
   // Safari detection
   const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
@@ -69,6 +77,162 @@ const ResumeParser = () => {
     console.log('=== HANDLE ADD ADDITIONAL INFO CALLED ===');
     addNewAdditionalInfo();
   };
+
+  const handleAdditionalInfoSubmit = () => {
+    if (parsedData) {
+      const updatedData = {
+        ...parsedData,
+        personalInfo: {
+          ...parsedData.personalInfo,
+          ...additionalInfo
+        }
+      };
+      setParsedData(updatedData);
+      setEditableData(updatedData);
+    }
+    setShowAdditionalInfoPopup(false);
+    setActiveView('results');
+  };
+
+  const handleSkipAdditionalInfo = () => {
+    setShowAdditionalInfoPopup(false);
+    setActiveView('results');
+  };
+
+  const updateAdditionalInfo = (field, value) => {
+    setAdditionalInfo(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const addHobby = () => {
+    setAdditionalInfo(prev => ({
+      ...prev,
+      hobbies: [...prev.hobbies, '']
+    }));
+  };
+
+  const updateHobby = (index, value) => {
+    setAdditionalInfo(prev => ({
+      ...prev,
+      hobbies: prev.hobbies.map((hobby, i) => i === index ? value : hobby)
+    }));
+  };
+
+  const removeHobby = (index) => {
+    setAdditionalInfo(prev => ({
+      ...prev,
+      hobbies: prev.hobbies.filter((_, i) => i !== index)
+    }));
+  };
+
+  // Additional Info Popup Component
+  const AdditionalInfoPopup = () => (
+    <div className="popup-overlay">
+      <div className="popup-content">
+        <div className="popup-header">
+          <h3>Complete Your Profile</h3>
+          <p>Add some additional information to enhance your resume</p>
+        </div>
+        
+        <div className="popup-form">
+          <div className="form-row">
+            <div className="form-group">
+              <label>Current Salary</label>
+              <input
+                type="text"
+                value={additionalInfo.currentSalary}
+                onChange={(e) => updateAdditionalInfo('currentSalary', e.target.value)}
+                placeholder="e.g., $75,000 or ₹12 LPA"
+                className="popup-input"
+              />
+            </div>
+            <div className="form-group">
+              <label>Hometown</label>
+              <input
+                type="text"
+                value={additionalInfo.hometown}
+                onChange={(e) => updateAdditionalInfo('hometown', e.target.value)}
+                placeholder="e.g., Mumbai, Maharashtra"
+                className="popup-input"
+              />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label>Current Location</label>
+              <input
+                type="text"
+                value={additionalInfo.currentLocation}
+                onChange={(e) => updateAdditionalInfo('currentLocation', e.target.value)}
+                placeholder="e.g., Bengaluru, Karnataka"
+                className="popup-input"
+              />
+            </div>
+            <div className="form-group">
+              <label>LinkedIn Profile</label>
+              <input
+                type="url"
+                value={additionalInfo.linkedinLink}
+                onChange={(e) => updateAdditionalInfo('linkedinLink', e.target.value)}
+                placeholder="https://linkedin.com/in/yourprofile"
+                className="popup-input"
+              />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>GitHub Profile</label>
+            <input
+              type="url"
+              value={additionalInfo.githubLink}
+              onChange={(e) => updateAdditionalInfo('githubLink', e.target.value)}
+              placeholder="https://github.com/yourusername"
+              className="popup-input"
+            />
+          </div>
+
+          <div className="form-group">
+            <div className="section-header-with-actions">
+              <label>Hobbies & Interests</label>
+              <button onClick={addHobby} className="add-hobby-button">
+                <Plus className="button-icon" />
+                Add Hobby
+              </button>
+            </div>
+            {additionalInfo.hobbies.map((hobby, index) => (
+              <div key={index} className="hobby-input">
+                <input
+                  type="text"
+                  value={hobby}
+                  onChange={(e) => updateHobby(index, e.target.value)}
+                  placeholder="e.g., Photography, Hiking, Gaming"
+                  className="popup-input"
+                />
+                <button 
+                  onClick={() => removeHobby(index)}
+                  className="remove-hobby-button"
+                >
+                  <Trash2 className="button-icon" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="popup-actions">
+          <button onClick={handleSkipAdditionalInfo} className="skip-button">
+            Skip for Now
+          </button>
+          <button onClick={handleAdditionalInfoSubmit} className="submit-button">
+            Continue
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 
   // Global error handler
   useEffect(() => {
@@ -131,7 +295,14 @@ const ResumeParser = () => {
         name: '', 
         email: '', 
         phone: '', 
-        location: '' 
+        location: '',
+        // New fields
+        currentSalary: '',
+        linkedinLink: '',
+        githubLink: '',
+        hometown: '',
+        currentLocation: '',
+        hobbies: []
       },
       experience: [],
       education: [],
@@ -269,7 +440,15 @@ const ResumeParser = () => {
         name: (data.personalInfo?.name || '').toString().trim(),
         email: (data.personalInfo?.email || '').toString().trim(),
         phone: (data.personalInfo?.phone || '').toString().trim(),
-        location: (data.personalInfo?.location || '').toString().trim()
+        location: (data.personalInfo?.location || '').toString().trim(),
+        // New fields
+        currentSalary: (data.personalInfo?.currentSalary || '').toString().trim(),
+        linkedinLink: (data.personalInfo?.linkedinLink || '').toString().trim(),
+        githubLink: (data.personalInfo?.githubLink || '').toString().trim(),
+        hometown: (data.personalInfo?.hometown || '').toString().trim(),
+        currentLocation: (data.personalInfo?.currentLocation || '').toString().trim(),
+        hobbies: Array.isArray(data.personalInfo?.hobbies) ? 
+          data.personalInfo.hobbies.map(h => h.toString().trim()).filter(Boolean) : []
       },
       experience: Array.isArray(data.experience) ? data.experience.map(exp => ({
         position: (exp.position || '').toString().trim(),
@@ -354,7 +533,13 @@ REQUIRED JSON STRUCTURE:
     "name": "",
     "email": "",
     "phone": "",
-    "location": ""
+    "location": "",
+    "currentSalary": "",
+    "linkedinLink": "",
+    "githubLink": "",
+    "hometown": "",
+    "currentLocation": "",
+    "hobbies": []
   },
   "experience": [
     {
@@ -602,7 +787,7 @@ Return only this JSON format:
       
       console.log('Parsing completed successfully');
       setParsedData(parsed);
-      setActiveView('results');
+      setShowAdditionalInfoPopup(true); // Show popup instead of going directly to results
       setManualMode(false);
       
     } catch (err) {
@@ -1432,10 +1617,10 @@ Return only this JSON format:
               <Upload className="nav-icon" />
               Upload Resume
             </button>
-            <button onClick={handleManualEntry}  className = 'nav-button'>
-                    <FileText className="button-icon" />
-                    Manual Entry
-                  </button>
+            <button onClick={handleManualEntry} className='nav-button'>
+              <FileText className="button-icon" />
+              Manual Entry
+            </button>
             <button
               onClick={() => setActiveView('results')}
               className={'nav-button ' + (activeView === 'results' ? 'active' : '') + (!parsedData ? ' disabled' : '')}
@@ -1490,13 +1675,6 @@ Return only this JSON format:
                     Choose File
                   </label>
                 </div>
-
-
-
-
-                  
-                  
-
               </>
             )}
 
@@ -1601,6 +1779,184 @@ Return only this JSON format:
                   )}
                 </div>
               </div>
+
+              {/* Additional Personal Information Section */}
+              {(isEditing || (parsedData?.personalInfo?.linkedinLink || parsedData?.personalInfo?.githubLink || parsedData?.personalInfo?.currentSalary || parsedData?.personalInfo?.hometown || parsedData?.personalInfo?.currentLocation)) && (
+                <div className="resume-section">
+                  <div className="section-header-with-actions">
+                    <h2 className="resume-section-title">PERSONAL INFORMATION</h2>
+                  </div>
+                  
+                  <div className="personal-info-grid">
+                    {/* LinkedIn */}
+                    {(isEditing || parsedData?.personalInfo?.linkedinLink) && (
+                      <div className="personal-info-item">
+                        <label className="personal-info-label">LinkedIn:</label>
+                        {isEditing ? (
+                          <input
+                            type="url"
+                            value={editableData?.personalInfo?.linkedinLink || ''}
+                            onChange={(e) => updateEditableData('personalInfo', 'linkedinLink', e.target.value)}
+                            className="editable-input personal-info-input"
+                            placeholder="LinkedIn Profile URL"
+                          />
+                        ) : (
+                          <a href={parsedData?.personalInfo?.linkedinLink} target="_blank" rel="noopener noreferrer" className="personal-info-link">
+                            {parsedData?.personalInfo?.linkedinLink}
+                          </a>
+                        )}
+                      </div>
+                    )}
+
+                    {/* GitHub */}
+                    {(isEditing || parsedData?.personalInfo?.githubLink) && (
+                      <div className="personal-info-item">
+                        <label className="personal-info-label">GitHub:</label>
+                        {isEditing ? (
+                          <input
+                            type="url"
+                            value={editableData?.personalInfo?.githubLink || ''}
+                            onChange={(e) => updateEditableData('personalInfo', 'githubLink', e.target.value)}
+                            className="editable-input personal-info-input"
+                            placeholder="GitHub Profile URL"
+                          />
+                        ) : (
+                          <a href={parsedData?.personalInfo?.githubLink} target="_blank" rel="noopener noreferrer" className="personal-info-link">
+                            {parsedData?.personalInfo?.githubLink}
+                          </a>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Current Salary */}
+                    {(isEditing || parsedData?.personalInfo?.currentSalary) && (
+                      <div className="personal-info-item">
+                        <label className="personal-info-label">Current Salary:</label>
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            value={editableData?.personalInfo?.currentSalary || ''}
+                            onChange={(e) => updateEditableData('personalInfo', 'currentSalary', e.target.value)}
+                            className="editable-input personal-info-input"
+                            placeholder="e.g., $75,000 or ₹12 LPA"
+                          />
+                        ) : (
+                          <span className="personal-info-text">{parsedData?.personalInfo?.currentSalary}</span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Hometown */}
+                    {(isEditing || parsedData?.personalInfo?.hometown) && (
+                      <div className="personal-info-item">
+                        <label className="personal-info-label">Hometown:</label>
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            value={editableData?.personalInfo?.hometown || ''}
+                            onChange={(e) => updateEditableData('personalInfo', 'hometown', e.target.value)}
+                            className="editable-input personal-info-input"
+                            placeholder="e.g., Mumbai, Maharashtra"
+                          />
+                        ) : (
+                          <span className="personal-info-text">{parsedData?.personalInfo?.hometown}</span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Current Location */}
+                    {(isEditing || parsedData?.personalInfo?.currentLocation) && (
+                      <div className="personal-info-item">
+                        <label className="personal-info-label">Current Location:</label>
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            value={editableData?.personalInfo?.currentLocation || ''}
+                            onChange={(e) => updateEditableData('personalInfo', 'currentLocation', e.target.value)}
+                            className="editable-input personal-info-input"
+                            placeholder="e.g., Bengaluru, Karnataka"
+                          />
+                        ) : (
+                          <span className="personal-info-text">{parsedData?.personalInfo?.currentLocation}</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Hobbies & Interests Section */}
+              {(isEditing || (parsedData?.personalInfo?.hobbies && parsedData?.personalInfo?.hobbies.length > 0)) && (
+                <div className="resume-section">
+                  <div className="section-header-with-actions">
+                    <h2 className="resume-section-title">HOBBIES & INTERESTS</h2>
+                    {isEditing && (
+                      <button 
+                        onClick={() => {
+                          setEditableData(prev => ({
+                            ...prev,
+                            personalInfo: {
+                              ...prev.personalInfo,
+                              hobbies: [...(prev.personalInfo.hobbies || []), '']
+                            }
+                          }));
+                        }} 
+                        className="add-item-button"
+                      >
+                        <Plus className="button-icon" />
+                        Add Hobby
+                      </button>
+                    )}
+                  </div>
+                  {((isEditing ? editableData?.personalInfo?.hobbies : parsedData?.personalInfo?.hobbies) || []).length > 0 ? (
+                    <div className="resume-skills-text">
+                      {isEditing ? (
+                        <div className="hobbies-inputs">
+                          {(editableData?.personalInfo?.hobbies || []).map((hobby, index) => (
+                            <div key={index} className="hobby-input">
+                              <input
+                                type="text"
+                                value={hobby}
+                                onChange={(e) => {
+                                  setEditableData(prev => ({
+                                    ...prev,
+                                    personalInfo: {
+                                      ...prev.personalInfo,
+                                      hobbies: prev.personalInfo.hobbies.map((h, i) => i === index ? e.target.value : h)
+                                    }
+                                  }));
+                                }}
+                                className="editable-input hobby-input-field"
+                                placeholder="e.g., Photography, Hiking, Gaming"
+                              />
+                              <button 
+                                onClick={() => {
+                                  setEditableData(prev => ({
+                                    ...prev,
+                                    personalInfo: {
+                                      ...prev.personalInfo,
+                                      hobbies: prev.personalInfo.hobbies.filter((_, i) => i !== index)
+                                    }
+                                  }));
+                                }}
+                                className="remove-hobby-button"
+                              >
+                                <Trash2 className="button-icon" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        (parsedData?.personalInfo?.hobbies || []).join(' | ')
+                      )}
+                    </div>
+                  ) : (
+                    <div className="empty-section">
+                      {isEditing ? 'No hobbies added yet. Click "Add Hobby" to add one.' : 'No hobbies information available.'}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Professional Experience Section */}
               <div className="resume-section">
@@ -2225,6 +2581,9 @@ Return only this JSON format:
           </div>
         )}
       </div>
+      
+      {/* Additional Info Popup */}
+      {showAdditionalInfoPopup && <AdditionalInfoPopup />}
     </div>
   );
 };
