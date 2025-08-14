@@ -11,6 +11,11 @@ const ResumeParser = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [manualMode, setManualMode] = useState(false);
   const [uploadError, setUploadError] = useState(null);
+  const [isAiProcessing, setIsAiProcessing] = useState(false);
+  const [aiProcessingComplete, setAiProcessingComplete] = useState(false);
+  const [aiProcessingError, setAiProcessingError] = useState(null);
+  const [extractedText, setExtractedText] = useState('');
+  const [showProcessingPopup, setShowProcessingPopup] = useState(false);
   const [showAdditionalInfoPopup, setShowAdditionalInfoPopup] = useState(false);
   const [additionalInfo, setAdditionalInfo] = useState({
   currentSalary: '',
@@ -79,6 +84,14 @@ const ResumeParser = () => {
   };
 
   const handleAdditionalInfoSubmit = useCallback(() => {
+  // Check if AI processing is still in progress
+  if (isAiProcessing) {
+    setShowAdditionalInfoPopup(false);
+    setShowProcessingPopup(true);
+    return;
+  }
+
+  // AI processing complete, proceed normally
   if (parsedData) {
     const updatedData = {
       ...parsedData,
@@ -89,10 +102,144 @@ const ResumeParser = () => {
     };
     setParsedData(updatedData);
     setEditableData(updatedData);
+  } else {
+    // No AI data yet, create with additional info
+    const dataWithAdditionalInfo = {
+      ...createEmptyResume(),
+      personalInfo: {
+        ...createEmptyResume().personalInfo,
+        ...additionalInfo
+      }
+    };
+    setParsedData(dataWithAdditionalInfo);
+    setEditableData(dataWithAdditionalInfo);
   }
+  
   setShowAdditionalInfoPopup(false);
   setActiveView('results');
-}, [parsedData, additionalInfo]);
+}, [parsedData, additionalInfo, isAiProcessing]);
+
+const ProcessingPopup = useMemo(() => {
+  if (!showProcessingPopup) return null;
+  
+  return (
+    <div className="popup-overlay">
+      <div className="popup-content processing-popup">
+        <div className="popup-header">
+          <div className="spinner"></div>
+          <h3>AI Processing in Progress</h3>
+          <p>Please wait while we analyze your resume content...</p>
+        </div>
+        
+        <div className="processing-status">
+          {aiProcessingError ? (
+            <div className="processing-error">
+              <p>⚠️ AI processing encountered an issue: {aiProcessingError}</p>
+              <p>You can continue editing manually, and the system will use your inputs.</p>
+            </div>
+          ) : (
+            <div className="processing-info">
+              <p>✨ We're extracting information from your resume</p>
+              <p>📝 Organizing sections and formatting content</p>
+              <p>🚀 Almost ready!</p>
+            </div>
+          )}
+        </div>
+
+        <div className="popup-actions">
+          <button 
+            onClick={() => {
+              // Force proceed even if AI isn't done
+              setShowProcessingPopup(false);
+              
+              if (!parsedData) {
+                // Create basic structure with additional info
+                const basicData = {
+                  ...createEmptyResume(),
+                  personalInfo: {
+                    ...createEmptyResume().personalInfo,
+                    ...additionalInfo
+                  }
+                };
+                setParsedData(basicData);
+                setEditableData(basicData);
+              } else {
+                // Update existing data with additional info
+                const updatedData = {
+                  ...parsedData,
+                  personalInfo: {
+                    ...parsedData.personalInfo,
+                    ...additionalInfo
+                  }
+                };
+                setParsedData(updatedData);
+                setEditableData(updatedData);
+              }
+              
+              setActiveView('results');
+            }}
+            className="continue-button"
+          >
+            Continue Anyway
+          </button>
+          
+          <button 
+            onClick={() => {
+              setShowProcessingPopup(false);
+              setShowAdditionalInfoPopup(true);
+            }}
+            className="wait-button"
+          >
+            Wait & Go Back
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}, [showProcessingPopup, aiProcessingError, parsedData, additionalInfo]);
+
+useEffect(() => {
+  if (aiProcessingComplete && showProcessingPopup) {
+    // AI processing finished while user was waiting
+    setTimeout(() => {
+      setShowProcessingPopup(false);
+      
+      if (parsedData) {
+        const updatedData = {
+          ...parsedData,
+          personalInfo: {
+            ...parsedData.personalInfo,
+            ...additionalInfo
+          }
+        };
+        setParsedData(updatedData);
+        setEditableData(updatedData);
+      }
+      
+      setActiveView('results');
+    }, 1000); // Small delay to show completion
+  }
+}, [aiProcessingComplete, showProcessingPopup, parsedData, additionalInfo]);
+
+// 6. Add processing status indicator in the main UI
+const ProcessingIndicator = () => {
+  if (!isAiProcessing && !aiProcessingComplete) return null;
+  
+  return (
+    <div className="processing-indicator">
+      {isAiProcessing ? (
+        <div className="processing-active">
+          <div className="mini-spinner"></div>
+          <span>AI analyzing resume...</span>
+        </div>
+      ) : aiProcessingComplete ? (
+        <div className="processing-complete">
+          <span>✅ AI analysis complete</span>
+        </div>
+      ) : null}
+    </div>
+  );
+};
 
   const handleSkipAdditionalInfo = useCallback(() => {
   setShowAdditionalInfoPopup(false);
@@ -757,105 +904,142 @@ Return only this JSON format:
   };
 
   const handleFileUpload = useCallback(async (uploadedFile) => {
-    try {
-      setActiveView('processing');
-      setUploadError(null);
+  try {
+    setUploadError(null);
+    setIsAiProcessing(true);
+    setAiProcessingComplete(false);
+    setAiProcessingError(null);
 
-      console.log('Processing file:', uploadedFile?.name || 'unknown', 'Type:', uploadedFile?.type || 'unknown');
-      let text = '';
-      
-      if (!uploadedFile) {
-        throw new Error('No file provided');
-      }
+    console.log('Processing file:', uploadedFile?.name || 'unknown', 'Type:', uploadedFile?.type || 'unknown');
+    let text = '';
+    
+    if (!uploadedFile) {
+      throw new Error('No file provided');
+    }
 
-      if (uploadedFile.type === 'application/pdf') {
-        console.log('Extracting text from PDF...');
-        text = await extractTextFromPDF(uploadedFile);
-      } else if (uploadedFile.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || 
-                 uploadedFile.name?.toLowerCase().endsWith('.docx')) {
-        console.log('Extracting text from DOCX...');
-        text = await extractTextFromDOCX(uploadedFile);
-      } else {
-        throw new Error('Unsupported file type. Please upload a PDF or DOCX file.');
-      }
+    // Extract text from file
+    if (uploadedFile.type === 'application/pdf') {
+      console.log('Extracting text from PDF...');
+      text = await extractTextFromPDF(uploadedFile);
+    } else if (uploadedFile.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || 
+               uploadedFile.name?.toLowerCase().endsWith('.docx')) {
+      console.log('Extracting text from DOCX...');
+      text = await extractTextFromDOCX(uploadedFile);
+    } else {
+      throw new Error('Unsupported file type. Please upload a PDF or DOCX file.');
+    }
 
-      console.log('Extracted text length:', text ? text.length : 0);
-      if (text && text.length > 200) {
-        console.log('Text preview:', text.substring(0, 200) + '...');
-      }
+    console.log('Extracted text length:', text ? text.length : 0);
 
-      if (!text || text.trim().length < 50) {
-        throw new Error('Unable to extract sufficient text from the file. Please ensure the file contains readable text and try again.');
-      }
+    if (!text || text.trim().length < 50) {
+      throw new Error('Unable to extract sufficient text from the file. Please ensure the file contains readable text and try again.');
+    }
 
-      console.log('Starting AI parsing...');
-      const parsed = await parseResumeData(text);
-      
-      console.log('Parsing completed successfully');
-      setParsedData(parsed);
-      setShowAdditionalInfoPopup(true); // Show popup instead of going directly to results
-      setManualMode(false);
-      
-    } catch (err) {
-      console.error('Error processing file:', err);
-      
-      // Ultra-safe error handling
-      let errorMessage = 'Processing failed: ';
-      let errorMsg = 'Unknown error occurred';
-      
+    // Store extracted text and show popup immediately
+    setExtractedText(text);
+    setShowAdditionalInfoPopup(true);
+
+    // Start AI processing in background
+    if (aiStatus === 'connected') {
       try {
-        if (err) {
-          if (typeof err === 'string') {
-            errorMsg = err;
-          } else if (err && typeof err === 'object') {
-            if (typeof err.message === 'string' && err.message.length > 0) {
-              errorMsg = err.message;
-            } else if (typeof err.toString === 'function') {
-              try {
-                errorMsg = err.toString();
-              } catch (e) {
-                errorMsg = 'Error object toString failed';
-              }
+        console.log('Starting background AI parsing...');
+        const parsed = await parseResumeData(text);
+        console.log('AI parsing completed successfully');
+        
+        // Create initial parsed data structure
+        const initialData = {
+          personalInfo: { 
+            name: '', 
+            email: '', 
+            phone: '', 
+            location: '',
+            currentSalary: '',
+            linkedinLink: '',
+            githubLink: '',
+            hometown: '',
+            currentLocation: '',
+            hobbies: []
+          },
+          ...parsed
+        };
+        
+        setParsedData(initialData);
+        setAiProcessingComplete(true);
+        setIsAiProcessing(false);
+      } catch (aiError) {
+        console.error('AI processing failed:', aiError);
+        setAiProcessingError(aiError.message || 'AI processing failed');
+        setIsAiProcessing(false);
+        
+        // Create minimal structure if AI fails
+        const fallbackData = createEmptyResume();
+        setParsedData(fallbackData);
+        setAiProcessingComplete(true);
+      }
+    } else {
+      // AI not available, create empty structure
+      const emptyData = createEmptyResume();
+      setParsedData(emptyData);
+      setAiProcessingComplete(true);
+      setIsAiProcessing(false);
+    }
+    
+    setManualMode(false);
+    
+  } catch (err) {
+    console.error('Error processing file:', err);
+    
+    let errorMessage = 'Processing failed: ';
+    let errorMsg = 'Unknown error occurred';
+    
+    // Error handling logic (same as before)
+    try {
+      if (err) {
+        if (typeof err === 'string') {
+          errorMsg = err;
+        } else if (err && typeof err === 'object') {
+          if (typeof err.message === 'string' && err.message.length > 0) {
+            errorMsg = err.message;
+          } else if (typeof err.toString === 'function') {
+            try {
+              errorMsg = err.toString();
+            } catch (e) {
+              errorMsg = 'Error object toString failed';
             }
           }
         }
-      } catch (e) {
-        console.error('Error extracting error message:', e);
-        errorMsg = 'Error processing failed';
       }
-      
-      try {
-        if (typeof errorMsg === 'string' && errorMsg.length > 0) {
-          const lowerMsg = errorMsg.toLowerCase();
-          if (lowerMsg.indexOf('pdf extraction') !== -1) {
-            errorMessage += 'Could not read the PDF file. Please ensure it\'s not password-protected and contains selectable text.';
-          } else if (lowerMsg.indexOf('docx') !== -1) {
-            errorMessage += 'Could not read the DOCX file. Please ensure it\'s a valid Word document with readable text content.';
-          } else if (lowerMsg.indexOf('json') !== -1) {
-            errorMessage += 'AI parsing encountered an issue. This may be due to complex resume formatting.';
-          } else if (lowerMsg.indexOf('ai service') !== -1) {
-            errorMessage += 'AI service is not available. Please ensure Ollama is running with the qwen2.5:1.5b model.';
-          } else if (lowerMsg.indexOf('failed to load') !== -1) {
-            errorMessage += 'Failed to load required libraries. Please check your internet connection and try again.';
-          } else if (lowerMsg.indexOf('insufficient text') !== -1) {
-            errorMessage += 'Not enough readable text found in the file. Please ensure your resume has clear, readable content.';
-          } else if (lowerMsg.indexOf('unsupported file type') !== -1) {
-            errorMessage += 'Please upload a PDF or DOCX file only.';
-          } else {
-            errorMessage += errorMsg;
-          }
-        } else {
-          errorMessage += 'An unexpected error occurred during processing.';
-        }
-      } catch (e) {
-        console.error('Error processing error message:', e);
-        errorMessage = 'An unexpected error occurred. Please try again.';
-      }
-      
-      setUploadError(errorMessage);
-      setActiveView('upload');
+    } catch (e) {
+      console.error('Error extracting error message:', e);
+      errorMsg = 'Error processing failed';
     }
-  }, [aiStatus]);
+    
+    // Error message formatting (same as before)
+    try {
+      if (typeof errorMsg === 'string' && errorMsg.length > 0) {
+        const lowerMsg = errorMsg.toLowerCase();
+        if (lowerMsg.indexOf('pdf extraction') !== -1) {
+          errorMessage += 'Could not read the PDF file. Please ensure it\'s not password-protected and contains selectable text.';
+        } else if (lowerMsg.indexOf('docx') !== -1) {
+          errorMessage += 'Could not read the DOCX file. Please ensure it\'s a valid Word document with readable text content.';
+        } else if (lowerMsg.indexOf('unsupported file type') !== -1) {
+          errorMessage += 'Please upload a PDF or DOCX file only.';
+        } else {
+          errorMessage += errorMsg;
+        }
+      } else {
+        errorMessage += 'An unexpected error occurred during processing.';
+      }
+    } catch (e) {
+      console.error('Error processing error message:', e);
+      errorMessage = 'An unexpected error occurred. Please try again.';
+    }
+    
+    setUploadError(errorMessage);
+    setActiveView('upload');
+    setIsAiProcessing(false);
+  }
+}, [aiStatus]);
 
   const handleDrop = useCallback((e) => {
     try {
@@ -1637,6 +1821,7 @@ Return only this JSON format:
             </button>
           </div>
         </div>
+        <ProcessingIndicator />
 
         {activeView === 'upload' && (
           <div className="upload-section">
@@ -2590,6 +2775,7 @@ Return only this JSON format:
       
       {/* Additional Info Popup */}
       {AdditionalInfoPopup}
+      {ProcessingPopup}
     </div>
   );
 };
