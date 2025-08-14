@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Upload, Download, Eye, Menu, X, Edit3, Save, Plus, Trash2, FileText, RefreshCw } from 'lucide-react';
 import './ResumeParser.css';
 
@@ -13,13 +13,13 @@ const ResumeParser = () => {
   const [uploadError, setUploadError] = useState(null);
   const [showAdditionalInfoPopup, setShowAdditionalInfoPopup] = useState(false);
   const [additionalInfo, setAdditionalInfo] = useState({
-    currentSalary: '',
-    linkedinLink: '',
-    githubLink: '',
-    hometown: '',
-    currentLocation: '',
-    hobbies: []
-  });
+  currentSalary: '',
+  linkedinLink: '',
+  githubLink: '',
+  hometown: '',
+  currentLocation: '',
+  hobbies: []
+});
   
   // Safari detection
   const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
@@ -78,57 +78,61 @@ const ResumeParser = () => {
     addNewAdditionalInfo();
   };
 
-  const handleAdditionalInfoSubmit = () => {
-    if (parsedData) {
-      const updatedData = {
-        ...parsedData,
-        personalInfo: {
-          ...parsedData.personalInfo,
-          ...additionalInfo
-        }
-      };
-      setParsedData(updatedData);
-      setEditableData(updatedData);
-    }
-    setShowAdditionalInfoPopup(false);
-    setActiveView('results');
-  };
+  const handleAdditionalInfoSubmit = useCallback(() => {
+  if (parsedData) {
+    const updatedData = {
+      ...parsedData,
+      personalInfo: {
+        ...parsedData.personalInfo,
+        ...additionalInfo
+      }
+    };
+    setParsedData(updatedData);
+    setEditableData(updatedData);
+  }
+  setShowAdditionalInfoPopup(false);
+  setActiveView('results');
+}, [parsedData, additionalInfo]);
 
-  const handleSkipAdditionalInfo = () => {
-    setShowAdditionalInfoPopup(false);
-    setActiveView('results');
-  };
+  const handleSkipAdditionalInfo = useCallback(() => {
+  setShowAdditionalInfoPopup(false);
+  setActiveView('results');
+}, []);
 
-  const updateAdditionalInfo = (field, value) => {
-    setAdditionalInfo(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
+  const updateAdditionalInfo = useCallback((field, value) => {
+  setAdditionalInfo(prev => ({
+    ...prev,
+    [field]: value
+  }));
+}, []);
 
-  const addHobby = () => {
-    setAdditionalInfo(prev => ({
-      ...prev,
-      hobbies: [...prev.hobbies, '']
-    }));
-  };
+const addHobby = useCallback(() => {
+  setAdditionalInfo(prev => ({
+    ...prev,
+    hobbies: [...prev.hobbies, '']
+  }));
+}, []);
 
-  const updateHobby = (index, value) => {
-    setAdditionalInfo(prev => ({
-      ...prev,
-      hobbies: prev.hobbies.map((hobby, i) => i === index ? value : hobby)
-    }));
-  };
+  const updateHobby = useCallback((index, value) => {
+  setAdditionalInfo(prev => ({
+    ...prev,
+    hobbies: prev.hobbies.map((hobby, i) => i === index ? value : hobby)
+  }));
+}, []);
 
-  const removeHobby = (index) => {
-    setAdditionalInfo(prev => ({
-      ...prev,
-      hobbies: prev.hobbies.filter((_, i) => i !== index)
-    }));
-  };
+const removeHobby = useCallback((index) => {
+  setAdditionalInfo(prev => ({
+    ...prev,
+    hobbies: prev.hobbies.filter((_, i) => i !== index)
+  }));
+}, []);
+
 
   // Additional Info Popup Component
-  const AdditionalInfoPopup = () => (
+  const AdditionalInfoPopup = useMemo(() => {
+  if (!showAdditionalInfoPopup) return null;
+  
+  return (
     <div className="popup-overlay">
       <div className="popup-content">
         <div className="popup-header">
@@ -214,6 +218,7 @@ const ResumeParser = () => {
                 <button 
                   onClick={() => removeHobby(index)}
                   className="remove-hobby-button"
+                  type="button"
                 >
                   <Trash2 className="button-icon" />
                 </button>
@@ -233,6 +238,7 @@ const ResumeParser = () => {
       </div>
     </div>
   );
+}, [showAdditionalInfoPopup, additionalInfo, updateAdditionalInfo, addHobby, updateHobby, removeHobby, handleSkipAdditionalInfo, handleAdditionalInfoSubmit]);
 
   // Global error handler
   useEffect(() => {
@@ -520,12 +526,12 @@ RESUME TEXT:
 ${text}
 
 STRICT INSTRUCTIONS:
-1. Extract ALL information accurately from the text above
+1. Extract ALL information wuthout skipping accurately from the text above and add descriptions for evrything that you can find.
 2. Return ONLY the JSON object below - no other text
 3. Use empty strings "" for missing text fields
 4. Use empty arrays [] for missing list fields
 5. Ensure ALL JSON is properly formatted with quotes
-6. Do NOT add explanations, markdown, or extra text
+6. Do NOT add markdown, or extra text
 
 REQUIRED JSON STRUCTURE:
 {
@@ -1887,76 +1893,76 @@ Return only this JSON format:
 
               {/* Hobbies & Interests Section */}
               {(isEditing || (parsedData?.personalInfo?.hobbies && parsedData?.personalInfo?.hobbies.length > 0)) && (
-                <div className="resume-section">
-                  <div className="section-header-with-actions">
-                    <h2 className="resume-section-title">HOBBIES & INTERESTS</h2>
-                    {isEditing && (
-                      <button 
-                        onClick={() => {
-                          setEditableData(prev => ({
-                            ...prev,
-                            personalInfo: {
-                              ...prev.personalInfo,
-                              hobbies: [...(prev.personalInfo.hobbies || []), '']
-                            }
-                          }));
-                        }} 
-                        className="add-item-button"
-                      >
-                        <Plus className="button-icon" />
-                        Add Hobby
-                      </button>
-                    )}
-                  </div>
-                  {((isEditing ? editableData?.personalInfo?.hobbies : parsedData?.personalInfo?.hobbies) || []).length > 0 ? (
-                    <div className="resume-skills-text">
-                      {isEditing ? (
-                        <div className="hobbies-inputs">
-                          {(editableData?.personalInfo?.hobbies || []).map((hobby, index) => (
-                            <div key={index} className="hobby-input">
-                              <input
-                                type="text"
-                                value={hobby}
-                                onChange={(e) => {
-                                  setEditableData(prev => ({
-                                    ...prev,
-                                    personalInfo: {
-                                      ...prev.personalInfo,
-                                      hobbies: prev.personalInfo.hobbies.map((h, i) => i === index ? e.target.value : h)
-                                    }
-                                  }));
-                                }}
-                                className="editable-input hobby-input-field"
-                                placeholder="e.g., Photography, Hiking, Gaming"
-                              />
-                              <button 
-                                onClick={() => {
-                                  setEditableData(prev => ({
-                                    ...prev,
-                                    personalInfo: {
-                                      ...prev.personalInfo,
-                                      hobbies: prev.personalInfo.hobbies.filter((_, i) => i !== index)
-                                    }
-                                  }));
-                                }}
-                                className="remove-hobby-button"
-                              >
-                                <Trash2 className="button-icon" />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        (parsedData?.personalInfo?.hobbies || []).join(' | ')
-                      )}
-                    </div>
-                  ) : (
-                    <div className="empty-section">
-                      {isEditing ? 'No hobbies added yet. Click "Add Hobby" to add one.' : 'No hobbies information available.'}
-                    </div>
-                  )}
-                </div>
-              )}
+  <div className="resume-section">
+    <div className="section-header-with-actions">
+      <h2 className="resume-section-title">HOBBIES & INTERESTS</h2>
+      {isEditing && (
+        <button 
+          onClick={() => {
+            setEditableData(prev => {
+              const newData = JSON.parse(JSON.stringify(prev));
+              if (!newData.personalInfo) newData.personalInfo = {};
+              if (!newData.personalInfo.hobbies) newData.personalInfo.hobbies = [];
+              newData.personalInfo.hobbies.push('');
+              return newData;
+            });
+          }} 
+          className="add-item-button"
+        >
+          <Plus className="button-icon" />
+          Add Hobby
+        </button>
+      )}
+    </div>
+    {((isEditing ? editableData?.personalInfo?.hobbies : parsedData?.personalInfo?.hobbies) || []).length > 0 ? (
+      <div className="resume-skills-text">
+        {isEditing ? (
+          <div className="hobbies-inputs">
+            {(editableData?.personalInfo?.hobbies || []).map((hobby, index) => (
+              <div key={`hobby-edit-${index}`} className="hobby-input">
+                <input
+                  type="text"
+                  value={hobby}
+                  onChange={(e) => {
+                    setEditableData(prev => {
+                      const newData = JSON.parse(JSON.stringify(prev));
+                      if (!newData.personalInfo) newData.personalInfo = {};
+                      if (!newData.personalInfo.hobbies) newData.personalInfo.hobbies = [];
+                      newData.personalInfo.hobbies[index] = e.target.value;
+                      return newData;
+                    });
+                  }}
+                  className="editable-input hobby-input-field"
+                  placeholder="e.g., Photography, Hiking, Gaming"
+                />
+                <button 
+                  onClick={() => {
+                    setEditableData(prev => {
+                      const newData = JSON.parse(JSON.stringify(prev));
+                      if (newData.personalInfo && newData.personalInfo.hobbies) {
+                        newData.personalInfo.hobbies.splice(index, 1);
+                      }
+                      return newData;
+                    });
+                  }}
+                  className="remove-hobby-button"
+                >
+                  <Trash2 className="button-icon" />
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          (parsedData?.personalInfo?.hobbies || []).join(' | ')
+        )}
+      </div>
+    ) : (
+      <div className="empty-section">
+        {isEditing ? 'No hobbies added yet. Click "Add Hobby" to add one.' : 'No hobbies information available.'}
+      </div>
+    )}
+  </div>
+)}
 
               {/* Professional Experience Section */}
               <div className="resume-section">
@@ -2583,7 +2589,7 @@ Return only this JSON format:
       </div>
       
       {/* Additional Info Popup */}
-      {showAdditionalInfoPopup && <AdditionalInfoPopup />}
+      {AdditionalInfoPopup}
     </div>
   );
 };
