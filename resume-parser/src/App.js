@@ -42,6 +42,54 @@ const ResumeParser = () => {
     checkDatabaseStatus();
   }, []);
 
+  useEffect(() => {
+  // Auto-save when parsedData changes and database is connected
+  const autoSave = async () => {
+    if (parsedData && 
+        parsedData.personalInfo?.name && 
+        parsedData.personalInfo?.email && 
+        dbStatus === 'connected' && 
+        !isSaving && 
+        !isEditing) {
+      
+      console.log('Auto-saving resume data...');
+      
+      try {
+        setIsSaving(true);
+        const response = await apiService.saveResume(parsedData);
+        console.log('Auto-save successful:', response);
+        
+        // Optional: Show brief success indicator without popup
+        setSaveStatus('success');
+        setSaveMessage('Resume auto-saved');
+        
+        // Clear status after 2 seconds
+        setTimeout(() => {
+          setSaveStatus(null);
+          setSaveMessage('');
+        }, 2000);
+        
+      } catch (error) {
+        console.error('Auto-save failed:', error);
+        // Silently fail for auto-save, or show minimal notification
+        setSaveStatus('error');
+        setSaveMessage('Auto-save failed');
+        
+        setTimeout(() => {
+          setSaveStatus(null);
+          setSaveMessage('');
+        }, 3000);
+      } finally {
+        setIsSaving(false);
+      }
+    }
+  };
+
+  // Debounce auto-save to avoid too frequent saves
+  const timeoutId = setTimeout(autoSave, 1000);
+  return () => clearTimeout(timeoutId);
+}, [parsedData, dbStatus, isSaving, isEditing]);
+
   const checkDatabaseStatus = async () => {
     try {
       await apiService.checkHealth();
@@ -103,19 +151,13 @@ const ResumeParser = () => {
 
   // Enhanced save changes to include database save
   const handleSaveChanges = async () => {
-    setParsedData(editableData);
-    setIsEditing(false);
-    setManualMode(false);
-
-    // Automatically save to database after editing
-    if (dbStatus === 'connected') {
-      await saveToDatabase(editableData);
-    }
-    
-    if (saveStatus !== 'error') {
-      alert('Changes saved successfully!');
-    }
-  };
+  setParsedData(editableData);
+  setIsEditing(false);
+  setManualMode(false);
+  
+  // Don't manually save here - auto-save will handle it
+  alert('Changes saved successfully!');
+};
 
   // Enhanced save confirmation popup
   const SaveConfirmationPopup = useMemo(() => {
@@ -229,40 +271,40 @@ const ResumeParser = () => {
   };
 
   const handleAdditionalInfoSubmit = useCallback(() => {
-    // Check if AI processing is still in progress
-    if (isAiProcessing) {
-      setShowAdditionalInfoPopup(false);
-      setShowProcessingPopup(true);
-      return;
-    }
-
-    // AI processing complete, proceed normally
-    if (parsedData) {
-      const updatedData = {
-        ...parsedData,
-        personalInfo: {
-          ...parsedData.personalInfo,
-          ...additionalInfo
-        }
-      };
-      setParsedData(updatedData);
-      setEditableData(updatedData);
-    } else {
-      // No AI data yet, create with additional info
-      const dataWithAdditionalInfo = {
-        ...createEmptyResume(),
-        personalInfo: {
-          ...createEmptyResume().personalInfo,
-          ...additionalInfo
-        }
-      };
-      setParsedData(dataWithAdditionalInfo);
-      setEditableData(dataWithAdditionalInfo);
-    }
-    
+  // Check if AI processing is still in progress
+  if (isAiProcessing) {
     setShowAdditionalInfoPopup(false);
-    setActiveView('results');
-  }, [parsedData, additionalInfo, isAiProcessing]);
+    setShowProcessingPopup(true);
+    return;
+  }
+
+  // AI processing complete, proceed normally
+  if (parsedData) {
+    const updatedData = {
+      ...parsedData,
+      personalInfo: {
+        ...parsedData.personalInfo,
+        ...additionalInfo
+      }
+    };
+    setParsedData(updatedData); // This will trigger auto-save
+    setEditableData(updatedData);
+  } else {
+    // No AI data yet, create with additional info
+    const dataWithAdditionalInfo = {
+      ...createEmptyResume(),
+      personalInfo: {
+        ...createEmptyResume().personalInfo,
+        ...additionalInfo
+      }
+    };
+    setParsedData(dataWithAdditionalInfo); // This will trigger auto-save
+    setEditableData(dataWithAdditionalInfo);
+  }
+  
+  setShowAdditionalInfoPopup(false);
+  setActiveView('results');
+}, [parsedData, additionalInfo, isAiProcessing]);
 
   const ProcessingPopup = useMemo(() => {
     if (!showProcessingPopup) return null;
@@ -344,27 +386,28 @@ const ResumeParser = () => {
   }, [showProcessingPopup, aiProcessingError, parsedData, additionalInfo]);
 
   useEffect(() => {
-    if (aiProcessingComplete && showProcessingPopup) {
-      // AI processing finished while user was waiting
-      setTimeout(() => {
-        setShowProcessingPopup(false);
-        
-        if (parsedData) {
-          const updatedData = {
-            ...parsedData,
-            personalInfo: {
-              ...parsedData.personalInfo,
-              ...additionalInfo
-            }
-          };
-          setParsedData(updatedData);
-          setEditableData(updatedData);
-        }
-        
-        setActiveView('results');
-      }, 1000); // Small delay to show completion
-    }
-  }, [aiProcessingComplete, showProcessingPopup, parsedData, additionalInfo]);
+  if (aiProcessingComplete && showProcessingPopup) {
+    // AI processing finished while user was waiting
+    setTimeout(() => {
+      setShowProcessingPopup(false);
+      
+      if (parsedData) {
+        const updatedData = {
+          ...parsedData,
+          personalInfo: {
+            ...parsedData.personalInfo,
+            ...additionalInfo
+          }
+        };
+        setParsedData(updatedData); // This will trigger auto-save
+        setEditableData(updatedData);
+      }
+      
+      setActiveView('results');
+    }, 1000);
+  }
+}, [aiProcessingComplete, showProcessingPopup, parsedData, additionalInfo]);
+
 
   // Processing status indicator in the main UI
   const ProcessingIndicator = () => {
@@ -376,10 +419,6 @@ const ResumeParser = () => {
           <div className="processing-active">
             <div className="mini-spinner"></div>
             <span>AI analyzing resume...</span>
-          </div>
-        ) : aiProcessingComplete ? (
-          <div className="processing-complete">
-            <span>✅ AI analysis complete</span>
           </div>
         ) : null}
       </div>
@@ -2904,38 +2943,10 @@ Return only this JSON format:
                   Download PDF
                 </button>
                 
-                {dbStatus === 'connected' && (
-                  <button 
-                    onClick={() => saveToDatabase()}
-                    className="save-db-button"
-                    disabled={isSaving || !parsedData?.personalInfo?.name || !parsedData?.personalInfo?.email}
-                    title={!parsedData?.personalInfo?.name || !parsedData?.personalInfo?.email ? 
-                      'Name and email are required to save to database' : 'Save resume to database'}
-                  >
-                    {isSaving ? (
-                      <>
-                        <div className="mini-spinner"></div>
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <Database className="button-icon" />
-                        Save to Database
-                      </>
-                    )}
-                  </button>
-                )}
+                
               </div>
               
-              {dbStatus === 'disconnected' && (
-                <div className="db-warning">
-                  <p>⚠️ Database is not connected. Resume data will not be saved.</p>
-                  <button onClick={checkDatabaseStatus} className="retry-db-connection">
-                    <RefreshCw className="button-icon" />
-                    Retry Connection
-                  </button>
-                </div>
-              )}
+              
             </div>
           </div>
         )}
