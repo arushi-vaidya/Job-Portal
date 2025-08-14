@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { Upload, Download, Eye, Menu, X, Edit3, Save, Plus, Trash2, FileText, RefreshCw } from 'lucide-react';
+import { Upload, Download, Eye, Menu, X, Edit3, Save, Plus, Trash2, FileText, RefreshCw, Database, CheckCircle } from 'lucide-react';
 import './ResumeParser.css';
+import apiService from './services/api';
 
 const ResumeParser = () => {
   const [parsedData, setParsedData] = useState(null);
@@ -18,16 +19,160 @@ const ResumeParser = () => {
   const [showProcessingPopup, setShowProcessingPopup] = useState(false);
   const [showAdditionalInfoPopup, setShowAdditionalInfoPopup] = useState(false);
   const [additionalInfo, setAdditionalInfo] = useState({
-  currentSalary: '',
-  linkedinLink: '',
-  githubLink: '',
-  hometown: '',
-  currentLocation: '',
-  hobbies: []
-});
+    currentSalary: '',
+    linkedinLink: '',
+    githubLink: '',
+    hometown: '',
+    currentLocation: '',
+    hobbies: []
+  });
+
+  // New state for database integration
+  const [dbStatus, setDbStatus] = useState('checking'); // 'checking', 'connected', 'disconnected'
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState(null); // null, 'success', 'error'
+  const [saveMessage, setSaveMessage] = useState('');
+  const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
   
   // Safari detection
   const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+  // Check database status on component mount
+  useEffect(() => {
+    checkDatabaseStatus();
+  }, []);
+
+  const checkDatabaseStatus = async () => {
+    try {
+      await apiService.checkHealth();
+      setDbStatus('connected');
+      console.log('Database connection successful');
+    } catch (error) {
+      console.error('Database connection failed:', error);
+      setDbStatus('disconnected');
+    }
+  };
+
+  // Save to database function
+  const saveToDatabase = async (dataToSave = null) => {
+    const resumeData = dataToSave || parsedData;
+    
+    if (!resumeData) {
+      alert('No resume data available to save.');
+      return;
+    }
+
+    // Validate required fields
+    if (!resumeData.personalInfo?.name || !resumeData.personalInfo?.email) {
+      alert('Name and email are required to save to database.');
+      return;
+    }
+
+    setIsSaving(true);
+    setSaveStatus(null);
+    setSaveMessage('');
+
+    try {
+      const response = await apiService.saveResume(resumeData);
+      
+      setSaveStatus('success');
+      setSaveMessage(response.message || 'Resume saved successfully!');
+      setShowSaveConfirmation(true);
+      
+      console.log('Resume saved to database:', response);
+      
+      // Auto-hide confirmation after 3 seconds
+      setTimeout(() => {
+        setShowSaveConfirmation(false);
+      }, 3000);
+
+    } catch (error) {
+      console.error('Error saving to database:', error);
+      setSaveStatus('error');
+      setSaveMessage(error.message || 'Failed to save resume to database.');
+      setShowSaveConfirmation(true);
+      
+      // Auto-hide error after 5 seconds
+      setTimeout(() => {
+        setShowSaveConfirmation(false);
+      }, 5000);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Enhanced save changes to include database save
+  const handleSaveChanges = async () => {
+    setParsedData(editableData);
+    setIsEditing(false);
+    setManualMode(false);
+
+    // Automatically save to database after editing
+    if (dbStatus === 'connected') {
+      await saveToDatabase(editableData);
+    }
+    
+    if (saveStatus !== 'error') {
+      alert('Changes saved successfully!');
+    }
+  };
+
+  // Enhanced save confirmation popup
+  const SaveConfirmationPopup = useMemo(() => {
+    if (!showSaveConfirmation) return null;
+    
+    return (
+      <div className="popup-overlay">
+        <div className="popup-content save-confirmation-popup">
+          <div className="popup-header">
+            <div className={`save-status-icon ${saveStatus}`}>
+              {saveStatus === 'success' ? (
+                <CheckCircle className="success-icon" />
+              ) : (
+                <X className="error-icon" />
+              )}
+            </div>
+            <h3 className={`save-status-title ${saveStatus}`}>
+              {saveStatus === 'success' ? 'Success!' : 'Error'}
+            </h3>
+            <p className="save-status-message">{saveMessage}</p>
+          </div>
+          
+          <div className="popup-actions">
+            <button 
+              onClick={() => setShowSaveConfirmation(false)}
+              className="close-button"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }, [showSaveConfirmation, saveStatus, saveMessage]);
+
+  // Database status indicator
+  const DatabaseStatusIndicator = () => {
+    if (dbStatus === 'checking') return null;
+    
+    return (
+      <div className={`db-status-indicator ${dbStatus}`}>
+        <Database className="db-icon" />
+        <span className="db-status-text">
+          {dbStatus === 'connected' ? 'Database Connected' : 'Database Disconnected'}
+        </span>
+        {dbStatus === 'disconnected' && (
+          <button 
+            onClick={checkDatabaseStatus}
+            className="retry-db-button"
+            title="Retry connection"
+          >
+            <RefreshCw className="retry-icon" />
+          </button>
+        )}
+      </div>
+    );
+  };
   
   // Safari-compatible button handlers
   const handleAddExperience = () => {
@@ -84,308 +229,307 @@ const ResumeParser = () => {
   };
 
   const handleAdditionalInfoSubmit = useCallback(() => {
-  // Check if AI processing is still in progress
-  if (isAiProcessing) {
+    // Check if AI processing is still in progress
+    if (isAiProcessing) {
+      setShowAdditionalInfoPopup(false);
+      setShowProcessingPopup(true);
+      return;
+    }
+
+    // AI processing complete, proceed normally
+    if (parsedData) {
+      const updatedData = {
+        ...parsedData,
+        personalInfo: {
+          ...parsedData.personalInfo,
+          ...additionalInfo
+        }
+      };
+      setParsedData(updatedData);
+      setEditableData(updatedData);
+    } else {
+      // No AI data yet, create with additional info
+      const dataWithAdditionalInfo = {
+        ...createEmptyResume(),
+        personalInfo: {
+          ...createEmptyResume().personalInfo,
+          ...additionalInfo
+        }
+      };
+      setParsedData(dataWithAdditionalInfo);
+      setEditableData(dataWithAdditionalInfo);
+    }
+    
     setShowAdditionalInfoPopup(false);
-    setShowProcessingPopup(true);
-    return;
-  }
+    setActiveView('results');
+  }, [parsedData, additionalInfo, isAiProcessing]);
 
-  // AI processing complete, proceed normally
-  if (parsedData) {
-    const updatedData = {
-      ...parsedData,
-      personalInfo: {
-        ...parsedData.personalInfo,
-        ...additionalInfo
-      }
-    };
-    setParsedData(updatedData);
-    setEditableData(updatedData);
-  } else {
-    // No AI data yet, create with additional info
-    const dataWithAdditionalInfo = {
-      ...createEmptyResume(),
-      personalInfo: {
-        ...createEmptyResume().personalInfo,
-        ...additionalInfo
-      }
-    };
-    setParsedData(dataWithAdditionalInfo);
-    setEditableData(dataWithAdditionalInfo);
-  }
-  
-  setShowAdditionalInfoPopup(false);
-  setActiveView('results');
-}, [parsedData, additionalInfo, isAiProcessing]);
-
-const ProcessingPopup = useMemo(() => {
-  if (!showProcessingPopup) return null;
-  
-  return (
-    <div className="popup-overlay">
-      <div className="popup-content processing-popup">
-        <div className="popup-header">
-          <div className="spinner"></div>
-          <h3>AI Processing in Progress</h3>
-          <p>Please wait while we analyze your resume content...</p>
-        </div>
-        
-        <div className="processing-status">
-          {aiProcessingError ? (
-            <div className="processing-error">
-              <p>⚠️ AI processing encountered an issue: {aiProcessingError}</p>
-              <p>You can continue editing manually, and the system will use your inputs.</p>
-            </div>
-          ) : (
-            <div className="processing-info">
-              <p>✨ We're extracting information from your resume</p>
-              <p>📝 Organizing sections and formatting content</p>
-              <p>🚀 Almost ready!</p>
-            </div>
-          )}
-        </div>
-
-        <div className="popup-actions">
-          <button 
-            onClick={() => {
-              // Force proceed even if AI isn't done
-              setShowProcessingPopup(false);
-              
-              if (!parsedData) {
-                // Create basic structure with additional info
-                const basicData = {
-                  ...createEmptyResume(),
-                  personalInfo: {
-                    ...createEmptyResume().personalInfo,
-                    ...additionalInfo
-                  }
-                };
-                setParsedData(basicData);
-                setEditableData(basicData);
-              } else {
-                // Update existing data with additional info
-                const updatedData = {
-                  ...parsedData,
-                  personalInfo: {
-                    ...parsedData.personalInfo,
-                    ...additionalInfo
-                  }
-                };
-                setParsedData(updatedData);
-                setEditableData(updatedData);
-              }
-              
-              setActiveView('results');
-            }}
-            className="continue-button"
-          >
-            Continue Anyway
-          </button>
+  const ProcessingPopup = useMemo(() => {
+    if (!showProcessingPopup) return null;
+    
+    return (
+      <div className="popup-overlay">
+        <div className="popup-content processing-popup">
+          <div className="popup-header">
+            <div className="spinner"></div>
+            <h3>AI Processing in Progress</h3>
+            <p>Please wait while we analyze your resume content...</p>
+          </div>
           
-          <button 
-            onClick={() => {
-              setShowProcessingPopup(false);
-              setShowAdditionalInfoPopup(true);
-            }}
-            className="wait-button"
-          >
-            Wait & Go Back
-          </button>
+          <div className="processing-status">
+            {aiProcessingError ? (
+              <div className="processing-error">
+                <p>⚠️ AI processing encountered an issue: {aiProcessingError}</p>
+                <p>You can continue editing manually, and the system will use your inputs.</p>
+              </div>
+            ) : (
+              <div className="processing-info">
+                <p>✨ We're extracting information from your resume</p>
+                <p>📝 Organizing sections and formatting content</p>
+                <p>🚀 Almost ready!</p>
+              </div>
+            )}
+          </div>
+
+          <div className="popup-actions">
+            <button 
+              onClick={() => {
+                // Force proceed even if AI isn't done
+                setShowProcessingPopup(false);
+                
+                if (!parsedData) {
+                  // Create basic structure with additional info
+                  const basicData = {
+                    ...createEmptyResume(),
+                    personalInfo: {
+                      ...createEmptyResume().personalInfo,
+                      ...additionalInfo
+                    }
+                  };
+                  setParsedData(basicData);
+                  setEditableData(basicData);
+                } else {
+                  // Update existing data with additional info
+                  const updatedData = {
+                    ...parsedData,
+                    personalInfo: {
+                      ...parsedData.personalInfo,
+                      ...additionalInfo
+                    }
+                  };
+                  setParsedData(updatedData);
+                  setEditableData(updatedData);
+                }
+                
+                setActiveView('results');
+              }}
+              className="continue-button"
+            >
+              Continue Anyway
+            </button>
+            
+            <button 
+              onClick={() => {
+                setShowProcessingPopup(false);
+                setShowAdditionalInfoPopup(true);
+              }}
+              className="wait-button"
+            >
+              Wait & Go Back
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-  );
-}, [showProcessingPopup, aiProcessingError, parsedData, additionalInfo]);
+    );
+  }, [showProcessingPopup, aiProcessingError, parsedData, additionalInfo]);
 
-useEffect(() => {
-  if (aiProcessingComplete && showProcessingPopup) {
-    // AI processing finished while user was waiting
-    setTimeout(() => {
-      setShowProcessingPopup(false);
-      
-      if (parsedData) {
-        const updatedData = {
-          ...parsedData,
-          personalInfo: {
-            ...parsedData.personalInfo,
-            ...additionalInfo
-          }
-        };
-        setParsedData(updatedData);
-        setEditableData(updatedData);
-      }
-      
-      setActiveView('results');
-    }, 1000); // Small delay to show completion
-  }
-}, [aiProcessingComplete, showProcessingPopup, parsedData, additionalInfo]);
+  useEffect(() => {
+    if (aiProcessingComplete && showProcessingPopup) {
+      // AI processing finished while user was waiting
+      setTimeout(() => {
+        setShowProcessingPopup(false);
+        
+        if (parsedData) {
+          const updatedData = {
+            ...parsedData,
+            personalInfo: {
+              ...parsedData.personalInfo,
+              ...additionalInfo
+            }
+          };
+          setParsedData(updatedData);
+          setEditableData(updatedData);
+        }
+        
+        setActiveView('results');
+      }, 1000); // Small delay to show completion
+    }
+  }, [aiProcessingComplete, showProcessingPopup, parsedData, additionalInfo]);
 
-// 6. Add processing status indicator in the main UI
-const ProcessingIndicator = () => {
-  if (!isAiProcessing && !aiProcessingComplete) return null;
-  
-  return (
-    <div className="processing-indicator">
-      {isAiProcessing ? (
-        <div className="processing-active">
-          <div className="mini-spinner"></div>
-          <span>AI analyzing resume...</span>
-        </div>
-      ) : aiProcessingComplete ? (
-        <div className="processing-complete">
-          <span>✅ AI analysis complete</span>
-        </div>
-      ) : null}
-    </div>
-  );
-};
+  // Processing status indicator in the main UI
+  const ProcessingIndicator = () => {
+    if (!isAiProcessing && !aiProcessingComplete) return null;
+    
+    return (
+      <div className="processing-indicator">
+        {isAiProcessing ? (
+          <div className="processing-active">
+            <div className="mini-spinner"></div>
+            <span>AI analyzing resume...</span>
+          </div>
+        ) : aiProcessingComplete ? (
+          <div className="processing-complete">
+            <span>✅ AI analysis complete</span>
+          </div>
+        ) : null}
+      </div>
+    );
+  };
 
   const handleSkipAdditionalInfo = useCallback(() => {
-  setShowAdditionalInfoPopup(false);
-  setActiveView('results');
-}, []);
+    setShowAdditionalInfoPopup(false);
+    setActiveView('results');
+  }, []);
 
   const updateAdditionalInfo = useCallback((field, value) => {
-  setAdditionalInfo(prev => ({
-    ...prev,
-    [field]: value
-  }));
-}, []);
+    setAdditionalInfo(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  }, []);
 
-const addHobby = useCallback(() => {
-  setAdditionalInfo(prev => ({
-    ...prev,
-    hobbies: [...prev.hobbies, '']
-  }));
-}, []);
+  const addHobby = useCallback(() => {
+    setAdditionalInfo(prev => ({
+      ...prev,
+      hobbies: [...prev.hobbies, '']
+    }));
+  }, []);
 
   const updateHobby = useCallback((index, value) => {
-  setAdditionalInfo(prev => ({
-    ...prev,
-    hobbies: prev.hobbies.map((hobby, i) => i === index ? value : hobby)
-  }));
-}, []);
+    setAdditionalInfo(prev => ({
+      ...prev,
+      hobbies: prev.hobbies.map((hobby, i) => i === index ? value : hobby)
+    }));
+  }, []);
 
-const removeHobby = useCallback((index) => {
-  setAdditionalInfo(prev => ({
-    ...prev,
-    hobbies: prev.hobbies.filter((_, i) => i !== index)
-  }));
-}, []);
-
+  const removeHobby = useCallback((index) => {
+    setAdditionalInfo(prev => ({
+      ...prev,
+      hobbies: prev.hobbies.filter((_, i) => i !== index)
+    }));
+  }, []);
 
   // Additional Info Popup Component
   const AdditionalInfoPopup = useMemo(() => {
-  if (!showAdditionalInfoPopup) return null;
-  
-  return (
-    <div className="popup-overlay">
-      <div className="popup-content">
-        <div className="popup-header">
-          <h3>Complete Your Profile</h3>
-          <p>Add some additional information to enhance your resume</p>
-        </div>
-        
-        <div className="popup-form">
-          <div className="form-row">
-            <div className="form-group">
-              <label>Current Salary</label>
-              <input
-                type="text"
-                value={additionalInfo.currentSalary}
-                onChange={(e) => updateAdditionalInfo('currentSalary', e.target.value)}
-                placeholder="e.g., $75,000 or ₹12 LPA"
-                className="popup-input"
-              />
-            </div>
-            <div className="form-group">
-              <label>Hometown</label>
-              <input
-                type="text"
-                value={additionalInfo.hometown}
-                onChange={(e) => updateAdditionalInfo('hometown', e.target.value)}
-                placeholder="e.g., Mumbai, Maharashtra"
-                className="popup-input"
-              />
-            </div>
+    if (!showAdditionalInfoPopup) return null;
+    
+    return (
+      <div className="popup-overlay">
+        <div className="popup-content">
+          <div className="popup-header">
+            <h3>Complete Your Profile</h3>
+            <p>Add some additional information to enhance your resume</p>
           </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label>Current Location</label>
-              <input
-                type="text"
-                value={additionalInfo.currentLocation}
-                onChange={(e) => updateAdditionalInfo('currentLocation', e.target.value)}
-                placeholder="e.g., Bengaluru, Karnataka"
-                className="popup-input"
-              />
-            </div>
-            <div className="form-group">
-              <label>LinkedIn Profile</label>
-              <input
-                type="url"
-                value={additionalInfo.linkedinLink}
-                onChange={(e) => updateAdditionalInfo('linkedinLink', e.target.value)}
-                placeholder="https://linkedin.com/in/yourprofile"
-                className="popup-input"
-              />
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label>GitHub Profile</label>
-            <input
-              type="url"
-              value={additionalInfo.githubLink}
-              onChange={(e) => updateAdditionalInfo('githubLink', e.target.value)}
-              placeholder="https://github.com/yourusername"
-              className="popup-input"
-            />
-          </div>
-
-          <div className="form-group">
-            <div className="section-header-with-actions">
-              <label>Hobbies & Interests</label>
-              <button onClick={addHobby} className="add-hobby-button">
-                <Plus className="button-icon" />
-                Add Hobby
-              </button>
-            </div>
-            {additionalInfo.hobbies.map((hobby, index) => (
-              <div key={index} className="hobby-input">
+          
+          <div className="popup-form">
+            <div className="form-row">
+              <div className="form-group">
+                <label>Current Salary</label>
                 <input
                   type="text"
-                  value={hobby}
-                  onChange={(e) => updateHobby(index, e.target.value)}
-                  placeholder="e.g., Photography, Hiking, Gaming"
+                  value={additionalInfo.currentSalary}
+                  onChange={(e) => updateAdditionalInfo('currentSalary', e.target.value)}
+                  placeholder="e.g., $75,000 or ₹12 LPA"
                   className="popup-input"
                 />
-                <button 
-                  onClick={() => removeHobby(index)}
-                  className="remove-hobby-button"
-                  type="button"
-                >
-                  <Trash2 className="button-icon" />
+              </div>
+              <div className="form-group">
+                <label>Hometown</label>
+                <input
+                  type="text"
+                  value={additionalInfo.hometown}
+                  onChange={(e) => updateAdditionalInfo('hometown', e.target.value)}
+                  placeholder="e.g., Mumbai, Maharashtra"
+                  className="popup-input"
+                />
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label>Current Location</label>
+                <input
+                  type="text"
+                  value={additionalInfo.currentLocation}
+                  onChange={(e) => updateAdditionalInfo('currentLocation', e.target.value)}
+                  placeholder="e.g., Bengaluru, Karnataka"
+                  className="popup-input"
+                />
+              </div>
+              <div className="form-group">
+                <label>LinkedIn Profile</label>
+                <input
+                  type="url"
+                  value={additionalInfo.linkedinLink}
+                  onChange={(e) => updateAdditionalInfo('linkedinLink', e.target.value)}
+                  placeholder="https://linkedin.com/in/yourprofile"
+                  className="popup-input"
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label>GitHub Profile</label>
+              <input
+                type="url"
+                value={additionalInfo.githubLink}
+                onChange={(e) => updateAdditionalInfo('githubLink', e.target.value)}
+                placeholder="https://github.com/yourusername"
+                className="popup-input"
+              />
+            </div>
+
+            <div className="form-group">
+              <div className="section-header-with-actions">
+                <label>Hobbies & Interests</label>
+                <button onClick={addHobby} className="add-hobby-button">
+                  <Plus className="button-icon" />
+                  Add Hobby
                 </button>
               </div>
-            ))}
+              {additionalInfo.hobbies.map((hobby, index) => (
+                <div key={index} className="hobby-input">
+                  <input
+                    type="text"
+                    value={hobby}
+                    onChange={(e) => updateHobby(index, e.target.value)}
+                    placeholder="e.g., Photography, Hiking, Gaming"
+                    className="popup-input"
+                  />
+                  <button 
+                    onClick={() => removeHobby(index)}
+                    className="remove-hobby-button"
+                    type="button"
+                  >
+                    <Trash2 className="button-icon" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="popup-actions">
+            <button onClick={handleSkipAdditionalInfo} className="skip-button">
+              Skip for Now
+            </button>
+            <button onClick={handleAdditionalInfoSubmit} className="submit-button">
+              Continue
+            </button>
           </div>
         </div>
-
-        <div className="popup-actions">
-          <button onClick={handleSkipAdditionalInfo} className="skip-button">
-            Skip for Now
-          </button>
-          <button onClick={handleAdditionalInfoSubmit} className="submit-button">
-            Continue
-          </button>
-        </div>
       </div>
-    </div>
-  );
-}, [showAdditionalInfoPopup, additionalInfo, updateAdditionalInfo, addHobby, updateHobby, removeHobby, handleSkipAdditionalInfo, handleAdditionalInfoSubmit]);
+    );
+  }, [showAdditionalInfoPopup, additionalInfo, updateAdditionalInfo, addHobby, updateHobby, removeHobby, handleSkipAdditionalInfo, handleAdditionalInfoSubmit]);
 
   // Global error handler
   useEffect(() => {
@@ -673,7 +817,7 @@ RESUME TEXT:
 ${text}
 
 STRICT INSTRUCTIONS:
-1. Extract ALL information wuthout skipping accurately from the text above and add descriptions for evrything that you can find.
+1. Extract ALL information without skipping accurately from the text above and add descriptions for everything that you can find.
 2. Return ONLY the JSON object below - no other text
 3. Use empty strings "" for missing text fields
 4. Use empty arrays [] for missing list fields
@@ -904,142 +1048,142 @@ Return only this JSON format:
   };
 
   const handleFileUpload = useCallback(async (uploadedFile) => {
-  try {
-    setUploadError(null);
-    setIsAiProcessing(true);
-    setAiProcessingComplete(false);
-    setAiProcessingError(null);
-
-    console.log('Processing file:', uploadedFile?.name || 'unknown', 'Type:', uploadedFile?.type || 'unknown');
-    let text = '';
-    
-    if (!uploadedFile) {
-      throw new Error('No file provided');
-    }
-
-    // Extract text from file
-    if (uploadedFile.type === 'application/pdf') {
-      console.log('Extracting text from PDF...');
-      text = await extractTextFromPDF(uploadedFile);
-    } else if (uploadedFile.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || 
-               uploadedFile.name?.toLowerCase().endsWith('.docx')) {
-      console.log('Extracting text from DOCX...');
-      text = await extractTextFromDOCX(uploadedFile);
-    } else {
-      throw new Error('Unsupported file type. Please upload a PDF or DOCX file.');
-    }
-
-    console.log('Extracted text length:', text ? text.length : 0);
-
-    if (!text || text.trim().length < 50) {
-      throw new Error('Unable to extract sufficient text from the file. Please ensure the file contains readable text and try again.');
-    }
-
-    // Store extracted text and show popup immediately
-    setExtractedText(text);
-    setShowAdditionalInfoPopup(true);
-
-    // Start AI processing in background
-    if (aiStatus === 'connected') {
-      try {
-        console.log('Starting background AI parsing...');
-        const parsed = await parseResumeData(text);
-        console.log('AI parsing completed successfully');
-        
-        // Create initial parsed data structure
-        const initialData = {
-          personalInfo: { 
-            name: '', 
-            email: '', 
-            phone: '', 
-            location: '',
-            currentSalary: '',
-            linkedinLink: '',
-            githubLink: '',
-            hometown: '',
-            currentLocation: '',
-            hobbies: []
-          },
-          ...parsed
-        };
-        
-        setParsedData(initialData);
-        setAiProcessingComplete(true);
-        setIsAiProcessing(false);
-      } catch (aiError) {
-        console.error('AI processing failed:', aiError);
-        setAiProcessingError(aiError.message || 'AI processing failed');
-        setIsAiProcessing(false);
-        
-        // Create minimal structure if AI fails
-        const fallbackData = createEmptyResume();
-        setParsedData(fallbackData);
-        setAiProcessingComplete(true);
-      }
-    } else {
-      // AI not available, create empty structure
-      const emptyData = createEmptyResume();
-      setParsedData(emptyData);
-      setAiProcessingComplete(true);
-      setIsAiProcessing(false);
-    }
-    
-    setManualMode(false);
-    
-  } catch (err) {
-    console.error('Error processing file:', err);
-    
-    let errorMessage = 'Processing failed: ';
-    let errorMsg = 'Unknown error occurred';
-    
-    // Error handling logic (same as before)
     try {
-      if (err) {
-        if (typeof err === 'string') {
-          errorMsg = err;
-        } else if (err && typeof err === 'object') {
-          if (typeof err.message === 'string' && err.message.length > 0) {
-            errorMsg = err.message;
-          } else if (typeof err.toString === 'function') {
-            try {
-              errorMsg = err.toString();
-            } catch (e) {
-              errorMsg = 'Error object toString failed';
+      setUploadError(null);
+      setIsAiProcessing(true);
+      setAiProcessingComplete(false);
+      setAiProcessingError(null);
+
+      console.log('Processing file:', uploadedFile?.name || 'unknown', 'Type:', uploadedFile?.type || 'unknown');
+      let text = '';
+      
+      if (!uploadedFile) {
+        throw new Error('No file provided');
+      }
+
+      // Extract text from file
+      if (uploadedFile.type === 'application/pdf') {
+        console.log('Extracting text from PDF...');
+        text = await extractTextFromPDF(uploadedFile);
+      } else if (uploadedFile.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || 
+                 uploadedFile.name?.toLowerCase().endsWith('.docx')) {
+        console.log('Extracting text from DOCX...');
+        text = await extractTextFromDOCX(uploadedFile);
+      } else {
+        throw new Error('Unsupported file type. Please upload a PDF or DOCX file.');
+      }
+
+      console.log('Extracted text length:', text ? text.length : 0);
+
+      if (!text || text.trim().length < 50) {
+        throw new Error('Unable to extract sufficient text from the file. Please ensure the file contains readable text and try again.');
+      }
+
+      // Store extracted text and show popup immediately
+      setExtractedText(text);
+      setShowAdditionalInfoPopup(true);
+
+      // Start AI processing in background
+      if (aiStatus === 'connected') {
+        try {
+          console.log('Starting background AI parsing...');
+          const parsed = await parseResumeData(text);
+          console.log('AI parsing completed successfully');
+          
+          // Create initial parsed data structure
+          const initialData = {
+            personalInfo: { 
+              name: '', 
+              email: '', 
+              phone: '', 
+              location: '',
+              currentSalary: '',
+              linkedinLink: '',
+              githubLink: '',
+              hometown: '',
+              currentLocation: '',
+              hobbies: []
+            },
+            ...parsed
+          };
+          
+          setParsedData(initialData);
+          setAiProcessingComplete(true);
+          setIsAiProcessing(false);
+        } catch (aiError) {
+          console.error('AI processing failed:', aiError);
+          setAiProcessingError(aiError.message || 'AI processing failed');
+          setIsAiProcessing(false);
+          
+          // Create minimal structure if AI fails
+          const fallbackData = createEmptyResume();
+          setParsedData(fallbackData);
+          setAiProcessingComplete(true);
+        }
+      } else {
+        // AI not available, create empty structure
+        const emptyData = createEmptyResume();
+        setParsedData(emptyData);
+        setAiProcessingComplete(true);
+        setIsAiProcessing(false);
+      }
+      
+      setManualMode(false);
+      
+    } catch (err) {
+      console.error('Error processing file:', err);
+      
+      let errorMessage = 'Processing failed: ';
+      let errorMsg = 'Unknown error occurred';
+      
+      // Error handling logic
+      try {
+        if (err) {
+          if (typeof err === 'string') {
+            errorMsg = err;
+          } else if (err && typeof err === 'object') {
+            if (typeof err.message === 'string' && err.message.length > 0) {
+              errorMsg = err.message;
+            } else if (typeof err.toString === 'function') {
+              try {
+                errorMsg = err.toString();
+              } catch (e) {
+                errorMsg = 'Error object toString failed';
+              }
             }
           }
         }
+      } catch (e) {
+        console.error('Error extracting error message:', e);
+        errorMsg = 'Error processing failed';
       }
-    } catch (e) {
-      console.error('Error extracting error message:', e);
-      errorMsg = 'Error processing failed';
-    }
-    
-    // Error message formatting (same as before)
-    try {
-      if (typeof errorMsg === 'string' && errorMsg.length > 0) {
-        const lowerMsg = errorMsg.toLowerCase();
-        if (lowerMsg.indexOf('pdf extraction') !== -1) {
-          errorMessage += 'Could not read the PDF file. Please ensure it\'s not password-protected and contains selectable text.';
-        } else if (lowerMsg.indexOf('docx') !== -1) {
-          errorMessage += 'Could not read the DOCX file. Please ensure it\'s a valid Word document with readable text content.';
-        } else if (lowerMsg.indexOf('unsupported file type') !== -1) {
-          errorMessage += 'Please upload a PDF or DOCX file only.';
+      
+      // Error message formatting
+      try {
+        if (typeof errorMsg === 'string' && errorMsg.length > 0) {
+          const lowerMsg = errorMsg.toLowerCase();
+          if (lowerMsg.indexOf('pdf extraction') !== -1) {
+            errorMessage += 'Could not read the PDF file. Please ensure it\'s not password-protected and contains selectable text.';
+          } else if (lowerMsg.indexOf('docx') !== -1) {
+            errorMessage += 'Could not read the DOCX file. Please ensure it\'s a valid Word document with readable text content.';
+          } else if (lowerMsg.indexOf('unsupported file type') !== -1) {
+            errorMessage += 'Please upload a PDF or DOCX file only.';
+          } else {
+            errorMessage += errorMsg;
+          }
         } else {
-          errorMessage += errorMsg;
+          errorMessage += 'An unexpected error occurred during processing.';
         }
-      } else {
-        errorMessage += 'An unexpected error occurred during processing.';
+      } catch (e) {
+        console.error('Error processing error message:', e);
+        errorMessage = 'An unexpected error occurred. Please try again.';
       }
-    } catch (e) {
-      console.error('Error processing error message:', e);
-      errorMessage = 'An unexpected error occurred. Please try again.';
+      
+      setUploadError(errorMessage);
+      setActiveView('upload');
+      setIsAiProcessing(false);
     }
-    
-    setUploadError(errorMessage);
-    setActiveView('upload');
-    setIsAiProcessing(false);
-  }
-}, [aiStatus]);
+  }, [aiStatus]);
 
   const handleDrop = useCallback((e) => {
     try {
@@ -1124,14 +1268,6 @@ Return only this JSON format:
       console.error('Error creating editable data:', error);
       alert('Error entering edit mode. Please try again.');
     }
-  };
-
-  // Handle saving changes
-  const handleSaveChanges = () => {
-    setParsedData(editableData);
-    setIsEditing(false);
-    setManualMode(false);
-    alert('Changes saved successfully!');
   };
 
   // Handle canceling edits
@@ -1582,7 +1718,7 @@ Return only this JSON format:
               <div class="duration">${edu.year || 'Year'}</div>
             </div>
             <div class="education-details">${edu.degree || 'Degree'}</div>
-            ${edu.description && edu.description.length > 0 ? `
+              ${edu.description && edu.description.length > 0 ? `
               <ul class="bullet-list">
                 ${edu.description.map(desc => `<li>${desc}</li>`).join('')}
               </ul>
@@ -2078,76 +2214,76 @@ Return only this JSON format:
 
               {/* Hobbies & Interests Section */}
               {(isEditing || (parsedData?.personalInfo?.hobbies && parsedData?.personalInfo?.hobbies.length > 0)) && (
-  <div className="resume-section">
-    <div className="section-header-with-actions">
-      <h2 className="resume-section-title">HOBBIES & INTERESTS</h2>
-      {isEditing && (
-        <button 
-          onClick={() => {
-            setEditableData(prev => {
-              const newData = JSON.parse(JSON.stringify(prev));
-              if (!newData.personalInfo) newData.personalInfo = {};
-              if (!newData.personalInfo.hobbies) newData.personalInfo.hobbies = [];
-              newData.personalInfo.hobbies.push('');
-              return newData;
-            });
-          }} 
-          className="add-item-button"
-        >
-          <Plus className="button-icon" />
-          Add Hobby
-        </button>
-      )}
-    </div>
-    {((isEditing ? editableData?.personalInfo?.hobbies : parsedData?.personalInfo?.hobbies) || []).length > 0 ? (
-      <div className="resume-skills-text">
-        {isEditing ? (
-          <div className="hobbies-inputs">
-            {(editableData?.personalInfo?.hobbies || []).map((hobby, index) => (
-              <div key={`hobby-edit-${index}`} className="hobby-input">
-                <input
-                  type="text"
-                  value={hobby}
-                  onChange={(e) => {
-                    setEditableData(prev => {
-                      const newData = JSON.parse(JSON.stringify(prev));
-                      if (!newData.personalInfo) newData.personalInfo = {};
-                      if (!newData.personalInfo.hobbies) newData.personalInfo.hobbies = [];
-                      newData.personalInfo.hobbies[index] = e.target.value;
-                      return newData;
-                    });
-                  }}
-                  className="editable-input hobby-input-field"
-                  placeholder="e.g., Photography, Hiking, Gaming"
-                />
-                <button 
-                  onClick={() => {
-                    setEditableData(prev => {
-                      const newData = JSON.parse(JSON.stringify(prev));
-                      if (newData.personalInfo && newData.personalInfo.hobbies) {
-                        newData.personalInfo.hobbies.splice(index, 1);
-                      }
-                      return newData;
-                    });
-                  }}
-                  className="remove-hobby-button"
-                >
-                  <Trash2 className="button-icon" />
-                </button>
-              </div>
-            ))}
-          </div>
-        ) : (
-          (parsedData?.personalInfo?.hobbies || []).join(' | ')
-        )}
-      </div>
-    ) : (
-      <div className="empty-section">
-        {isEditing ? 'No hobbies added yet. Click "Add Hobby" to add one.' : 'No hobbies information available.'}
-      </div>
-    )}
-  </div>
-)}
+                <div className="resume-section">
+                  <div className="section-header-with-actions">
+                    <h2 className="resume-section-title">HOBBIES & INTERESTS</h2>
+                    {isEditing && (
+                      <button 
+                        onClick={() => {
+                          setEditableData(prev => {
+                            const newData = JSON.parse(JSON.stringify(prev));
+                            if (!newData.personalInfo) newData.personalInfo = {};
+                            if (!newData.personalInfo.hobbies) newData.personalInfo.hobbies = [];
+                            newData.personalInfo.hobbies.push('');
+                            return newData;
+                          });
+                        }} 
+                        className="add-item-button"
+                      >
+                        <Plus className="button-icon" />
+                        Add Hobby
+                      </button>
+                    )}
+                  </div>
+                  {((isEditing ? editableData?.personalInfo?.hobbies : parsedData?.personalInfo?.hobbies) || []).length > 0 ? (
+                    <div className="resume-skills-text">
+                      {isEditing ? (
+                        <div className="hobbies-inputs">
+                          {(editableData?.personalInfo?.hobbies || []).map((hobby, index) => (
+                            <div key={`hobby-edit-${index}`} className="hobby-input">
+                              <input
+                                type="text"
+                                value={hobby}
+                                onChange={(e) => {
+                                  setEditableData(prev => {
+                                    const newData = JSON.parse(JSON.stringify(prev));
+                                    if (!newData.personalInfo) newData.personalInfo = {};
+                                    if (!newData.personalInfo.hobbies) newData.personalInfo.hobbies = [];
+                                    newData.personalInfo.hobbies[index] = e.target.value;
+                                    return newData;
+                                  });
+                                }}
+                                className="editable-input hobby-input-field"
+                                placeholder="e.g., Photography, Hiking, Gaming"
+                              />
+                              <button 
+                                onClick={() => {
+                                  setEditableData(prev => {
+                                    const newData = JSON.parse(JSON.stringify(prev));
+                                    if (newData.personalInfo && newData.personalInfo.hobbies) {
+                                      newData.personalInfo.hobbies.splice(index, 1);
+                                    }
+                                    return newData;
+                                  });
+                                }}
+                                className="remove-hobby-button"
+                              >
+                                <Trash2 className="button-icon" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        (parsedData?.personalInfo?.hobbies || []).join(' | ')
+                      )}
+                    </div>
+                  ) : (
+                    <div className="empty-section">
+                      {isEditing ? 'No hobbies added yet. Click "Add Hobby" to add one.' : 'No hobbies information available.'}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Professional Experience Section */}
               <div className="resume-section">
@@ -2760,24 +2896,59 @@ Return only this JSON format:
               </div>
             </div>
 
-            {/* Action Buttons - Only Download */}
+            {/* Action Buttons - Download and Save to Database */}
             <div className="resume-actions">
               <div className="view-actions">
                 <button onClick={downloadTemplate} className="download-button">
                   <Download className="button-icon" />
                   Download PDF
                 </button>
+                
+                {dbStatus === 'connected' && (
+                  <button 
+                    onClick={() => saveToDatabase()}
+                    className="save-db-button"
+                    disabled={isSaving || !parsedData?.personalInfo?.name || !parsedData?.personalInfo?.email}
+                    title={!parsedData?.personalInfo?.name || !parsedData?.personalInfo?.email ? 
+                      'Name and email are required to save to database' : 'Save resume to database'}
+                  >
+                    {isSaving ? (
+                      <>
+                        <div className="mini-spinner"></div>
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Database className="button-icon" />
+                        Save to Database
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
+              
+              {dbStatus === 'disconnected' && (
+                <div className="db-warning">
+                  <p>⚠️ Database is not connected. Resume data will not be saved.</p>
+                  <button onClick={checkDatabaseStatus} className="retry-db-connection">
+                    <RefreshCw className="button-icon" />
+                    Retry Connection
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
       </div>
       
+      {/* Database Status Indicator */}
+      <DatabaseStatusIndicator />
+      
       {/* Additional Info Popup */}
       {AdditionalInfoPopup}
       {ProcessingPopup}
+      {SaveConfirmationPopup}
     </div>
   );
 };
-
 export default ResumeParser;
