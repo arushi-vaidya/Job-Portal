@@ -856,7 +856,7 @@ RESUME TEXT:
 ${text}
 
 STRICT INSTRUCTIONS:
-1. Extract ALL information without skipping accurately from the text above and add descriptions for everything that you can find.
+1. Extract ALL information without skipping accurately from the text above.
 2. Return ONLY the JSON object below - no other text
 3. Use empty strings "" for missing text fields
 4. Use empty arrays [] for missing list fields
