@@ -2,6 +2,9 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const { body, validationResult } = require('express-validator');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser');
 require('dotenv').config();
 
 const app = express();
@@ -9,11 +12,21 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true
+  origin: (origin, callback) => {
+    const allowed = [
+      process.env.FRONTEND_URL || 'http://localhost:3000',
+      'http://localhost:3000',
+      'http://localhost:5173'
+    ];
+    if (!origin || allowed.includes(origin)) return callback(null, true);
+    return callback(null, false);
+  },
+  credentials: true,
+  optionsSuccessStatus: 200
 }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(cookieParser());
 
 // MongoDB Connection
 const connectDB = async () => {
@@ -27,14 +40,28 @@ const connectDB = async () => {
   }
 };
 
+// User Schema
+const userSchema = new mongoose.Schema({
+  name: { type: String, required: true, trim: true },
+  email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+  passwordHash: { type: String, required: true },
+}, { timestamps: true, collection: 'users' });
+
+userSchema.index({ email: 1 }, { unique: true });
+
+const User = mongoose.model('User', userSchema);
+
 // Resume Schema
 const resumeSchema = new mongoose.Schema({
+  // Link to user (one-to-one)
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', unique: true, sparse: true },
   // Personal Information
   personalInfo: {
     name: { type: String, required: true, trim: true },
     email: { type: String, required: true, trim: true, lowercase: true },
     phone: { type: String, trim: true, default: '' },
     location: { type: String, trim: true, default: '' },
+    bio: { type: String, trim: true, default: '' },
     currentSalary: { type: String, trim: true, default: '' },
     linkedinLink: { type: String, trim: true, default: '' },
     githubLink: { type: String, trim: true, default: '' },
@@ -116,6 +143,7 @@ resumeSchema.index({ 'personalInfo.email': 1 });
 resumeSchema.index({ 'personalInfo.name': 1 });
 resumeSchema.index({ uploadedAt: -1 });
 resumeSchema.index({ 'personalInfo.email': 1, uploadedAt: -1 });
+resumeSchema.index({ user: 1 }, { unique: true, sparse: true });
 
 const Resume = mongoose.model('Resume', resumeSchema);
 
@@ -168,6 +196,14 @@ const cleanResumeData = (data) => {
   if (cleaned.personalInfo && cleaned.personalInfo.hobbies) {
     cleaned.personalInfo.hobbies = cleanArray(cleaned.personalInfo.hobbies);
   }
+  // Trim personalInfo string fields including bio
+  if (cleaned.personalInfo) {
+    Object.keys(cleaned.personalInfo).forEach(key => {
+      if (typeof cleaned.personalInfo[key] === 'string') {
+        cleaned.personalInfo[key] = cleaned.personalInfo[key].trim();
+      }
+    });
+  }
   
   // Clean other arrays
   ['experience', 'education', 'projects', 'achievements', 'certificates', 'skills', 'additionalInformation'].forEach(field => {
@@ -179,7 +215,86 @@ const cleanResumeData = (data) => {
   return cleaned;
 };
 
+// Auth helpers
+const signToken = (user) => {
+  const payload = { id: user._id, email: user.email, name: user.name };
+  return jwt.sign(payload, process.env.JWT_SECRET || 'dev_secret', { expiresIn: '7d' });
+};
+
+const authMiddleware = (req, res, next) => {
+  try {
+    const header = req.headers.authorization || '';
+    const token = header.startsWith('Bearer ') ? header.slice(7) : null;
+    if (!token) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev_secret');
+    req.user = decoded;
+    next();
+  } catch (err) {
+    return res.status(401).json({ success: false, message: 'Invalid or expired token' });
+  }
+};
+
 // Routes
+// Auth routes
+app.post('/api/auth/register', [
+  body('name').isLength({ min: 2 }).withMessage('Name is required'),
+  body('email').isEmail().withMessage('Valid email is required').normalizeEmail(),
+  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, message: 'Validation failed', errors: errors.array() });
+    }
+
+    const { name, email, password } = req.body;
+    const existing = await User.findOne({ email });
+    if (existing) {
+      return res.status(409).json({ success: false, message: 'Email already in use' });
+    }
+    const passwordHash = await bcrypt.hash(password, 10);
+    const user = await User.create({ name, email, passwordHash });
+    const token = signToken(user);
+    return res.status(201).json({ success: true, message: 'Registered successfully', data: { token, user: { id: user._id, name: user.name, email: user.email } } });
+  } catch (err) {
+    console.error('Register error:', err);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+app.post('/api/auth/login', [
+  body('email').isEmail().withMessage('Valid email is required').normalizeEmail(),
+  body('password').notEmpty().withMessage('Password is required'),
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, message: 'Validation failed', errors: errors.array() });
+    }
+    const { email, password } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) return res.status(401).json({ success: false, message: 'Invalid credentials' });
+    const match = await bcrypt.compare(password, user.passwordHash);
+    if (!match) return res.status(401).json({ success: false, message: 'Invalid credentials' });
+    const token = signToken(user);
+    return res.json({ success: true, message: 'Login successful', data: { token, user: { id: user._id, name: user.name, email: user.email } } });
+  } catch (err) {
+    console.error('Login error:', err);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+app.get('/api/auth/me', authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('name email');
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    return res.json({ success: true, data: { id: user._id, name: user.name, email: user.email } });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -192,7 +307,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // Save resume data
-app.post('/api/resumes', validateResumeData, async (req, res) => {
+app.post('/api/resumes', authMiddleware, validateResumeData, async (req, res) => {
   try {
     // Check for validation errors
     const errors = validationResult(req);
@@ -212,10 +327,11 @@ app.post('/api/resumes', validateResumeData, async (req, res) => {
     cleanedData.userAgent = req.get('User-Agent') || 'unknown';
     cleanedData.updatedAt = new Date();
 
-    // Check if resume with same email already exists
-    const existingResume = await Resume.findOne({ 
-      'personalInfo.email': cleanedData.personalInfo.email 
-    });
+    // Attach user id
+    cleanedData.user = req.user.id;
+
+    // Check if resume for this user already exists
+    const existingResume = await Resume.findOne({ user: req.user.id });
 
     let savedResume;
     
@@ -284,7 +400,7 @@ app.post('/api/resumes', validateResumeData, async (req, res) => {
 });
 
 // Get all resumes (with pagination)
-app.get('/api/resumes', async (req, res) => {
+app.get('/api/resumes', authMiddleware, async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
@@ -292,7 +408,7 @@ app.get('/api/resumes', async (req, res) => {
     
     // Search functionality
     const search = req.query.search;
-    let query = {};
+    let query = { user: req.user.id };
     
     if (search) {
       query = {
@@ -337,9 +453,9 @@ app.get('/api/resumes', async (req, res) => {
 });
 
 // Get single resume by ID
-app.get('/api/resumes/:id', async (req, res) => {
+app.get('/api/resumes/:id', authMiddleware, async (req, res) => {
   try {
-    const resume = await Resume.findById(req.params.id);
+    const resume = await Resume.findOne({ _id: req.params.id, user: req.user.id });
     
     if (!resume) {
       return res.status(404).json({
@@ -372,9 +488,9 @@ app.get('/api/resumes/:id', async (req, res) => {
 });
 
 // Delete resume by ID
-app.delete('/api/resumes/:id', async (req, res) => {
+app.delete('/api/resumes/:id', authMiddleware, async (req, res) => {
   try {
-    const resume = await Resume.findByIdAndDelete(req.params.id);
+    const resume = await Resume.findOneAndDelete({ _id: req.params.id, user: req.user.id });
     
     if (!resume) {
       return res.status(404).json({

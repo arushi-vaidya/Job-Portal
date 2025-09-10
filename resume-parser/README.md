@@ -42,7 +42,7 @@ An intelligent AI-powered resume parsing application that extracts, processes, a
 - **MongoDB** (local or cloud instance)
 - **Modern browser** (Chrome, Firefox, Safari, Edge)
 
-## 🚀 Quick Start
+## 🚀 Quick Start (Monorepo setup)
 
 ### 1. Clone the Repository
 ```bash
@@ -104,14 +104,27 @@ sudo systemctl start mongod
 # Start MongoDB as a Windows service or run mongod.exe
 ```
 
-### 5. Start Development Server
+### 5. Run Everything
+Backend (port 3001):
 ```bash
-npm start #in root directory
 cd backend
-npm run dev 
+npm install
+npm run dev
 ```
 
-Visit `http://localhost:3000` to access the application.
+Auth page (port 5173):
+```bash
+npx serve "../../auth" -l 5173
+```
+
+Resume app (port 3000):
+```bash
+cd ..
+npm install
+npm start
+```
+
+Visit `http://localhost:3000`. If not authenticated, you’ll be redirected to `http://localhost:5173` to sign in, then returned with a token.
 
 ## 🎯 Usage Guide
 
@@ -144,16 +157,16 @@ Visit `http://localhost:3000` to access the application.
 ## 🔧 Configuration
 
 ### Environment Variables
-Create a `.env` file in the root directory:
+Create a `.env` file in `resume-parser/backend`:
 ```env
 # API Configuration
-REACT_APP_API_URL=http://localhost:5000/api
+REACT_APP_API_URL=http://localhost:3001/api
 
 # AI Service Configuration
 OLLAMA_HOST=http://localhost:11434
 
 # Database Configuration (for backend)
-MONGODB_URI=mongodb://localhost:27017/resumeparser
+MONGODB_URI=mongodb://localhost:27017/resume_parser
 ```
 
 ### AI Model Configuration

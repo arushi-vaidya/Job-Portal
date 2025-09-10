@@ -1,10 +1,11 @@
 // API Service for Resume Parser Frontend
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
 
 class ApiService {
   constructor() {
     this.baseURL = API_BASE_URL;
+    this.tokenKey = 'rp_auth_token';
   }
 
   // Helper method for making HTTP requests
@@ -26,6 +27,12 @@ class ApiService {
       },
     };
 
+    // Attach Authorization header if token exists
+    const token = this.getToken();
+    if (token) {
+      requestOptions.headers['Authorization'] = `Bearer ${token}`;
+    }
+
     try {
       console.log(`Making ${requestOptions.method || 'GET'} request to:`, url);
       
@@ -44,6 +51,42 @@ class ApiService {
       console.error('API Request failed:', error);
       throw error;
     }
+  }
+
+  // Auth token helpers
+  setToken(token) {
+    try { localStorage.setItem(this.tokenKey, token); } catch (_) {}
+  }
+
+  getToken() {
+    try { return localStorage.getItem(this.tokenKey); } catch (_) { return null; }
+  }
+
+  clearToken() {
+    try { localStorage.removeItem(this.tokenKey); } catch (_) {}
+  }
+
+  // Auth endpoints
+  async login(email, password) {
+    const res = await this.makeRequest('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password })
+    });
+    if (res?.data?.token) this.setToken(res.data.token);
+    return res;
+  }
+
+  async register(name, email, password) {
+    const res = await this.makeRequest('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ name, email, password })
+    });
+    if (res?.data?.token) this.setToken(res.data.token);
+    return res;
+  }
+
+  async me() {
+    return this.makeRequest('/auth/me');
   }
 
   // Health check

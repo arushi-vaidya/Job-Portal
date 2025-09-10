@@ -1,9 +1,298 @@
+/* eslint-disable react-hooks/rules-of-hooks */
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Upload, Download, Eye, Menu, X, Edit3, Save, Plus, Trash2, FileText, RefreshCw, Database, CheckCircle } from 'lucide-react';
 import './ResumeParser.css';
 import apiService from './services/api';
 
-const ResumeParser = () => {
+const LoginView = ({ onLoggedIn }) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [mode, setMode] = useState('login'); // 'login' | 'register'
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      const res = mode === 'login'
+        ? await apiService.login(email, password)
+        : await apiService.register(name, email, password);
+      if (res?.success) {
+        onLoggedIn();
+      } else {
+        setError(res?.message || 'Something went wrong');
+      }
+    } catch (err) {
+      setError(err?.message || 'Failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="login-container">
+      <div className="login-card">
+        <h2 className="login-title">{mode === 'login' ? 'Welcome back' : 'Create your account'}</h2>
+        <p className="login-subtitle">Sign in to manage your single resume profile</p>
+        <form onSubmit={handleSubmit} className="login-form">
+          {mode === 'register' && (
+            <div className="form-row">
+              <label>Name</label>
+              <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" required />
+            </div>
+          )}
+          <div className="form-row">
+            <label>Email</label>
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required />
+          </div>
+          <div className="form-row">
+            <label>Password</label>
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required />
+          </div>
+          {error && <div className="form-error">{error}</div>}
+          <button className="login-button" type="submit" disabled={loading}>
+            {loading ? 'Please wait…' : (mode === 'login' ? 'Sign In' : 'Create Account')}
+          </button>
+        </form>
+        <div className="login-toggle">
+          {mode === 'login' ? (
+            <span>New here? <button className="link-button" onClick={() => setMode('register')}>Create an account</button></span>
+          ) : (
+            <span>Already have an account? <button className="link-button" onClick={() => setMode('login')}>Sign in</button></span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const App = () => {
+  const [isAuthed, setIsAuthed] = useState(!!apiService.getToken());
+  const [activePage, setActivePage] = useState('app'); // 'app' | 'view-info'
+  const [accountResume, setAccountResume] = useState(null);
+  const [editorIntent, setEditorIntent] = useState(null); // { mode: 'edit' }
+
+  useEffect(() => {
+    const verify = async () => {
+      // Accept token via URL hash from external auth and store it
+      if (!apiService.getToken() && window.location.hash.startsWith('#token=')) {
+        const raw = window.location.hash.slice('#token='.length);
+        const token = decodeURIComponent(raw);
+        if (token) {
+          apiService.setToken(token);
+          // Clean the hash to avoid reprocessing
+          window.history.replaceState(null, document.title, window.location.pathname + window.location.search);
+        }
+      }
+      if (!apiService.getToken()) { setIsAuthed(false); return; }
+      try { await apiService.me(); setIsAuthed(true); } catch (_) { setIsAuthed(false); }
+    };
+    verify();
+  }, []);
+
+  const handleLogout = () => {
+    apiService.clearToken();
+    setIsAuthed(false);
+    setActivePage('app');
+    setAccountResume(null);
+  };
+
+  if (!isAuthed) {
+    // If a token is present in the hash, let the effect handle it before redirecting
+    if (typeof window !== 'undefined' && window.location.hash && window.location.hash.startsWith('#token=')) {
+      return null;
+    }
+    // Redirect unauthenticated users to external auth page
+    window.location.href = (window.AUTH_LOGIN_URL || 'http://localhost:5173') || '/auth';
+    return null;
+  }
+
+  return (
+    <div className="app-container">
+      <div className="nav-content" style={{ paddingTop: 16 }}>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginLeft: 'auto' }}>
+          <ViewInfoButton onOpen={async () => {
+            // Load full resume before navigating to view page
+            try {
+              const list = await apiService.getResumes({ limit: 1 });
+              const items = list?.data || [];
+              if (items.length > 0) {
+                const id = items[0]._id || items[0].id;
+                const full = await apiService.getResumeById(id);
+                setAccountResume(full?.data || items[0]);
+              } else {
+                setAccountResume(null);
+              }
+            } catch (_) { setAccountResume(null); }
+            setActivePage('view-info');
+          }} />
+          <button className="logout-button" onClick={handleLogout}>Sign out</button>
+        </div>
+      </div>
+      {activePage === 'app' ? (
+        <ResumeParser editorIntent={editorIntent} clearIntent={() => setEditorIntent(null)} />
+      ) : (
+        <AccountViewPage resume={accountResume} onBack={() => setActivePage('app')} onEdit={() => { setEditorIntent({ mode: 'edit' }); setActivePage('app'); }} />
+      )}
+    </div>
+  );
+};
+
+const ViewInfoButton = ({ onOpen }) => (
+  <div className="view-info">
+    <button className="view-info-button" onClick={onOpen}>View Info</button>
+  </div>
+
+);
+
+const AccountViewPage = ({ resume, onBack, onEdit }) => {
+  const data = React.useMemo(() => normalizeAccountResume(resume), [resume]);
+  return (
+    <div className="account-page">
+      <div className="account-header">
+        <button className="back-button" onClick={onBack}>← Back</button>
+        <h2>Account • View Info</h2>
+        <div style={{ marginLeft: 'auto' }}>
+          <button className="edit-button" onClick={onEdit}>Edit</button>
+        </div>
+      </div>
+      {!data ? (
+        <div className="account-empty">No resume found for this account.</div>
+      ) : (
+        <div className="account-content">
+          <section className="account-section">
+            <h3>Personal Info</h3>
+            <div className="kv"><span>Name</span><span>{data.personalInfo.name}</span></div>
+            <div className="kv"><span>Email</span><span>{data.personalInfo.email}</span></div>
+            <div className="kv"><span>Phone</span><span>{data.personalInfo.phone}</span></div>
+            <div className="kv"><span>Location</span><span>{data.personalInfo.location}</span></div>
+            <div className="kv"><span>Bio</span><span>{data.personalInfo.bio}</span></div>
+            <div className="kv"><span>LinkedIn</span><span>{data.personalInfo.linkedinLink}</span></div>
+            <div className="kv"><span>GitHub</span><span>{data.personalInfo.githubLink}</span></div>
+            <div className="kv"><span>Hometown</span><span>{data.personalInfo.hometown}</span></div>
+            <div className="kv"><span>Current Location</span><span>{data.personalInfo.currentLocation}</span></div>
+            {data.personalInfo.hobbies.length > 0 && (
+              <div className="kv"><span>Hobbies</span><span>{data.personalInfo.hobbies.join(', ')}</span></div>
+            )}
+          </section>
+
+          <section className="account-section">
+            <h3>Experience</h3>
+            {data.experience.length === 0 ? <div className="empty">No entries</div> : data.experience.map((e, i) => (
+              <div className="entry" key={`exp-${i}`}>
+                <div className="entry-header">
+                  <div className="entry-title">{e.position} @ {e.company}</div>
+                  <div className="entry-sub">{e.duration}</div>
+                </div>
+                {e.description?.length > 0 && (
+                  <ul>{e.description.map((d, idx) => <li key={idx}>{d}</li>)}</ul>
+                )}
+              </div>
+            ))}
+          </section>
+
+          <section className="account-section">
+            <h3>Education</h3>
+            {data.education.length === 0 ? <div className="empty">No entries</div> : data.education.map((ed, i) => (
+              <div className="entry" key={`edu-${i}`}>
+                <div className="entry-header">
+                  <div className="entry-title">{ed.degree} • {ed.institution}</div>
+                  <div className="entry-sub">{ed.year}</div>
+                </div>
+                {ed.description?.length > 0 && (
+                  <ul>{ed.description.map((d, idx) => <li key={idx}>{d}</li>)}</ul>
+                )}
+              </div>
+            ))}
+          </section>
+
+          <section className="account-section">
+            <h3>Projects</h3>
+            {data.projects.length === 0 ? <div className="empty">No entries</div> : data.projects.map((p, i) => (
+              <div className="entry" key={`proj-${i}`}>
+                <div className="entry-title">{p.title}</div>
+                {p.description?.length > 0 && (
+                  <ul>{p.description.map((d, idx) => <li key={idx}>{d}</li>)}</ul>
+                )}
+              </div>
+            ))}
+          </section>
+
+          <section className="account-section">
+            <h3>Achievements</h3>
+            {data.achievements.length === 0 ? <div className="empty">No entries</div> : data.achievements.map((a, i) => (
+              <div className="entry" key={`ach-${i}`}>
+                <div className="entry-title">{a.title}</div>
+                {a.description?.length > 0 && (
+                  <ul>{a.description.map((d, idx) => <li key={idx}>{d}</li>)}</ul>
+                )}
+              </div>
+            ))}
+          </section>
+
+          <section className="account-section">
+            <h3>Certificates</h3>
+            {data.certificates.length === 0 ? <div className="empty">No entries</div> : data.certificates.map((c, i) => (
+              <div className="entry" key={`cert-${i}`}>
+                <div className="entry-header">
+                  <div className="entry-title">{c.title}</div>
+                  <div className="entry-sub">{c.issuer} • {c.year}</div>
+                </div>
+                {c.description?.length > 0 && (
+                  <ul>{c.description.map((d, idx) => <li key={idx}>{d}</li>)}</ul>
+                )}
+              </div>
+            ))}
+          </section>
+
+          <section className="account-section">
+            <h3>Skills</h3>
+            {data.skills.length === 0 ? <div className="empty">No entries</div> : (
+              <div className="chips">{data.skills.map((s, i) => <span className="chip" key={`skill-${i}`}>{s}</span>)}</div>
+            )}
+          </section>
+
+          <section className="account-section">
+            <h3>Additional Information</h3>
+            {data.additionalInformation.length === 0 ? <div className="empty">No entries</div> : (
+              <ul>{data.additionalInformation.map((d, i) => <li key={`add-${i}`}>{d}</li>)}</ul>
+            )}
+          </section>
+        </div>
+      )}
+    </div>
+  );
+};
+
+function normalizeAccountResume(r) {
+  if (!r) return null;
+  return {
+    personalInfo: {
+      name: r?.personalInfo?.name || '-',
+      email: r?.personalInfo?.email || '-',
+      phone: r?.personalInfo?.phone || '-',
+      location: r?.personalInfo?.location || '-',
+      bio: r?.personalInfo?.bio || '-',
+      linkedinLink: r?.personalInfo?.linkedinLink || '-',
+      githubLink: r?.personalInfo?.githubLink || '-',
+      hometown: r?.personalInfo?.hometown || '-',
+      currentLocation: r?.personalInfo?.currentLocation || '-',
+      hobbies: Array.isArray(r?.personalInfo?.hobbies) ? r.personalInfo.hobbies : []
+    },
+    experience: Array.isArray(r?.experience) ? r.experience : [],
+    education: Array.isArray(r?.education) ? r.education : [],
+    projects: Array.isArray(r?.projects) ? r.projects : [],
+    achievements: Array.isArray(r?.achievements) ? r.achievements : [],
+    certificates: Array.isArray(r?.certificates) ? r.certificates : [],
+    skills: Array.isArray(r?.skills) ? r.skills : [],
+    additionalInformation: Array.isArray(r?.additionalInformation) ? r.additionalInformation : [],
+  };
+}
+
+const ResumeParser = ({ editorIntent, clearIntent }) => {
   const [parsedData, setParsedData] = useState(null);
   const [editableData, setEditableData] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -37,10 +326,58 @@ const ResumeParser = () => {
   // Safari detection
   const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
-  // Check database status on component mount
+  const checkDatabaseStatus = async () => {
+    try {
+      await apiService.checkHealth();
+      setDbStatus('connected');
+      console.log('Database connection successful');
+    } catch (error) {
+      console.error('Database connection failed:', error);
+      setDbStatus('disconnected');
+    }
+  };
+
+  // Check database status on mount
   useEffect(() => {
     checkDatabaseStatus();
   }, []);
+
+  // Load existing resume for current user on mount
+  useEffect(() => {
+    const loadExisting = async () => {
+      try {
+        const response = await apiService.getResumes({ limit: 1 });
+        const items = response?.data || [];
+        if (!Array.isArray(items) || items.length === 0) return;
+
+        const summary = items[0];
+        const id = summary._id || summary.id;
+        if (!id) return;
+
+        const full = await apiService.getResumeById(id);
+        const resume = normalizeResume(full?.data || summary);
+        setParsedData(resume);
+        setEditableData(resume);
+        setActiveView('results');
+      } catch (e) {
+        // ignore if none exists or unauthorized
+      }
+    };
+    loadExisting();
+  }, []);
+
+  const normalizeResume = (r) => {
+    const safe = r || {};
+    safe.personalInfo = safe.personalInfo || {};
+    safe.experience = Array.isArray(safe.experience) ? safe.experience : [];
+    safe.education = Array.isArray(safe.education) ? safe.education : [];
+    safe.projects = Array.isArray(safe.projects) ? safe.projects : [];
+    safe.achievements = Array.isArray(safe.achievements) ? safe.achievements : [];
+    safe.certificates = Array.isArray(safe.certificates) ? safe.certificates : [];
+    safe.skills = Array.isArray(safe.skills) ? safe.skills : [];
+    safe.additionalInformation = Array.isArray(safe.additionalInformation) ? safe.additionalInformation : [];
+    return safe;
+  };
 
   useEffect(() => {
   // Auto-save when parsedData changes and database is connected
@@ -90,16 +427,7 @@ const ResumeParser = () => {
   return () => clearTimeout(timeoutId);
 }, [parsedData, dbStatus, isSaving, isEditing]);
 
-  const checkDatabaseStatus = async () => {
-    try {
-      await apiService.checkHealth();
-      setDbStatus('connected');
-      console.log('Database connection successful');
-    } catch (error) {
-      console.error('Database connection failed:', error);
-      setDbStatus('disconnected');
-    }
-  };
+  
 
   // Save to database function
   const saveToDatabase = async (dataToSave = null) => {
@@ -1715,7 +2043,7 @@ Return only this JSON format:
               </div>
               <div class="duration">${exp.duration || 'Duration'}</div>
             </div>
-            ${exp.description && exp.description.length > 0 ? `
+            ${exp.description?.length > 0 ? `
               <ul class="bullet-list">
                 ${exp.description.map(desc => `<li>${desc}</li>`).join('')}
               </ul>
@@ -1735,7 +2063,7 @@ Return only this JSON format:
                 <strong>${project.title || 'Project Title'}</strong>
               </div>
             </div>
-            ${project.description && project.description.length > 0 ? `
+            ${project.description?.length > 0 ? `
               <ul class="bullet-list">
                 ${project.description.map(desc => `<li>${desc}</li>`).join('')}
               </ul>
@@ -1757,7 +2085,7 @@ Return only this JSON format:
               <div class="duration">${edu.year || 'Year'}</div>
             </div>
             <div class="education-details">${edu.degree || 'Degree'}</div>
-              ${edu.description && edu.description.length > 0 ? `
+              ${edu.description?.length > 0 ? `
               <ul class="bullet-list">
                 ${edu.description.map(desc => `<li>${desc}</li>`).join('')}
               </ul>
@@ -1780,7 +2108,7 @@ Return only this JSON format:
         ${data.achievements.map(achievement => `
           <div class="entry">
             <div class="achievement-title"><strong>${achievement.title || 'Achievement'}</strong></div>
-            ${achievement.description && achievement.description.length > 0 ? `
+            ${achievement.description?.length > 0 ? `
               <ul class="bullet-list">
                 ${achievement.description.map(desc => `<li>${desc}</li>`).join('')}
               </ul>
@@ -1939,30 +2267,19 @@ Return only this JSON format:
 </html>`;
   };
 
+  // Handle external intent to enter edit mode
+  useEffect(() => {
+    if (editorIntent?.mode === 'edit') {
+      setIsEditing(true);
+      if (parsedData) setEditableData(parsedData);
+      if (typeof clearIntent === 'function') clearIntent();
+    }
+  }, [editorIntent, parsedData, clearIntent]);
+
   return (
     <div className="app-container">
       {/* Navigation Bar */}
-      <nav className="navbar">
-        <div className="nav-content">
-          <div className="nav-brand">
-            <h2>JobDekho</h2>
-          </div>
-          <div className="nav-links">
-            <a href="#" className="nav-link active">Resume Parser</a>
-          </div>
-          <button 
-            className="mobile-menu-btn"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
-        </div>
-        
-        {/* Mobile Menu */}
-        <div className={`mobile-menu ${mobileMenuOpen ? 'open' : ''}`}>
-          <a href="#" className="mobile-nav-link active">Resume Parser</a>
-        </div>
-      </nav>
+      
 
       <div className="app-content">
         {/* Only show header section on upload and processing views, not on results */}
@@ -2147,13 +2464,30 @@ Return only this JSON format:
               </div>
 
               {/* Additional Personal Information Section */}
-              {(isEditing || (parsedData?.personalInfo?.linkedinLink || parsedData?.personalInfo?.githubLink || parsedData?.personalInfo?.currentSalary || parsedData?.personalInfo?.hometown || parsedData?.personalInfo?.currentLocation)) && (
+              {(isEditing || (parsedData?.personalInfo?.bio || parsedData?.personalInfo?.linkedinLink || parsedData?.personalInfo?.githubLink || parsedData?.personalInfo?.currentSalary || parsedData?.personalInfo?.hometown || parsedData?.personalInfo?.currentLocation)) && (
                 <div className="resume-section">
                   <div className="section-header-with-actions">
                     <h2 className="resume-section-title">PERSONAL INFORMATION</h2>
                   </div>
                   
                   <div className="personal-info-grid">
+                    {/* Bio */}
+                    {(isEditing || parsedData?.personalInfo?.bio) && (
+                      <div className="personal-info-item">
+                        <label className="personal-info-label">Bio:</label>
+                        {isEditing ? (
+                          <textarea
+                            className="editable-input personal-info-input"
+                            rows={3}
+                            value={editableData?.personalInfo?.bio || ''}
+                            onChange={(e) => updateEditableData('personalInfo', 'bio', e.target.value)}
+                            placeholder="Brief summary about you"
+                          />
+                        ) : (
+                          <span className="personal-info-text">{parsedData?.personalInfo?.bio}</span>
+                        )}
+                      </div>
+                    )}
                     {/* LinkedIn */}
                     {(isEditing || parsedData?.personalInfo?.linkedinLink) && (
                       <div className="personal-info-item">
@@ -2167,7 +2501,7 @@ Return only this JSON format:
                             placeholder="LinkedIn Profile URL"
                           />
                         ) : (
-                          <a href={parsedData?.personalInfo?.linkedinLink} target="_blank" rel="noopener noreferrer" className="personal-info-link">
+                          <a href={parsedData?.personalInfo?.linkedinLink || '#'} target={parsedData?.personalInfo?.linkedinLink ? "_blank" : undefined} rel={parsedData?.personalInfo?.linkedinLink ? "noopener noreferrer" : undefined} className="personal-info-link">
                             {parsedData?.personalInfo?.linkedinLink}
                           </a>
                         )}
@@ -2187,7 +2521,7 @@ Return only this JSON format:
                             placeholder="GitHub Profile URL"
                           />
                         ) : (
-                          <a href={parsedData?.personalInfo?.githubLink} target="_blank" rel="noopener noreferrer" className="personal-info-link">
+                          <a href={parsedData?.personalInfo?.githubLink || '#'} target={parsedData?.personalInfo?.githubLink ? "_blank" : undefined} rel={parsedData?.personalInfo?.githubLink ? "noopener noreferrer" : undefined} className="personal-info-link">
                             {parsedData?.personalInfo?.githubLink}
                           </a>
                         )}
@@ -2962,4 +3296,4 @@ Return only this JSON format:
     </div>
   );
 };
-export default ResumeParser;
+export default App;
