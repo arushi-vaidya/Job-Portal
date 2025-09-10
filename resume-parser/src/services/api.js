@@ -89,6 +89,27 @@ class ApiService {
     return this.makeRequest('/auth/me');
   }
 
+  // Profile endpoints
+  async getProfile() {
+    try {
+      const response = await this.makeRequest('/profile');
+      return response;
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+      throw new Error(`Failed to fetch profile: ${error.message}`);
+    }
+  }
+
+  async getAnalytics() {
+    try {
+      const response = await this.makeRequest('/analytics');
+      return response;
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+      throw new Error(`Failed to fetch analytics: ${error.message}`);
+    }
+  }
+
   // Health check
   async checkHealth() {
     try {
@@ -184,18 +205,6 @@ class ApiService {
     }
   }
 
-  // Get analytics data
-  async getAnalytics() {
-    try {
-      const response = await this.makeRequest('/analytics');
-      return response;
-
-    } catch (error) {
-      console.error('Error fetching analytics:', error);
-      throw new Error(`Failed to fetch analytics: ${error.message}`);
-    }
-  }
-
   // Helper method to clean resume data
   cleanResumeData(data) {
     const cleaned = JSON.parse(JSON.stringify(data)); // Deep clone
@@ -284,6 +293,111 @@ class ApiService {
       return 'An unexpected error occurred';
     }
   }
+
+  // Utility method to generate a shareable profile link
+  generateProfileLink(userId) {
+    return `${window.location.origin}/profile/${userId}`;
+  }
+
+  // Utility method to format user ID for display
+  formatUserId(userId) {
+    if (!userId) return 'N/A';
+    // Make it more readable by adding dashes
+    return userId.replace(/([A-Z0-9]{4})([A-Z0-9]{8})([A-Z0-9]{5})/, '$1-$2-$3');
+  }
+
+  // Utility method to get profile completion tips
+  getProfileCompletionTips(profileCompleteness, hasResume) {
+    const tips = [];
+    
+    if (!hasResume) {
+      tips.push({ icon: '✨', text: 'Upload or create your resume', priority: 'high' });
+    }
+    
+    if (profileCompleteness < 100) {
+      tips.push({ icon: '📝', text: 'Complete all resume sections', priority: 'medium' });
+    }
+    
+    if (profileCompleteness < 80) {
+      tips.push({ icon: '🔗', text: 'Add LinkedIn and GitHub links', priority: 'medium' });
+    }
+    
+    if (profileCompleteness < 60) {
+      tips.push({ icon: '💼', text: 'Add work experience details', priority: 'high' });
+    }
+    
+    if (profileCompleteness < 40) {
+      tips.push({ icon: '🎓', text: 'Add education information', priority: 'high' });
+    }
+    
+    return tips;
+  }
+
+  // Utility method to get completion status text and color
+  getCompletionStatus(percentage) {
+    if (percentage >= 80) return { status: 'Complete', color: '#10b981' };
+    if (percentage >= 60) return { status: 'Good', color: '#f59e0b' };
+    if (percentage >= 40) return { status: 'Fair', color: '#f97316' };
+    return { status: 'Needs Work', color: '#ef4444' };
+  }
+
+  // Utility method to format dates consistently
+  formatDate(dateString, options = {}) {
+    if (!dateString) return 'Unknown';
+    
+    const defaultOptions = {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    };
+    
+    const formatOptions = { ...defaultOptions, ...options };
+    
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', formatOptions);
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Invalid Date';
+    }
+  }
+
+  // Utility method to calculate days since joining
+  calculateDaysActive(joinedDate) {
+    if (!joinedDate) return 0;
+    
+    try {
+      const joined = new Date(joinedDate);
+      const now = new Date();
+      const diffTime = Math.abs(now - joined);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      return diffDays;
+    } catch (error) {
+      console.error('Error calculating days active:', error);
+      return 0;
+    }
+  }
+
+  // Utility method to get relative time (e.g., "2 days ago")
+  getRelativeTime(dateString) {
+    if (!dateString) return 'Unknown';
+    
+    try {
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffTime = now - date;
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      
+      if (diffDays === 0) return 'Today';
+      if (diffDays === 1) return 'Yesterday';
+      if (diffDays < 7) return `${diffDays} days ago`;
+      if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+      if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
+      return `${Math.floor(diffDays / 365)} years ago`;
+    } catch (error) {
+      console.error('Error getting relative time:', error);
+      return 'Unknown';
+    }
+  }
 }
 
 // Create singleton instance
@@ -296,10 +410,18 @@ export const {
   getResumes,
   getResumeById,
   deleteResume,
+  getProfile,
   getAnalytics,
   cleanResumeData,
   isValidEmail,
-  formatError
+  formatError,
+  generateProfileLink,
+  formatUserId,
+  getProfileCompletionTips,
+  getCompletionStatus,
+  formatDate,
+  calculateDaysActive,
+  getRelativeTime
 } = apiService;
 
 // Export the class instance as default

@@ -31,7 +31,6 @@ app.use(cookieParser());
 // MongoDB Connection
 const connectDB = async () => {
   try {
-    // Updated connection options for newer Mongoose versions
     const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/resume_parser');
     console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
   } catch (error) {
@@ -40,22 +39,50 @@ const connectDB = async () => {
   }
 };
 
-// User Schema
+// Generate unique user ID
+const generateUserId = () => {
+  const timestamp = Date.now().toString(36); // Convert timestamp to base36
+  const randomStr = Math.random().toString(36).substr(2, 5); // Random string
+  return `USER-${timestamp}-${randomStr}`.toUpperCase();
+};
+
+// User Schema with unique ID
 const userSchema = new mongoose.Schema({
+  userId: { 
+    type: String, 
+    unique: true, 
+    required: true,
+    default: generateUserId
+  },
   name: { type: String, required: true, trim: true },
   email: { type: String, required: true, unique: true, lowercase: true, trim: true },
   passwordHash: { type: String, required: true },
+  // Profile information
+  profileInfo: {
+    joinedDate: { type: Date, default: Date.now },
+    lastLoginDate: { type: Date, default: Date.now },
+    resumeCount: { type: Number, default: 0 },
+    profileCompleteness: { type: Number, default: 0 } // Percentage
+  }
 }, { timestamps: true, collection: 'users' });
 
+// Ensure unique indexes
 userSchema.index({ email: 1 }, { unique: true });
+userSchema.index({ userId: 1 }, { unique: true });
+
+// Pre-save middleware to generate userId if not exists
+userSchema.pre('save', function(next) {
+  if (!this.userId) {
+    this.userId = generateUserId();
+  }
+  next();
+});
 
 const User = mongoose.model('User', userSchema);
 
-// Resume Schema
+// Resume Schema (keeping existing structure)
 const resumeSchema = new mongoose.Schema({
-  // Link to user (one-to-one)
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', unique: true, sparse: true },
-  // Personal Information
   personalInfo: {
     name: { type: String, required: true, trim: true },
     email: { type: String, required: true, trim: true, lowercase: true },
@@ -69,8 +96,6 @@ const resumeSchema = new mongoose.Schema({
     currentLocation: { type: String, trim: true, default: '' },
     hobbies: { type: [String], default: [] }
   },
-  
-  // Professional Experience
   experience: {
     type: [{
       position: { type: String, trim: true, default: '' },
@@ -80,8 +105,6 @@ const resumeSchema = new mongoose.Schema({
     }],
     default: []
   },
-  
-  // Education
   education: {
     type: [{
       degree: { type: String, trim: true, default: '' },
@@ -91,8 +114,6 @@ const resumeSchema = new mongoose.Schema({
     }],
     default: []
   },
-  
-  // Projects
   projects: {
     type: [{
       title: { type: String, trim: true, default: '' },
@@ -100,8 +121,6 @@ const resumeSchema = new mongoose.Schema({
     }],
     default: []
   },
-  
-  // Achievements
   achievements: {
     type: [{
       title: { type: String, trim: true, default: '' },
@@ -109,8 +128,6 @@ const resumeSchema = new mongoose.Schema({
     }],
     default: []
   },
-  
-  // Certificates
   certificates: {
     type: [{
       title: { type: String, trim: true, default: '' },
@@ -120,14 +137,8 @@ const resumeSchema = new mongoose.Schema({
     }],
     default: []
   },
-  
-  // Skills
   skills: { type: [String], default: [] },
-  
-  // Additional Information
   additionalInformation: { type: [String], default: [] },
-  
-  // Metadata
   uploadedAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
   source: { type: String, enum: ['upload', 'manual'], default: 'upload' },
@@ -138,16 +149,14 @@ const resumeSchema = new mongoose.Schema({
   collection: 'resumes'
 });
 
-// Add indexes for better query performance
 resumeSchema.index({ 'personalInfo.email': 1 });
 resumeSchema.index({ 'personalInfo.name': 1 });
 resumeSchema.index({ uploadedAt: -1 });
-resumeSchema.index({ 'personalInfo.email': 1, uploadedAt: -1 });
 resumeSchema.index({ user: 1 }, { unique: true, sparse: true });
 
 const Resume = mongoose.model('Resume', resumeSchema);
 
-// Validation middleware
+// Helper functions (keeping existing validation)
 const validateResumeData = [
   body('personalInfo.name')
     .notEmpty()
@@ -171,17 +180,14 @@ const validateResumeData = [
     .withMessage('Location too long')
 ];
 
-// Helper function to clean and validate data
 const cleanResumeData = (data) => {
   const cleaned = { ...data };
   
-  // Clean arrays - remove empty strings and null values
   const cleanArray = (arr) => {
     if (!Array.isArray(arr)) return [];
     return arr.filter(item => {
       if (typeof item === 'string') return item.trim().length > 0;
       if (typeof item === 'object' && item !== null) {
-        // For objects, check if they have any non-empty values
         return Object.values(item).some(val => {
           if (typeof val === 'string') return val.trim().length > 0;
           if (Array.isArray(val)) return val.length > 0;
@@ -192,11 +198,9 @@ const cleanResumeData = (data) => {
     });
   };
   
-  // Clean personal info hobbies
   if (cleaned.personalInfo && cleaned.personalInfo.hobbies) {
     cleaned.personalInfo.hobbies = cleanArray(cleaned.personalInfo.hobbies);
   }
-  // Trim personalInfo string fields including bio
   if (cleaned.personalInfo) {
     Object.keys(cleaned.personalInfo).forEach(key => {
       if (typeof cleaned.personalInfo[key] === 'string') {
@@ -205,7 +209,6 @@ const cleanResumeData = (data) => {
     });
   }
   
-  // Clean other arrays
   ['experience', 'education', 'projects', 'achievements', 'certificates', 'skills', 'additionalInformation'].forEach(field => {
     if (cleaned[field]) {
       cleaned[field] = cleanArray(cleaned[field]);
@@ -215,9 +218,36 @@ const cleanResumeData = (data) => {
   return cleaned;
 };
 
+// Calculate profile completeness
+const calculateProfileCompleteness = (user, resume) => {
+  let score = 0;
+  const maxScore = 100;
+  
+  // Basic info (30 points)
+  if (user.name) score += 10;
+  if (user.email) score += 10;
+  if (resume?.personalInfo?.phone) score += 5;
+  if (resume?.personalInfo?.location) score += 5;
+  
+  // Resume sections (70 points)
+  if (resume?.experience?.length > 0) score += 20;
+  if (resume?.education?.length > 0) score += 15;
+  if (resume?.skills?.length > 0) score += 15;
+  if (resume?.projects?.length > 0) score += 10;
+  if (resume?.personalInfo?.bio) score += 5;
+  if (resume?.personalInfo?.linkedinLink || resume?.personalInfo?.githubLink) score += 5;
+  
+  return Math.min(score, maxScore);
+};
+
 // Auth helpers
 const signToken = (user) => {
-  const payload = { id: user._id, email: user.email, name: user.name };
+  const payload = { 
+    id: user._id, 
+    email: user.email, 
+    name: user.name,
+    userId: user.userId // Include userId in token
+  };
   return jwt.sign(payload, process.env.JWT_SECRET || 'dev_secret', { expiresIn: '7d' });
 };
 
@@ -237,7 +267,7 @@ const authMiddleware = (req, res, next) => {
 };
 
 // Routes
-// Auth routes
+// Updated register route
 app.post('/api/auth/register', [
   body('name').isLength({ min: 2 }).withMessage('Name is required'),
   body('email').isEmail().withMessage('Valid email is required').normalizeEmail(),
@@ -254,16 +284,42 @@ app.post('/api/auth/register', [
     if (existing) {
       return res.status(409).json({ success: false, message: 'Email already in use' });
     }
+    
     const passwordHash = await bcrypt.hash(password, 10);
-    const user = await User.create({ name, email, passwordHash });
+    const user = await User.create({ 
+      name, 
+      email, 
+      passwordHash,
+      profileInfo: {
+        joinedDate: new Date(),
+        lastLoginDate: new Date(),
+        resumeCount: 0,
+        profileCompleteness: 20 // Basic completion for name + email
+      }
+    });
+    
     const token = signToken(user);
-    return res.status(201).json({ success: true, message: 'Registered successfully', data: { token, user: { id: user._id, name: user.name, email: user.email } } });
+    return res.status(201).json({ 
+      success: true, 
+      message: 'Registered successfully', 
+      data: { 
+        token, 
+        user: { 
+          id: user._id, 
+          userId: user.userId,
+          name: user.name, 
+          email: user.email,
+          profileInfo: user.profileInfo
+        } 
+      } 
+    });
   } catch (err) {
     console.error('Register error:', err);
     return res.status(500).json({ success: false, message: 'Internal server error' });
   }
 });
 
+// Updated login route
 app.post('/api/auth/login', [
   body('email').isEmail().withMessage('Valid email is required').normalizeEmail(),
   body('password').notEmpty().withMessage('Password is required'),
@@ -273,30 +329,72 @@ app.post('/api/auth/login', [
     if (!errors.isEmpty()) {
       return res.status(400).json({ success: false, message: 'Validation failed', errors: errors.array() });
     }
+    
     const { email, password } = req.body;
     const user = await User.findOne({ email });
     if (!user) return res.status(401).json({ success: false, message: 'Invalid credentials' });
+    
     const match = await bcrypt.compare(password, user.passwordHash);
     if (!match) return res.status(401).json({ success: false, message: 'Invalid credentials' });
+    
+    // Update last login date
+    user.profileInfo.lastLoginDate = new Date();
+    await user.save();
+    
     const token = signToken(user);
-    return res.json({ success: true, message: 'Login successful', data: { token, user: { id: user._id, name: user.name, email: user.email } } });
+    return res.json({ 
+      success: true, 
+      message: 'Login successful', 
+      data: { 
+        token, 
+        user: { 
+          id: user._id, 
+          userId: user.userId,
+          name: user.name, 
+          email: user.email,
+          profileInfo: user.profileInfo
+        } 
+      } 
+    });
   } catch (err) {
     console.error('Login error:', err);
     return res.status(500).json({ success: false, message: 'Internal server error' });
   }
 });
 
+// Updated me route with profile completeness
 app.get('/api/auth/me', authMiddleware, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select('name email');
+    const user = await User.findById(req.user.id).select('userId name email profileInfo');
     if (!user) return res.status(404).json({ success: false, message: 'User not found' });
-    return res.json({ success: true, data: { id: user._id, name: user.name, email: user.email } });
+    
+    // Get user's resume for completeness calculation
+    const resume = await Resume.findOne({ user: user._id });
+    
+    // Update profile completeness
+    const completeness = calculateProfileCompleteness(user, resume);
+    user.profileInfo.profileCompleteness = completeness;
+    if (resume) {
+      user.profileInfo.resumeCount = 1;
+    }
+    await user.save();
+    
+    return res.json({ 
+      success: true, 
+      data: { 
+        id: user._id, 
+        userId: user.userId,
+        name: user.name, 
+        email: user.email,
+        profileInfo: user.profileInfo
+      } 
+    });
   } catch (err) {
     return res.status(500).json({ success: false, message: 'Internal server error' });
   }
 });
 
-// Health check
+// Health check (existing)
 app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'ok', 
@@ -306,10 +404,9 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Save resume data
+// Updated save resume route with profile completeness update
 app.post('/api/resumes', authMiddleware, validateResumeData, async (req, res) => {
   try {
-    // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({
@@ -319,26 +416,25 @@ app.post('/api/resumes', authMiddleware, validateResumeData, async (req, res) =>
       });
     }
 
-    // Clean the incoming data
     const cleanedData = cleanResumeData(req.body);
-    
-    // Add metadata
     cleanedData.ipAddress = req.ip || req.connection?.remoteAddress || 'unknown';
     cleanedData.userAgent = req.get('User-Agent') || 'unknown';
     cleanedData.updatedAt = new Date();
-
-    // Attach user id
     cleanedData.user = req.user.id;
 
-    // Check if resume for this user already exists
     const existingResume = await Resume.findOne({ user: req.user.id });
-
     let savedResume;
     
     if (existingResume) {
-      // Update existing resume
       Object.assign(existingResume, cleanedData);
       savedResume = await existingResume.save();
+      
+      // Update user profile completeness
+      const user = await User.findById(req.user.id);
+      const completeness = calculateProfileCompleteness(user, savedResume);
+      user.profileInfo.profileCompleteness = completeness;
+      user.profileInfo.resumeCount = 1;
+      await user.save();
       
       res.status(200).json({
         success: true,
@@ -348,13 +444,20 @@ app.post('/api/resumes', authMiddleware, validateResumeData, async (req, res) =>
           email: savedResume.personalInfo.email,
           name: savedResume.personalInfo.name,
           updatedAt: savedResume.updatedAt,
-          isUpdate: true
+          isUpdate: true,
+          profileCompleteness: completeness
         }
       });
     } else {
-      // Create new resume
       const newResume = new Resume(cleanedData);
       savedResume = await newResume.save();
+      
+      // Update user profile completeness
+      const user = await User.findById(req.user.id);
+      const completeness = calculateProfileCompleteness(user, savedResume);
+      user.profileInfo.profileCompleteness = completeness;
+      user.profileInfo.resumeCount = 1;
+      await user.save();
       
       res.status(201).json({
         success: true,
@@ -364,7 +467,8 @@ app.post('/api/resumes', authMiddleware, validateResumeData, async (req, res) =>
           email: savedResume.personalInfo.email,
           name: savedResume.personalInfo.name,
           createdAt: savedResume.createdAt,
-          isUpdate: false
+          isUpdate: false,
+          profileCompleteness: completeness
         }
       });
     }
@@ -399,19 +503,19 @@ app.post('/api/resumes', authMiddleware, validateResumeData, async (req, res) =>
   }
 });
 
-// Get all resumes (with pagination)
+// Get all resumes (existing - keeping same functionality)
 app.get('/api/resumes', authMiddleware, async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
     
-    // Search functionality
     const search = req.query.search;
     let query = { user: req.user.id };
     
     if (search) {
       query = {
+        user: req.user.id,
         $or: [
           { 'personalInfo.name': { $regex: search, $options: 'i' } },
           { 'personalInfo.email': { $regex: search, $options: 'i' } },
@@ -452,7 +556,7 @@ app.get('/api/resumes', authMiddleware, async (req, res) => {
   }
 });
 
-// Get single resume by ID
+// Get single resume by ID (existing)
 app.get('/api/resumes/:id', authMiddleware, async (req, res) => {
   try {
     const resume = await Resume.findOne({ _id: req.params.id, user: req.user.id });
@@ -487,7 +591,7 @@ app.get('/api/resumes/:id', authMiddleware, async (req, res) => {
   }
 });
 
-// Delete resume by ID
+// Delete resume by ID (existing)
 app.delete('/api/resumes/:id', authMiddleware, async (req, res) => {
   try {
     const resume = await Resume.findOneAndDelete({ _id: req.params.id, user: req.user.id });
@@ -498,6 +602,12 @@ app.delete('/api/resumes/:id', authMiddleware, async (req, res) => {
         message: 'Resume not found'
       });
     }
+
+    // Update user resume count
+    const user = await User.findById(req.user.id);
+    user.profileInfo.resumeCount = 0;
+    user.profileInfo.profileCompleteness = calculateProfileCompleteness(user, null);
+    await user.save();
 
     res.json({
       success: true,
@@ -527,9 +637,43 @@ app.delete('/api/resumes/:id', authMiddleware, async (req, res) => {
   }
 });
 
-// Analytics endpoint
-app.get('/api/analytics', async (req, res) => {
+// New route: Get user profile
+app.get('/api/profile', authMiddleware, async (req, res) => {
   try {
+    const user = await User.findById(req.user.id).select('userId name email profileInfo');
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    
+    const resume = await Resume.findOne({ user: user._id });
+    const completeness = calculateProfileCompleteness(user, resume);
+    
+    user.profileInfo.profileCompleteness = completeness;
+    await user.save();
+    
+    res.json({
+      success: true,
+      data: {
+        userId: user.userId,
+        name: user.name,
+        email: user.email,
+        profileInfo: user.profileInfo,
+        hasResume: !!resume
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching profile:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+// Analytics endpoint (updated with user-specific data)
+app.get('/api/analytics', authMiddleware, async (req, res) => {
+  try {
+    // Get user-specific stats
+    const userResume = await Resume.findOne({ user: req.user.id });
+    const user = await User.findById(req.user.id);
+    
+    // Global stats (admin-level, optional)
+    const totalUsers = await User.countDocuments();
     const totalResumes = await Resume.countDocuments();
     const resumesThisMonth = await Resume.countDocuments({
       createdAt: { $gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) }
@@ -552,10 +696,22 @@ app.get('/api/analytics', async (req, res) => {
     res.json({
       success: true,
       data: {
-        totalResumes,
-        resumesThisMonth,
-        topSkills,
-        topCompanies
+        // User-specific
+        userStats: {
+          userId: user.userId,
+          profileCompleteness: user.profileInfo.profileCompleteness,
+          hasResume: !!userResume,
+          joinedDate: user.profileInfo.joinedDate,
+          lastLoginDate: user.profileInfo.lastLoginDate
+        },
+        // Global stats
+        globalStats: {
+          totalUsers,
+          totalResumes,
+          resumesThisMonth,
+          topSkills,
+          topCompanies
+        }
       }
     });
 
@@ -569,7 +725,7 @@ app.get('/api/analytics', async (req, res) => {
   }
 });
 
-// Basic catch-all route handler (fixes the path-to-regexp issue)
+// Basic catch-all route handler
 app.get('/', (req, res) => {
   res.json({
     message: 'Resume Parser Backend API',
@@ -577,7 +733,9 @@ app.get('/', (req, res) => {
     status: 'running',
     endpoints: {
       health: '/api/health',
+      auth: '/api/auth/*',
       resumes: '/api/resumes',
+      profile: '/api/profile',
       analytics: '/api/analytics'
     }
   });
@@ -593,17 +751,21 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 404 handler (simplified to avoid path-to-regexp issues)
+// 404 handler
 app.use((req, res) => {
   res.status(404).json({
     success: false,
     message: `Route not found: ${req.method} ${req.path}`,
     availableRoutes: [
       'GET /api/health',
+      'POST /api/auth/register',
+      'POST /api/auth/login',
+      'GET /api/auth/me',
       'POST /api/resumes',
       'GET /api/resumes',
       'GET /api/resumes/:id',
       'DELETE /api/resumes/:id',
+      'GET /api/profile',
       'GET /api/analytics'
     ]
   });
@@ -641,6 +803,7 @@ const startServer = async () => {
       console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log(`🔗 API Base URL: http://localhost:${PORT}/api`);
       console.log(`📝 Health Check: http://localhost:${PORT}/api/health`);
+      console.log(`👤 New Feature: User IDs and Profile Management`);
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);

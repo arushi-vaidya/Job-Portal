@@ -1,7 +1,6 @@
 /* eslint-disable react-hooks/rules-of-hooks */
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { Upload, Download, Eye, Menu, X, Edit3, Save, Plus, Trash2, FileText, RefreshCw, Database, CheckCircle } from 'lucide-react';
-import './ResumeParser.css';
+import { Upload, Download, Eye, Menu, X, Edit3, Save, Plus, Trash2, FileText, RefreshCw, Database, CheckCircle, User, Star, Calendar, Award } from 'lucide-react';import './ResumeParser.css';
 import apiService from './services/api';
 
 const LoginView = ({ onLoggedIn }) => {
@@ -21,8 +20,8 @@ const LoginView = ({ onLoggedIn }) => {
         ? await apiService.login(email, password)
         : await apiService.register(name, email, password);
       if (res?.success) {
-        onLoggedIn();
-      } else {
+  onLoggedIn(res.data.user); // Pass user data instead of just calling onLoggedIn()
+} else {
         setError(res?.message || 'Something went wrong');
       }
     } catch (err) {
@@ -69,35 +68,257 @@ const LoginView = ({ onLoggedIn }) => {
   );
 };
 
+const ProfilePage = ({ user, profile, onBack, onRefresh }) => {
+  const [analytics, setAnalytics] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadAnalytics = async () => {
+      try {
+        const analyticsResponse = await apiService.makeRequest('/analytics');
+        setAnalytics(analyticsResponse.data);
+      } catch (error) {
+        console.error('Failed to load analytics:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadAnalytics();
+  }, []);
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  const getCompletenessColor = (percentage) => {
+    if (percentage >= 80) return '#10b981'; // Green
+    if (percentage >= 60) return '#f59e0b'; // Orange
+    return '#ef4444'; // Red
+  };
+
+  const getCompletenessStatus = (percentage) => {
+    if (percentage >= 80) return 'Complete';
+    if (percentage >= 60) return 'Good';
+    if (percentage >= 40) return 'Fair';
+    return 'Needs Work';
+  };
+
+  return (
+    <div className="profile-page">
+      <div className="profile-header">
+        <button className="back-button" onClick={onBack}>← Back</button>
+        <div className="profile-title-section">
+          <h2>User Profile</h2>
+          <button className="refresh-button" onClick={onRefresh} title="Refresh Profile">
+            <RefreshCw className="button-icon" />
+          </button>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="profile-loading">
+          <div className="spinner"></div>
+          <p>Loading profile data...</p>
+        </div>
+      ) : (
+        <div className="profile-content">
+          {/* Main Profile Card */}
+          <div className="profile-main-card">
+            <div className="profile-avatar">
+              <User className="avatar-icon" />
+            </div>
+            <div className="profile-basic-info">
+              <h3 className="profile-name">{user?.name}</h3>
+              <p className="profile-email">{user?.email}</p>
+              <div className="profile-user-id">
+                <span className="user-id-label">User ID:</span>
+                <span className="user-id-value">{user?.userId}</span>
+                <button 
+                  className="copy-id-button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(user?.userId);
+                    // Could add toast notification here
+                  }}
+                  title="Copy User ID"
+                >
+                  📋
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Profile Stats */}
+          <div className="profile-stats-grid">
+            <div className="stat-card">
+              <div className="stat-icon">
+                <Star className="icon" />
+              </div>
+              <div className="stat-content">
+                <div className="stat-value">{profile?.profileCompleteness || 0}%</div>
+                <div className="stat-label">Profile Complete</div>
+                <div 
+                  className="stat-status"
+                  style={{ color: getCompletenessColor(profile?.profileCompleteness || 0) }}
+                >
+                  {getCompletenessStatus(profile?.profileCompleteness || 0)}
+                </div>
+              </div>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-icon">
+                <FileText className="icon" />
+              </div>
+              <div className="stat-content">
+                <div className="stat-value">{profile?.hasResume ? '1' : '0'}</div>
+                <div className="stat-label">Resume Created</div>
+                <div className="stat-status">
+                  {profile?.hasResume ? 'Active' : 'None'}
+                </div>
+              </div>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-icon">
+                <Calendar className="icon" />
+              </div>
+              <div className="stat-content">
+                <div className="stat-value">
+                  {profile?.joinedDate ? formatDate(profile.joinedDate).split(',')[0] : 'Unknown'}
+                </div>
+                <div className="stat-label">Member Since</div>
+                <div className="stat-status">
+                  {profile?.joinedDate ? formatDate(profile.joinedDate) : 'Unknown'}
+                </div>
+              </div>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-icon">
+                <Award className="icon" />
+              </div>
+              <div className="stat-content">
+                <div className="stat-value">
+                  {Math.floor((new Date() - new Date(profile?.joinedDate || new Date())) / (1000 * 60 * 60 * 24))}
+                </div>
+                <div className="stat-label">Days Active</div>
+                <div className="stat-status">
+                  Last login: {profile?.lastLoginDate ? new Date(profile.lastLoginDate).toLocaleDateString() : 'Today'}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Profile Completeness Details */}
+          <div className="profile-section">
+            <h3>Profile Completeness</h3>
+            <div className="completeness-details">
+              <div className="completeness-bar-large">
+                <div 
+                  className="completeness-fill-large" 
+                  style={{ 
+                    width: `${profile?.profileCompleteness || 0}%`,
+                    backgroundColor: getCompletenessColor(profile?.profileCompleteness || 0)
+                  }}
+                ></div>
+              </div>
+              <div className="completeness-tips">
+                <h4>Ways to improve your profile:</h4>
+                <ul>
+                  {!profile?.hasResume && <li>✨ Upload or create your resume</li>}
+                  {(profile?.profileCompleteness || 0) < 100 && <li>📝 Complete all resume sections</li>}
+                  {(profile?.profileCompleteness || 0) < 80 && <li>🔗 Add LinkedIn and GitHub links</li>}
+                  {(profile?.profileCompleteness || 0) < 60 && <li>💼 Add work experience details</li>}
+                  {(profile?.profileCompleteness || 0) < 40 && <li>🎓 Add education information</li>}
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* Analytics Section */}
+          {analytics && (
+            <div className="profile-section">
+              <h3>Account Analytics</h3>
+              <div className="analytics-grid">
+                <div className="analytics-item">
+                  <span className="analytics-label">Total Users:</span>
+                  <span className="analytics-value">{analytics.globalStats?.totalUsers || 0}</span>
+                </div>
+                <div className="analytics-item">
+                  <span className="analytics-label">Total Resumes:</span>
+                  <span className="analytics-value">{analytics.globalStats?.totalResumes || 0}</span>
+                </div>
+                <div className="analytics-item">
+                  <span className="analytics-label">New This Month:</span>
+                  <span className="analytics-value">{analytics.globalStats?.resumesThisMonth || 0}</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const App = () => {
+  const [currentUser, setCurrentUser] = useState(null);
+  const [userProfile, setUserProfile] = useState(null);
   const [isAuthed, setIsAuthed] = useState(!!apiService.getToken());
-  const [activePage, setActivePage] = useState('app'); // 'app' | 'view-info'
+const [activePage, setActivePage] = useState('app'); // 'app' | 'view-info' | 'profile'
   const [accountResume, setAccountResume] = useState(null);
   const [editorIntent, setEditorIntent] = useState(null); // { mode: 'edit' }
 
   useEffect(() => {
     const verify = async () => {
-      // Accept token via URL hash from external auth and store it
       if (!apiService.getToken() && window.location.hash.startsWith('#token=')) {
         const raw = window.location.hash.slice('#token='.length);
         const token = decodeURIComponent(raw);
         if (token) {
           apiService.setToken(token);
-          // Clean the hash to avoid reprocessing
           window.history.replaceState(null, document.title, window.location.pathname + window.location.search);
         }
       }
-      if (!apiService.getToken()) { setIsAuthed(false); return; }
-      try { await apiService.me(); setIsAuthed(true); } catch (_) { setIsAuthed(false); }
+      if (!apiService.getToken()) { 
+        setIsAuthed(false); 
+        return; 
+      }
+      try { 
+        const userResponse = await apiService.me(); 
+        setCurrentUser(userResponse.data); // Add this line
+        setIsAuthed(true); 
+      } catch (_) { 
+        setIsAuthed(false); 
+      }
     };
     verify();
   }, []);
+
+  useEffect(() => {
+    const loadUserProfile = async () => {
+      if (isAuthed && currentUser) {
+        try {
+          const profileResponse = await apiService.makeRequest('/profile');
+          setUserProfile(profileResponse.data);
+        } catch (error) {
+          console.error('Failed to load user profile:', error);
+        }
+      }
+    };
+    loadUserProfile();
+  }, [isAuthed, currentUser]);
 
   const handleLogout = () => {
     apiService.clearToken();
     setIsAuthed(false);
     setActivePage('app');
     setAccountResume(null);
+    setCurrentUser(null);        // Add this line
+    setUserProfile(null);        // Add this line
   };
 
   if (!isAuthed) {
@@ -114,6 +335,26 @@ const App = () => {
     <div className="app-container">
       <div className="nav-content" style={{ paddingTop: 16 }}>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginLeft: 'auto' }}>
+          {currentUser && (
+          <div className="user-profile-info">
+            <div className="user-id-badge">
+              <User className="user-icon" />
+              <span className="user-id-text">ID: {currentUser.userId}</span>
+            </div>
+            <div className="user-name-text">{currentUser.name}</div>
+            {userProfile && (
+              <div className="profile-completeness">
+                <div className="completeness-bar">
+                  <div 
+                    className="completeness-fill" 
+                    style={{ width: `${userProfile.profileCompleteness}%` }}
+                  ></div>
+                </div>
+                <span className="completeness-text">{userProfile.profileCompleteness}%</span>
+              </div>
+            )}
+          </div>
+        )}
           <ViewInfoButton onOpen={async () => {
             // Load full resume before navigating to view page
             try {
@@ -129,12 +370,34 @@ const App = () => {
             } catch (_) { setAccountResume(null); }
             setActivePage('view-info');
           }} />
+          <button 
+          className="profile-button" 
+          onClick={() => setActivePage('profile')}
+          title="View Profile"
+        >
+          <User className="button-icon" />
+          Profile
+        </button>
           <button className="logout-button" onClick={handleLogout}>Sign out</button>
         </div>
       </div>
       {activePage === 'app' ? (
-        <ResumeParser editorIntent={editorIntent} clearIntent={() => setEditorIntent(null)} />
-      ) : (
+  <ResumeParser editorIntent={editorIntent} clearIntent={() => setEditorIntent(null)} />
+) : activePage === 'profile' ? (
+  <ProfilePage 
+    user={currentUser} 
+    profile={userProfile} 
+    onBack={() => setActivePage('app')}
+    onRefresh={async () => {
+      try {
+        const profileResponse = await apiService.makeRequest('/profile');
+        setUserProfile(profileResponse.data);
+      } catch (error) {
+        console.error('Failed to refresh profile:', error);
+      }
+    }}
+  />
+) : (
         <AccountViewPage resume={accountResume} onBack={() => setActivePage('app')} onEdit={() => { setEditorIntent({ mode: 'edit' }); setActivePage('app'); }} />
       )}
     </div>
@@ -147,6 +410,8 @@ const ViewInfoButton = ({ onOpen }) => (
   </div>
 
 );
+
+
 
 const AccountViewPage = ({ resume, onBack, onEdit }) => {
   const data = React.useMemo(() => normalizeAccountResume(resume), [resume]);
@@ -3297,3 +3562,4 @@ Return only this JSON format:
   );
 };
 export default App;
+
