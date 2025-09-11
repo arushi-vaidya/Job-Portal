@@ -1310,6 +1310,137 @@ const ResumeParser = ({ editorIntent, clearIntent }) => {
     });
   };
 
+  // Extract text from PowerPoint files using JSZip
+const extractTextFromPPT = async (file) => {
+  return new Promise((resolve, reject) => {
+    try {
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+      
+      script.onload = async () => {
+        try {
+          console.log('JSZip loaded, processing PowerPoint file...');
+          
+          if (!window.JSZip) {
+            throw new Error('JSZip failed to load properly');
+          }
+          
+          const arrayBuffer = await file.arrayBuffer();
+          const zip = new window.JSZip();
+          const zipContent = await zip.loadAsync(arrayBuffer);
+          
+          let extractedText = '';
+          
+          // PowerPoint files contain slides in ppt/slides/ directory
+          const slideFiles = Object.keys(zipContent.files).filter(filename => 
+            filename.startsWith('ppt/slides/slide') && filename.endsWith('.xml')
+          );
+          
+          console.log('Found slide files:', slideFiles);
+          
+          if (slideFiles.length === 0) {
+            // Try alternative structure for older PPT files
+            const alternativeSlides = Object.keys(zipContent.files).filter(filename => 
+              filename.includes('slide') && filename.endsWith('.xml')
+            );
+            slideFiles.push(...alternativeSlides);
+          }
+          
+          if (slideFiles.length === 0) {
+            throw new Error('No slides found in PowerPoint file. Please ensure the file is a valid PPTX presentation.');
+          }
+          
+          // Process each slide
+          for (const slideFile of slideFiles) {
+            try {
+              const slideContent = await zipContent.files[slideFile].async('text');
+              
+              // Extract text from XML using regex patterns
+              // PowerPoint stores text in <a:t> tags
+              const textMatches = slideContent.match(/<a:t[^>]*>(.*?)<\/a:t>/g);
+              
+              if (textMatches) {
+                textMatches.forEach(match => {
+                  // Extract text content and decode XML entities
+                  const textContent = match.replace(/<a:t[^>]*>(.*?)<\/a:t>/, '$1')
+                    .replace(/&lt;/g, '<')
+                    .replace(/&gt;/g, '>')
+                    .replace(/&amp;/g, '&')
+                    .replace(/&quot;/g, '"')
+                    .replace(/&apos;/g, "'")
+                    .trim();
+                  
+                  if (textContent) {
+                    extractedText += textContent + ' ';
+                  }
+                });
+              }
+              
+              // Also try to extract from <a:p> (paragraph) tags
+              const paragraphMatches = slideContent.match(/<a:p[^>]*>.*?<\/a:p>/gs);
+              if (paragraphMatches) {
+                paragraphMatches.forEach(paragraph => {
+                  const innerTextMatches = paragraph.match(/<a:t[^>]*>(.*?)<\/a:t>/g);
+                  if (innerTextMatches) {
+                    innerTextMatches.forEach(innerMatch => {
+                      const innerText = innerMatch.replace(/<a:t[^>]*>(.*?)<\/a:t>/, '$1')
+                        .replace(/&lt;/g, '<')
+                        .replace(/&gt;/g, '>')
+                        .replace(/&amp;/g, '&')
+                        .replace(/&quot;/g, '"')
+                        .replace(/&apos;/g, "'")
+                        .trim();
+                      
+                      if (innerText) {
+                        extractedText += innerText + ' ';
+                      }
+                    });
+                  }
+                });
+              }
+              
+              extractedText += '\n'; // Add line break between slides
+              
+            } catch (slideError) {
+              console.warn(`Failed to process slide ${slideFile}:`, slideError);
+              // Continue with other slides
+            }
+          }
+          
+          console.log('PowerPoint processing completed, text length:', extractedText.length);
+          
+          if (!extractedText || extractedText.trim().length < 10) {
+            reject(new Error('Could not extract readable text from the PowerPoint file. Please ensure the presentation contains text content.'));
+            return;
+          }
+          
+          resolve(cleanExtractedText(extractedText));
+          
+        } catch (pptError) {
+          console.error('PowerPoint Processing Error:', pptError);
+          reject(new Error(`PowerPoint processing failed: ${pptError?.message || 'Unknown PowerPoint error'}`));
+        }
+      };
+      
+      script.onerror = () => {
+        reject(new Error('Failed to load PowerPoint processing library. Please check your internet connection.'));
+      };
+      
+      // Add script to document
+      if (!document.head.querySelector('script[src*="jszip"]')) {
+        document.head.appendChild(script);
+      } else {
+        // Library already loaded, trigger onload
+        script.onload();
+      }
+      
+    } catch (setupError) {
+      console.error('PowerPoint Setup Error:', setupError);
+      reject(new Error(`PowerPoint setup failed: ${setupError?.message || 'Unknown setup error'}`));
+    }
+  });
+};
+
   // Extract text from DOCX using mammoth.js
   const extractTextFromDOCX = async (file) => {
     return new Promise((resolve, reject) => {
@@ -1693,17 +1824,22 @@ Return only this JSON format:
         throw new Error('No file provided');
       }
 
-      // Extract text from file
       if (uploadedFile.type === 'application/pdf') {
-        console.log('Extracting text from PDF...');
-        text = await extractTextFromPDF(uploadedFile);
-      } else if (uploadedFile.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || 
-                 uploadedFile.name?.toLowerCase().endsWith('.docx')) {
-        console.log('Extracting text from DOCX...');
-        text = await extractTextFromDOCX(uploadedFile);
-      } else {
-        throw new Error('Unsupported file type. Please upload a PDF or DOCX file.');
-      }
+      console.log('Extracting text from PDF...');
+      text = await extractTextFromPDF(uploadedFile);
+    } else if (uploadedFile.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || 
+               uploadedFile.name?.toLowerCase().endsWith('.docx')) {
+      console.log('Extracting text from DOCX...');
+      text = await extractTextFromDOCX(uploadedFile);
+    } else if (uploadedFile.type === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
+               uploadedFile.type === 'application/vnd.ms-powerpoint' ||
+               uploadedFile.name?.toLowerCase().endsWith('.pptx') ||
+               uploadedFile.name?.toLowerCase().endsWith('.ppt')) {
+      console.log('Extracting text from PowerPoint...');
+      text = await extractTextFromPPT(uploadedFile);
+    } else {
+      throw new Error('Unsupported file type. Please upload a PDF, DOCX, or PowerPoint (PPT/PPTX) file.');
+    }
 
       console.log('Extracted text length:', text ? text.length : 0);
 
@@ -1794,7 +1930,9 @@ Return only this JSON format:
       try {
         if (typeof errorMsg === 'string' && errorMsg.length > 0) {
           const lowerMsg = errorMsg.toLowerCase();
-          if (lowerMsg.indexOf('pdf extraction') !== -1) {
+          if (lowerMsg.indexOf('powerpoint') !== -1 || lowerMsg.indexOf('ppt') !== -1) {
+      errorMessage += 'Could not read the PowerPoint file. Please ensure it\'s a valid presentation with text content.';
+          } else if (lowerMsg.indexOf('pdf extraction') !== -1) {
             errorMessage += 'Could not read the PDF file. Please ensure it\'s not password-protected and contains selectable text.';
           } else if (lowerMsg.indexOf('docx') !== -1) {
             errorMessage += 'Could not read the DOCX file. Please ensure it\'s a valid Word document with readable text content.';
@@ -2611,10 +2749,10 @@ Return only this JSON format:
                   <Upload className="upload-icon" />
                   <h3 className="upload-title">Upload Your Resume</h3>
                   <p className="upload-subtitle">Drag and drop your resume here, or click to browse</p>
-                  <p className="upload-formats">Supports PDF and DOCX files</p>
+                  <p className="upload-formats">Supports PDF, DOCX, and PowerPoint (PPT/PPTX) files</p>
                   <input
                     type="file"
-                    accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    accept=".pdf,.docx,.pptx,.ppt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.ms-powerpoint"
                     onChange={(e) => e.target.files[0] && handleFileUpload(e.target.files[0])}
                     className="file-input"
                     id="file-upload"
