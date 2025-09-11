@@ -8,28 +8,34 @@
 }
 
 :root {
-  --primary-purple: #8b5cf6;
-  --primary-purple-light: #a78bfa;
-  --primary-purple-dark: #7c3aed;
-  --accent-blue: #3b82f6;
-  --accent-blue-light: #60a5fa;
-  --accent-blue-dark: #2563eb;
+  /* Enhanced Color Palette */
+  --primary-purple: #6366f1;
+  --primary-purple-light: #818cf8;
+  --primary-purple-dark: #4f46e5;
+  --accent-blue: #0ea5e9;
+  --accent-blue-light: #38bdf8;
+  --accent-blue-dark: #0284c7;
   --success-green: #10b981;
   --success-green-light: #34d399;
   --warning-orange: #f59e0b;
   --error-red: #ef4444;
   
-  --gradient-primary: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%);
-  --gradient-secondary: linear-gradient(135deg, #06b6d4 0%, #10b981 100%);
-  --gradient-warm: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
-  --gradient-success: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  --gradient-surface: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  /* Modern Gradients */
+  --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --gradient-secondary: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  --gradient-success: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  --gradient-warm: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+  --gradient-purple: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+  --gradient-surface: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+  --gradient-glass: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
   
-  --text-primary: #0f172a;
+  /* Enhanced Text Colors */
+  --text-primary: #1e293b;
   --text-secondary: #475569;
   --text-muted: #64748b;
   --text-light: #94a3b8;
   
+  /* Enhanced Background Colors */
   --bg-primary: #ffffff;
   --bg-secondary: #f8fafc;
   --bg-tertiary: #f1f5f9;
@@ -37,27 +43,37 @@
   --bg-purple-light: #faf5ff;
   --bg-blue-light: #eff6ff;
   --bg-green-light: #ecfdf5;
+  --bg-glass: rgba(255, 255, 255, 0.25);
+  --bg-glass-dark: rgba(0, 0, 0, 0.1);
   
+  /* Enhanced Border Colors */
   --border-light: #e2e8f0;
   --border-medium: #cbd5e1;
   --border-purple: #c4b5fd;
   --border-blue: #93c5fd;
   
+  /* Enhanced Shadows */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
   --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  --shadow-purple: 0 10px 25px -5px rgba(139, 92, 246, 0.3);
-  --shadow-blue: 0 10px 25px -5px rgba(59, 130, 246, 0.3);
-  --shadow-green: 0 10px 25px -5px rgba(16, 185, 129, 0.3);
+  --shadow-purple: 0 20px 25px -5px rgba(103, 102, 241, 0.4);
+  --shadow-blue: 0 20px 25px -5px rgba(14, 165, 233, 0.4);
+  --shadow-green: 0 20px 25px -5px rgba(16, 185, 129, 0.4);
+  --shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
   
+  /* Enhanced Border Radius */
+  --border-radius-xs: 4px;
   --border-radius-sm: 6px;
   --border-radius-md: 8px;
   --border-radius-lg: 12px;
   --border-radius-xl: 16px;
   --border-radius-2xl: 24px;
+  --border-radius-3xl: 32px;
+  --border-radius-full: 9999px;
   
+  /* Enhanced Spacing */
   --spacing-xs: 4px;
   --spacing-sm: 8px;
   --spacing-md: 16px;
@@ -66,6 +82,24 @@
   --spacing-2xl: 48px;
   --spacing-3xl: 64px;
   --spacing-4xl: 80px;
+  --spacing-5xl: 96px;
+  
+  /* Animation Variables */
+  --animation-fast: 200ms;
+  --animation-normal: 300ms;
+  --animation-slow: 500ms;
+  --animation-slower: 700ms;
+  
+  /* Typography */
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  --font-size-4xl: 2.25rem;
+  --font-size-5xl: 3rem;
 }
 
 body {
@@ -77,19 +111,31 @@ body {
   font-weight: 400;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
 }
 
 /* Colorful Navigation */
 .navbar {
-  background: var(--bg-primary);
-  border-bottom: 2px solid transparent;
-  border-image: var(--gradient-primary) 1;
-  box-shadow: var(--shadow-lg);
+  background: var(--bg-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border-light);
+  box-shadow: var(--shadow-glass);
   position: sticky;
   top: 0;
   z-index: 1000;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  transition: all var(--animation-normal) ease;
+}
+
+.navbar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--gradient-primary);
+  opacity: 0.6;
 }
 
 .nav-content {
@@ -107,21 +153,31 @@ body {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  font-size: 1.875rem;
+  font-size: var(--font-size-3xl);
   font-weight: 800;
   letter-spacing: -0.025em;
   position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.nav-brand h2::before {
+  content: '📄';
+  font-size: var(--font-size-2xl);
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
 }
 
 .nav-brand h2::after {
   content: '';
   position: absolute;
-  bottom: -4px;
+  bottom: -6px;
   left: 0;
-  width: 32px;
+  width: 60%;
   height: 3px;
   background: var(--gradient-primary);
-  border-radius: 2px;
+  border-radius: var(--border-radius-full);
+  animation: shimmer 2s ease-in-out infinite;
 }
 
 .nav-links {
@@ -284,27 +340,35 @@ body {
 /* Main app container */
 .app-container {
   min-height: calc(100vh - 80px);
-  background: var(--gradient-surface);
+  background: 
+    radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.8) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgba(103, 102, 241, 0.1) 0%, transparent 50%),
+    var(--gradient-surface);
+  position: relative;
 }
 
 .app-content {
   max-width: 1400px;
   margin: 0 auto;
-  padding: var(--spacing-4xl) var(--spacing-xl);
+  padding: var(--spacing-5xl) var(--spacing-xl);
 }
 
-/* Vibrant Header */
+/* Enhanced Header Section with Floating Effect */
 .header-section {
   text-align: center;
-  margin-bottom: var(--spacing-2xl); 
-  background: var(--bg-primary);
-  border-radius: var(--border-radius-2xl);
-  padding: var(--spacing-2xl) var(--spacing-xl); 
-  border: 2px solid transparent;
-  background-clip: padding-box;
-  box-shadow: var(--shadow-2xl);
+  margin-bottom: var(--spacing-4xl);
+  background: var(--bg-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: var(--border-radius-3xl);
+  padding: var(--spacing-5xl) var(--spacing-2xl);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: var(--shadow-glass);
   position: relative;
   overflow: hidden;
+  transform: translateY(-10px);
+  animation: float 6s ease-in-out infinite;
 }
 
 .header-section::before {
@@ -313,8 +377,9 @@ body {
   top: 0;
   left: 0;
   right: 0;
-  height: 4 px;
+  height: 2px;
   background: var(--gradient-primary);
+  opacity: 0.8;
 }
 
 .header-section::after {
@@ -324,8 +389,8 @@ body {
   left: -50%;
   width: 200%;
   height: 200%;
-  background: radial-gradient(circle, rgba(139, 92, 246, 0.05) 0%, transparent 70%);
-  animation: float 8s ease-in-out infinite;
+  background: radial-gradient(circle, rgba(103, 102, 241, 0.05) 0%, transparent 70%);
+  animation: rotate 20s linear infinite;
   z-index: -1;
 }
 
@@ -335,24 +400,28 @@ body {
 }
 
 .app-title {
-  font-size: clamp(1.2 rem, 5vw, 4rem);
-  font-weight: 800;
+  font-size: clamp(2.5rem, 8vw, 5rem);
+  font-weight: 900;
   background: var(--gradient-primary);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   margin-bottom: var(--spacing-lg);
-  letter-spacing: -0.03em;
-  line-height: 1.1;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  animation: textGlow 3s ease-in-out infinite alternate;
 }
 
 .app-subtitle {
-  font-size: 1.25rem;
+  font-size: var(--font-size-xl);
   color: var(--text-secondary);
-  max-width: 600px;
+  max-width: 700px;
   margin: 0 auto;
-  font-weight: 400;
-  line-height: 1.5;
+  font-weight: 500;
+  line-height: 1.6;
+  opacity: 0;
+  animation: slideUp 1s ease var(--animation-slow) forwards;
 }
 
 /* Colorful Status Section */
@@ -429,52 +498,54 @@ body {
   box-shadow: var(--shadow-lg);
 }
 
-/* Vibrant Navigation Tabs */
+/* Enhanced Navigation Buttons with Glass Morphism */
 .nav-buttons {
   display: flex;
   justify-content: center;
-  margin-bottom: var(--spacing-3xl);
+  margin-bottom: var(--spacing-4xl);
 }
 
 .nav-container {
   display: flex;
-  background: var(--bg-primary);
-  border-radius: var(--border-radius-2xl);
-  padding: var(--spacing-sm);
-  box-shadow: var(--shadow-2xl);
-  border: 2px solid transparent;
-  background-clip: padding-box;
+  background: var(--bg-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: var(--border-radius-3xl);
+  padding: var(--spacing-md);
+  box-shadow: var(--shadow-glass);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   gap: var(--spacing-sm);
   position: relative;
+  overflow: hidden;
 }
 
 .nav-container::before {
   content: '';
   position: absolute;
-  inset: 0;
-  padding: 2px;
-  background: var(--gradient-primary);
-  border-radius: var(--border-radius-2xl);
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  mask-composite: xor;
-  -webkit-mask-composite: xor;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  animation: shine 3s ease-in-out infinite;
 }
 
 .nav-button {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  padding: var(--spacing-lg) var(--spacing-xl);
+  padding: var(--spacing-lg) var(--spacing-2xl);
   border: none;
   background: transparent;
   color: var(--text-secondary);
-  border-radius: var(--border-radius-xl);
+  border-radius: var(--border-radius-2xl);
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  font-size: 1rem;
+  transition: all var(--animation-normal) cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: var(--font-size-md);
   font-weight: 600;
   position: relative;
   overflow: hidden;
+  white-space: nowrap;
 }
 
 .nav-button::before {
@@ -486,7 +557,7 @@ body {
   height: 100%;
   background: var(--gradient-primary);
   opacity: 0.1;
-  transition: left 0.5s ease;
+  transition: left var(--animation-slow) ease;
   z-index: -1;
 }
 
@@ -496,7 +567,8 @@ body {
 
 .nav-button:hover {
   color: var(--primary-purple);
-  transform: translateY(-2px);
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: var(--shadow-lg);
   background: var(--bg-purple-light);
 }
 
@@ -504,7 +576,11 @@ body {
   background: var(--gradient-primary);
   color: white;
   box-shadow: var(--shadow-purple);
-  transform: translateY(-2px);
+  transform: translateY(-2px) scale(1.05);
+}
+
+.nav-button.active::before {
+  display: none;
 }
 
 .nav-button.disabled {
@@ -513,143 +589,124 @@ body {
   transform: none;
 }
 
+.nav-button.disabled:hover {
+  transform: none;
+  box-shadow: none;
+  background: transparent;
+}
+
 .nav-icon {
   width: 18px;
   height: 18px;
 }
 
-/* Colorful Premium Cards */
-.upload-section, .processing-section {
-  .upload-section {
-  background: var(--bg-primary);
-  border-radius: var(--border-radius-2xl);
-  box-shadow: var(--shadow-2xl);
-  padding: var(--spacing-2xl); 
-  border: 2px solid transparent;
-  background-clip: padding-box;
-  position: relative;
-  margin-bottom: var(--spacing-xl);
-}
-
-}
-
-.upload-section::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  padding: 2px;
-  background: var(--gradient-secondary);
-  border-radius: var(--border-radius-2xl);
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  mask-composite: xor;
-  -webkit-mask-composite: xor;
-}
-
-.processing-section::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  padding: 2px;
-  background: var(--gradient-primary);
-  border-radius: var(--border-radius-2xl);
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  mask-composite: xor;
-  -webkit-mask-composite: xor;
-}
-
-/* Beautiful Upload Area */
+/* Enhanced Upload Area with Better Visual Feedback */
 .upload-area {
-  border: 2px dashed var(--primary-purple);
-  border-radius: var(--border-radius-xl);
-  padding: var(--spacing-2xl); 
+  border: 3px dashed var(--primary-purple);
+  border-radius: var(--border-radius-2xl);
+  padding: var(--spacing-4xl);
   text-align: center;
   cursor: pointer;
-  transition: all 0.4s ease;
+  transition: all var(--animation-slow) cubic-bezier(0.4, 0, 0.2, 1);
   background: var(--bg-purple-light);
   position: relative;
   overflow: hidden;
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
 .upload-area::before {
   content: '';
   position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle, rgba(139, 92, 246, 0.1) 0%, transparent 70%);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at center, rgba(103, 102, 241, 0.1) 0%, transparent 70%);
   transform: scale(0);
-  transition: transform 0.6s ease;
+  transition: transform var(--animation-slower) ease;
+  z-index: 0;
 }
 
 .upload-area:hover::before {
-  transform: scale(1);
+  transform: scale(1.2);
 }
 
 .upload-area:hover {
   border-color: var(--accent-blue);
   background: var(--bg-blue-light);
-  transform: translateY(-4px);
+  transform: translateY(-8px) scale(1.02);
   box-shadow: var(--shadow-blue);
 }
 
 .upload-icon {
-  width: 56px; 
-  height: 56px; 
+  width: 80px;
+  height: 80px;
   color: var(--primary-purple);
-  margin: 0 auto var(--spacing-lg);
-  transition: all 0.4s ease;
-  filter: drop-shadow(0 4px 12px rgba(139, 92, 246, 0.3));
+  margin-bottom: var(--spacing-xl);
+  transition: all var(--animation-slow) ease;
+  filter: drop-shadow(0 8px 16px rgba(103, 102, 241, 0.3));
+  z-index: 1;
+  position: relative;
 }
 
 .upload-area:hover .upload-icon {
-  transform: scale(1.1) rotate(5deg);
+  transform: scale(1.2) rotate(10deg);
   color: var(--accent-blue);
+  filter: drop-shadow(0 12px 24px rgba(14, 165, 233, 0.4));
 }
 
 .upload-title {
-  font-size: 1.875rem;
-  font-weight: 700;
+  font-size: var(--font-size-3xl);
+  font-weight: 800;
   background: var(--gradient-primary);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   margin-bottom: var(--spacing-md);
+  z-index: 1;
+  position: relative;
 }
 
 .upload-subtitle {
   color: var(--text-secondary);
   margin-bottom: var(--spacing-sm);
-  font-size: 1.125rem;
+  font-size: var(--font-size-lg);
   font-weight: 500;
+  z-index: 1;
+  position: relative;
 }
 
 .upload-formats {
   color: var(--text-muted);
-  font-size: 0.95rem;
-  margin-bottom: var(--spacing-lg); 
-}
-
-.file-input {
-  display: none;
+  font-size: var(--font-size-md);
+  margin-bottom: var(--spacing-xl);
+  z-index: 1;
+  position: relative;
 }
 
 .upload-button {
   background: var(--gradient-primary);
   color: white;
-  padding: var(--spacing-lg) var(--spacing-2xl);
-  border-radius: var(--border-radius-xl);
+  padding: var(--spacing-lg) var(--spacing-3xl);
+  border-radius: var(--border-radius-2xl);
   cursor: pointer;
-  transition: all 0.3s ease;
-  display: inline-block;
-  font-weight: 600;
-  font-size: 1.05rem;
+  transition: all var(--animation-normal) ease;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-weight: 700;
+  font-size: var(--font-size-lg);
   border: none;
   box-shadow: var(--shadow-purple);
   position: relative;
   overflow: hidden;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
+  z-index: 1;
 }
 
 .upload-button::before {
@@ -659,8 +716,8 @@ body {
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-  transition: left 0.6s ease;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+  transition: left var(--animation-slower) ease;
 }
 
 .upload-button:hover::before {
@@ -668,9 +725,14 @@ body {
 }
 
 .upload-button:hover {
-  transform: translateY(-3px) scale(1.02);
-  box-shadow: var(--shadow-lg);
+  transform: translateY(-4px) scale(1.05);
+  box-shadow: var(--shadow-2xl);
 }
+
+.file-input {
+  display: none;
+}
+
 
 /* Enhanced Processing Section */
 .processing-section {
