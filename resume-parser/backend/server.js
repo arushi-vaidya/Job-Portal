@@ -18,11 +18,12 @@ app.use(cors({
       'http://localhost:3000',
       'http://localhost:5173'
     ];
-    if (!origin || allowed.includes(origin)) return callback(null, true);
-    return callback(null, false);
+    // Allow requests with no origin (mobile apps, etc.)
+    if (!origin) return callback(null, true);
+    if (allowed.includes(origin)) return callback(null, true);
+    return callback(new Error('Not allowed by CORS'));
   },
-  credentials: true,
-  optionsSuccessStatus: 200
+  credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -41,9 +42,10 @@ const connectDB = async () => {
 
 // Generate unique user ID
 const generateUserId = () => {
-  const timestamp = Date.now().toString(36); // Convert timestamp to base36
-  const randomStr = Math.random().toString(36).substr(2, 5); // Random string
-  return `USER-${timestamp}-${randomStr}`.toUpperCase();
+  const timestamp = Date.now().toString(36);
+  const randomStr = Math.random().toString(36).substr(2, 8); // Longer random string
+  const counter = Math.floor(Math.random() * 1000); // Additional entropy
+  return `USER-${timestamp}-${randomStr}-${counter}`.toUpperCase();
 };
 
 // User Schema with unique ID
@@ -220,24 +222,97 @@ const cleanResumeData = (data) => {
 
 // Calculate profile completeness
 const calculateProfileCompleteness = (user, resume) => {
-  let score = 0;
-  const maxScore = 100;
+  const sections = {
+    basicInfo: { weight: 25, items: [] },
+    contactInfo: { weight: 15, items: [] },
+    professional: { weight: 35, items: [] },
+    education: { weight: 15, items: [] },
+    additional: { weight: 10, items: [] }
+  };
+
+  // Basic Info (25%)
+  if (user.name) sections.basicInfo.items.push({ name: 'Full Name', completed: true });
+  else sections.basicInfo.items.push({ name: 'Full Name', completed: false });
   
-  // Basic info (30 points)
-  if (user.name) score += 10;
-  if (user.email) score += 10;
-  if (resume?.personalInfo?.phone) score += 5;
-  if (resume?.personalInfo?.location) score += 5;
+  if (user.email) sections.basicInfo.items.push({ name: 'Email', completed: true });
+  else sections.basicInfo.items.push({ name: 'Email', completed: false });
   
-  // Resume sections (70 points)
-  if (resume?.experience?.length > 0) score += 20;
-  if (resume?.education?.length > 0) score += 15;
-  if (resume?.skills?.length > 0) score += 15;
-  if (resume?.projects?.length > 0) score += 10;
-  if (resume?.personalInfo?.bio) score += 5;
-  if (resume?.personalInfo?.linkedinLink || resume?.personalInfo?.githubLink) score += 5;
+  if (resume?.personalInfo?.bio?.length > 20) sections.basicInfo.items.push({ name: 'Professional Bio', completed: true });
+  else sections.basicInfo.items.push({ name: 'Professional Bio (20+ characters)', completed: false });
+
+  // Contact Info (15%)
+  if (resume?.personalInfo?.phone) sections.contactInfo.items.push({ name: 'Phone Number', completed: true });
+  else sections.contactInfo.items.push({ name: 'Phone Number', completed: false });
   
-  return Math.min(score, maxScore);
+  if (resume?.personalInfo?.location) sections.contactInfo.items.push({ name: 'Location', completed: true });
+  else sections.contactInfo.items.push({ name: 'Location', completed: false });
+  
+  if (resume?.personalInfo?.linkedinLink) sections.contactInfo.items.push({ name: 'LinkedIn Profile', completed: true });
+  else sections.contactInfo.items.push({ name: 'LinkedIn Profile', completed: false });
+
+  // Professional Experience (35%)
+  if (resume?.experience?.length >= 2) {
+    sections.professional.items.push({ name: 'Work Experience (2+ positions)', completed: true });
+  } else if (resume?.experience?.length === 1) {
+    sections.professional.items.push({ name: 'Work Experience (2+ recommended)', completed: true, partial: true });
+  } else {
+    sections.professional.items.push({ name: 'Work Experience', completed: false });
+  }
+  
+  if (resume?.skills?.length >= 5) {
+    sections.professional.items.push({ name: 'Skills (5+ skills)', completed: true });
+  } else if (resume?.skills?.length >= 3) {
+    sections.professional.items.push({ name: 'Skills (5+ recommended)', completed: true, partial: true });
+  } else {
+    sections.professional.items.push({ name: 'Technical Skills', completed: false });
+  }
+  
+  if (resume?.projects?.length >= 1) sections.professional.items.push({ name: 'Projects', completed: true });
+  else sections.professional.items.push({ name: 'Projects', completed: false });
+
+  // Education (15%)
+  if (resume?.education?.length >= 1) sections.education.items.push({ name: 'Education Background', completed: true });
+  else sections.education.items.push({ name: 'Education Background', completed: false });
+  
+  if (resume?.certificates?.length >= 1) sections.education.items.push({ name: 'Certifications', completed: true });
+  else sections.education.items.push({ name: 'Certifications', completed: false });
+
+  // Additional (10%)
+  if (resume?.personalInfo?.githubLink) sections.additional.items.push({ name: 'GitHub Profile', completed: true });
+  else sections.additional.items.push({ name: 'GitHub Profile', completed: false });
+  
+  if (resume?.achievements?.length >= 1) sections.additional.items.push({ name: 'Achievements', completed: true });
+  else sections.additional.items.push({ name: 'Achievements', completed: false });
+
+  // Calculate weighted score
+  let totalScore = 0;
+  const completionDetails = {};
+
+  Object.keys(sections).forEach(sectionKey => {
+    const section = sections[sectionKey];
+    const completed = section.items.filter(item => item.completed).length;
+    const partial = section.items.filter(item => item.partial).length;
+    const total = section.items.length;
+    
+    // Calculate section percentage (partial items count as 0.5)
+    const sectionPercentage = total > 0 ? ((completed + (partial * 0.5)) / total) * 100 : 0;
+    const weightedScore = (sectionPercentage / 100) * section.weight;
+    
+    totalScore += weightedScore;
+    
+    completionDetails[sectionKey] = {
+      percentage: Math.round(sectionPercentage),
+      completed: completed,
+      total: total,
+      items: section.items,
+      weight: section.weight
+    };
+  });
+
+  return {
+    overall: Math.round(totalScore),
+    sections: completionDetails
+  };
 };
 
 // Auth helpers
@@ -373,7 +448,7 @@ app.get('/api/auth/me', authMiddleware, async (req, res) => {
     
     // Update profile completeness
     const completeness = calculateProfileCompleteness(user, resume);
-    user.profileInfo.profileCompleteness = completeness;
+    user.profileInfo.profileCompleteness = completeness.overall;
     if (resume) {
       user.profileInfo.resumeCount = 1;
     }
@@ -432,7 +507,7 @@ app.post('/api/resumes', authMiddleware, validateResumeData, async (req, res) =>
       // Update user profile completeness
       const user = await User.findById(req.user.id);
       const completeness = calculateProfileCompleteness(user, savedResume);
-      user.profileInfo.profileCompleteness = completeness;
+      user.profileInfo.profileCompleteness = completeness.overall;
       user.profileInfo.resumeCount = 1;
       await user.save();
       
@@ -455,7 +530,7 @@ app.post('/api/resumes', authMiddleware, validateResumeData, async (req, res) =>
       // Update user profile completeness
       const user = await User.findById(req.user.id);
       const completeness = calculateProfileCompleteness(user, savedResume);
-      user.profileInfo.profileCompleteness = completeness;
+      user.profileInfo.profileCompleteness = completionData.overall;
       user.profileInfo.resumeCount = 1;
       await user.save();
       
@@ -644,9 +719,9 @@ app.get('/api/profile', authMiddleware, async (req, res) => {
     if (!user) return res.status(404).json({ success: false, message: 'User not found' });
     
     const resume = await Resume.findOne({ user: user._id });
-    const completeness = calculateProfileCompleteness(user, resume);
+    const completionData = calculateProfileCompleteness(user, resume);
     
-    user.profileInfo.profileCompleteness = completeness;
+    user.profileInfo.profileCompleteness = completionData.overall;
     await user.save();
     
     res.json({
@@ -656,7 +731,9 @@ app.get('/api/profile', authMiddleware, async (req, res) => {
         name: user.name,
         email: user.email,
         profileInfo: user.profileInfo,
-        hasResume: !!resume
+        hasResume: !!resume,
+        completionBreakdown: completionData.sections,
+        nextSteps: getNextSteps(completionData.sections)
       }
     });
   } catch (error) {
@@ -664,6 +741,33 @@ app.get('/api/profile', authMiddleware, async (req, res) => {
     res.status(500).json({ success: false, message: 'Internal server error' });
   }
 });
+
+// Helper function to get next steps
+const getNextSteps = (sections) => {
+  const suggestions = [];
+  
+  Object.keys(sections).forEach(sectionKey => {
+    const section = sections[sectionKey];
+    const incompleteItems = section.items.filter(item => !item.completed);
+    
+    incompleteItems.forEach(item => {
+      let priority = 'medium';
+      if (sectionKey === 'basicInfo' || sectionKey === 'professional') priority = 'high';
+      if (sectionKey === 'additional') priority = 'low';
+      
+      suggestions.push({
+        item: item.name,
+        section: sectionKey,
+        priority: priority
+      });
+    });
+  });
+  
+  return suggestions.sort((a, b) => {
+    const priorityOrder = { high: 3, medium: 2, low: 1 };
+    return priorityOrder[b.priority] - priorityOrder[a.priority];
+  }).slice(0, 5); // Top 5 suggestions
+};
 
 // Analytics endpoint (updated with user-specific data)
 app.get('/api/analytics', authMiddleware, async (req, res) => {

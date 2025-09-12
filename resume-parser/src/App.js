@@ -94,6 +94,7 @@ const ProfilePage = ({ user, profile, onBack, onRefresh }) => {
     });
   };
 
+
   const getCompletenessColor = (percentage) => {
     if (percentage >= 80) return '#10b981'; // Green
     if (percentage >= 60) return '#f59e0b'; // Orange
@@ -106,6 +107,72 @@ const ProfilePage = ({ user, profile, onBack, onRefresh }) => {
     if (percentage >= 40) return 'Fair';
     return 'Needs Work';
   };
+
+  // Add this to ProfilePage component
+const ProfileCompletionDetails = ({ completionBreakdown, nextSteps }) => {
+  const sectionNames = {
+    basicInfo: 'Basic Information',
+    contactInfo: 'Contact Details',
+    professional: 'Professional Experience',
+    education: 'Education & Learning',
+    additional: 'Additional Information'
+  };
+
+  const priorityColors = {
+    high: '#ef4444',
+    medium: '#f59e0b',
+    low: '#6b7280'
+  };
+
+  return (
+    <div className="profile-completion-details">
+      <h4>Profile Completion Breakdown</h4>
+      
+      {/* Section-wise breakdown */}
+      <div className="completion-sections">
+        {Object.entries(completionBreakdown).map(([key, section]) => (
+          <div key={key} className="completion-section">
+            <div className="section-header">
+              <span className="section-name">{sectionNames[key]}</span>
+              <span className="section-percentage">{section.percentage}%</span>
+            </div>
+            <div className="section-progress">
+              <div 
+                className="progress-bar"
+                style={{ width: `${section.percentage}%` }}
+              />
+            </div>
+            <div className="section-items">
+              {section.items.map((item, idx) => (
+                <div key={idx} className={`item ${item.completed ? 'completed' : 'incomplete'}`}>
+                  <span className="item-status">{item.completed ? '✓' : '○'}</span>
+                  <span className="item-name">{item.name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Next Steps */}
+      <div className="next-steps">
+        <h4>Recommended Next Steps</h4>
+        <div className="steps-list">
+          {nextSteps.map((step, idx) => (
+            <div key={idx} className="step-item">
+              <div 
+                className="priority-indicator"
+                style={{ backgroundColor: priorityColors[step.priority] }}
+              />
+              <span className="step-text">{step.item}</span>
+              <span className="step-section">{sectionNames[step.section]}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
 
   return (
     <div className="profile-page">
@@ -214,30 +281,38 @@ const ProfilePage = ({ user, profile, onBack, onRefresh }) => {
           </div>
 
           {/* Profile Completeness Details */}
-          <div className="profile-section">
-            <h3>Profile Completeness</h3>
-            <div className="completeness-details">
-              <div className="completeness-bar-large">
-                <div 
-                  className="completeness-fill-large" 
-                  style={{ 
-                    width: `${profile?.profileCompleteness || 0}%`,
-                    backgroundColor: getCompletenessColor(profile?.profileCompleteness || 0)
-                  }}
-                ></div>
-              </div>
-              <div className="completeness-tips">
-                <h4>Ways to improve your profile:</h4>
-                <ul>
-                  {!profile?.hasResume && <li>✨ Upload or create your resume</li>}
-                  {(profile?.profileCompleteness || 0) < 100 && <li>📝 Complete all resume sections</li>}
-                  {(profile?.profileCompleteness || 0) < 80 && <li>🔗 Add LinkedIn and GitHub links</li>}
-                  {(profile?.profileCompleteness || 0) < 60 && <li>💼 Add work experience details</li>}
-                  {(profile?.profileCompleteness || 0) < 40 && <li>🎓 Add education information</li>}
-                </ul>
-              </div>
-            </div>
-          </div>
+
+<div className="profile-section">
+  <h3>Profile Completeness</h3>
+  {profile?.completionBreakdown ? (
+    <ProfileCompletionDetails 
+      completionBreakdown={profile.completionBreakdown} 
+      nextSteps={profile.nextSteps || []}
+    />
+  ) : (
+    <div className="completeness-details">
+      <div className="completeness-bar-large">
+        <div 
+          className="completeness-fill-large" 
+          style={{ 
+            width: `${profile?.profileCompleteness || 0}%`,
+            backgroundColor: getCompletenessColor(profile?.profileCompleteness || 0)
+          }}
+        ></div>
+      </div>
+      <div className="completeness-tips">
+        <h4>Ways to improve your profile:</h4>
+        <ul>
+          {!profile?.hasResume && <li>✨ Upload or create your resume</li>}
+          {(profile?.profileCompleteness || 0) < 100 && <li>📝 Complete all resume sections</li>}
+          {(profile?.profileCompleteness || 0) < 80 && <li>🔗 Add LinkedIn and GitHub links</li>}
+          {(profile?.profileCompleteness || 0) < 60 && <li>💼 Add work experience details</li>}
+          {(profile?.profileCompleteness || 0) < 40 && <li>🎓 Add education information</li>}
+        </ul>
+      </div>
+    </div>
+  )}
+</div>
 
           {/* Analytics Section */}
           {analytics && (
@@ -389,13 +464,28 @@ const App = () => {
     profile={userProfile} 
     onBack={() => setActivePage('app')}
     onRefresh={async () => {
-      try {
-        const profileResponse = await apiService.makeRequest('/profile');
-        setUserProfile(profileResponse.data);
-      } catch (error) {
-        console.error('Failed to refresh profile:', error);
-      }
-    }}
+  try {
+    // Refresh both user data and profile data
+    const [userResponse, profileResponse] = await Promise.all([
+      apiService.me(),
+      apiService.makeRequest('/profile')
+    ]);
+    
+    setCurrentUser(userResponse.data);
+    setUserProfile(profileResponse.data);
+    
+    console.log('Profile refreshed with completion details:', profileResponse.data);
+  } catch (error) {
+    console.error('Failed to refresh profile:', error);
+    // Fallback to just profile refresh if user data fails
+    try {
+      const profileResponse = await apiService.makeRequest('/profile');
+      setUserProfile(profileResponse.data);
+    } catch (fallbackError) {
+      console.error('Fallback refresh also failed:', fallbackError);
+    }
+  }
+}}
   />
 ) : (
         <AccountViewPage resume={accountResume} onBack={() => setActivePage('app')} onEdit={() => { setEditorIntent({ mode: 'edit' }); setActivePage('app'); }} />
