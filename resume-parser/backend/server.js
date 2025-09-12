@@ -65,6 +65,19 @@ const userSchema = new mongoose.Schema({
     lastLoginDate: { type: Date, default: Date.now },
     resumeCount: { type: Number, default: 0 },
     profileCompleteness: { type: Number, default: 0 } // Percentage
+  },
+  // Verification information
+  verification: {
+    isVerified: { type: Boolean, default: false },
+    verifiedAt: { type: Date, default: null },
+    verificationMethod: { type: String, default: null }, // 'photo_aadhar', 'email', etc.
+    aadharNumber: { type: String, default: null },
+    verificationStatus: { 
+      type: String, 
+      enum: ['pending', 'approved', 'rejected'], 
+      default: 'pending' 
+    },
+    verificationNotes: { type: String, default: null }
   }
 }, { timestamps: true, collection: 'users' });
 
@@ -772,6 +785,7 @@ app.get('/api/profile', authMiddleware, async (req, res) => {
         name: user.name,
         email: user.email,
         profileInfo: user.profileInfo,
+        verification: user.verification,
         hasResume: !!resume,
         completionBreakdown: completionData.sections,
         nextSteps: getNextSteps(completionData.sections)
@@ -780,6 +794,70 @@ app.get('/api/profile', authMiddleware, async (req, res) => {
   } catch (error) {
     console.error('Error fetching profile:', error);
     res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+// Profile verification endpoint
+app.post('/api/profile/verify', authMiddleware, [
+  body('isVerified').isBoolean().withMessage('isVerified must be a boolean'),
+  body('verificationMethod').notEmpty().withMessage('verificationMethod is required'),
+  body('aadharNumber').optional().isLength({ min: 12, max: 12 }).withMessage('Aadhar number must be 12 digits')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Validation failed', 
+        errors: errors.array() 
+      });
+    }
+
+    const { isVerified, verifiedAt, verificationMethod, aadharNumber } = req.body;
+    
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'User not found' 
+      });
+    }
+
+    // Update verification information
+    user.verification.isVerified = isVerified;
+    user.verification.verifiedAt = verifiedAt ? new Date(verifiedAt) : new Date();
+    user.verification.verificationMethod = verificationMethod;
+    user.verification.verificationStatus = isVerified ? 'approved' : 'pending';
+    
+    if (aadharNumber) {
+      // Validate Aadhar number format
+      const cleanAadhar = aadharNumber.replace(/\s/g, '');
+      if (!/^\d{12}$/.test(cleanAadhar)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid Aadhar number format'
+        });
+      }
+      user.verification.aadharNumber = cleanAadhar;
+    }
+
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Verification status updated successfully',
+      data: {
+        userId: user.userId,
+        verification: user.verification
+      }
+    });
+
+  } catch (error) {
+    console.error('Error updating verification:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Internal server error' 
+    });
   }
 });
 
@@ -881,6 +959,7 @@ app.get('/', (req, res) => {
       auth: '/api/auth/*',
       resumes: '/api/resumes',
       profile: '/api/profile',
+      profileVerify: '/api/profile/verify',
       analytics: '/api/analytics'
     }
   });
@@ -911,6 +990,7 @@ app.use((req, res) => {
       'GET /api/resumes/:id',
       'DELETE /api/resumes/:id',
       'GET /api/profile',
+      'POST /api/profile/verify',
       'GET /api/analytics'
     ]
   });
