@@ -3917,3 +3917,45 @@ body {
   color: var(--text-muted);
 }
 
+.stat-actions {
+  display: flex;
+  gap: var(--spacing-xs);
+  margin-top: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.view-resume-button, .auth-profile-button {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: none;
+  border-radius: var(--border-radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.view-resume-button {
+  background: var(--gradient-secondary);
+  color: white;
+}
+
+.auth-profile-button {
+  background: var(--gradient-primary);
+  color: white;
+}
+
+.view-resume-button:hover, .auth-profile-button:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+@media (max-width: 768px) {
+  .stat-actions {
+    flex-direction: column;
+  }
+  
+  .view-resume-button, .auth-profile-button {
+    width: 100%;
+    text-align: center;
+  }
+}

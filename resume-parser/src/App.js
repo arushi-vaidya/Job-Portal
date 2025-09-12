@@ -68,7 +68,7 @@ const LoginView = ({ onLoggedIn }) => {
   );
 };
 
-const ProfilePage = ({ user, profile, onBack, onRefresh }) => {
+const ProfilePage = ({ user, profile, onBack, onViewResume, onRefresh }) => {
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -219,66 +219,50 @@ const ProfileCompletionDetails = ({ completionBreakdown, nextSteps }) => {
           </div>
 
           {/* Profile Stats */}
-          <div className="profile-stats-grid">
-            <div className="stat-card">
-              <div className="stat-icon">
-                <Star className="icon" />
-              </div>
-              <div className="stat-content">
-                <div className="stat-value">{profile?.profileCompleteness || 0}%</div>
-                <div className="stat-label">Profile Complete</div>
-                <div 
-                  className="stat-status"
-                  style={{ color: getCompletenessColor(profile?.profileCompleteness || 0) }}
-                >
-                  {getCompletenessStatus(profile?.profileCompleteness || 0)}
-                </div>
-              </div>
-            </div>
+<div className="profile-stats-grid">
+  <div className="stat-card">
+    <div className="stat-icon">
+      <Star className="icon" />
+    </div>
+    <div className="stat-content">
+      <div className="stat-value">{profile?.profileCompleteness || 0}%</div>
+      <div className="stat-label">Profile Complete</div>
+      <div 
+        className="stat-status"
+        style={{ color: getCompletenessColor(profile?.profileCompleteness || 0) }}
+      >
+        {getCompletenessStatus(profile?.profileCompleteness || 0)}
+      </div>
+    </div>
+  </div>
 
-            <div className="stat-card">
-              <div className="stat-icon">
-                <FileText className="icon" />
-              </div>
-              <div className="stat-content">
-                <div className="stat-value">{profile?.hasResume ? '1' : '0'}</div>
-                <div className="stat-label">Resume Created</div>
-                <div className="stat-status">
-                  {profile?.hasResume ? 'Active' : 'None'}
-                </div>
-              </div>
-            </div>
-
-            <div className="stat-card">
-              <div className="stat-icon">
-                <Calendar className="icon" />
-              </div>
-              <div className="stat-content">
-                <div className="stat-value">
-                  {profile?.joinedDate ? formatDate(profile.joinedDate).split(',')[0] : 'Unknown'}
-                </div>
-                <div className="stat-label">Member Since</div>
-                <div className="stat-status">
-                  {profile?.joinedDate ? formatDate(profile.joinedDate) : 'Unknown'}
-                </div>
-              </div>
-            </div>
-
-            <div className="stat-card">
-              <div className="stat-icon">
-                <Award className="icon" />
-              </div>
-              <div className="stat-content">
-                <div className="stat-value">
-                  {Math.floor((new Date() - new Date(profile?.joinedDate || new Date())) / (1000 * 60 * 60 * 24))}
-                </div>
-                <div className="stat-label">Days Active</div>
-                <div className="stat-status">
-                  Last login: {profile?.lastLoginDate ? new Date(profile.lastLoginDate).toLocaleDateString() : 'Today'}
-                </div>
-              </div>
-            </div>
-          </div>
+  <div className="stat-card">
+    <div className="stat-icon">
+      <FileText className="icon" />
+    </div>
+    <div className="stat-content">
+      <div className="stat-actions">
+        {profile?.hasResume && (
+  <button 
+    className="view-resume-button"
+    onClick={() => onViewResume && onViewResume()}
+  >
+    View Resume
+  </button>
+)}
+        <button 
+          className="auth-profile-button"
+          onClick={() => {
+            // Navigate to authentication profile page
+            window.open('/profile-auth', '_blank');
+          }}
+        >
+          Profile Auth
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 
           {/* Profile Completeness Details */}
 
@@ -313,27 +297,6 @@ const ProfileCompletionDetails = ({ completionBreakdown, nextSteps }) => {
     </div>
   )}
 </div>
-
-          {/* Analytics Section */}
-          {analytics && (
-            <div className="profile-section">
-              <h3>Account Analytics</h3>
-              <div className="analytics-grid">
-                <div className="analytics-item">
-                  <span className="analytics-label">Total Users:</span>
-                  <span className="analytics-value">{analytics.globalStats?.totalUsers || 0}</span>
-                </div>
-                <div className="analytics-item">
-                  <span className="analytics-label">Total Resumes:</span>
-                  <span className="analytics-value">{analytics.globalStats?.totalResumes || 0}</span>
-                </div>
-                <div className="analytics-item">
-                  <span className="analytics-label">New This Month:</span>
-                  <span className="analytics-value">{analytics.globalStats?.resumesThisMonth || 0}</span>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       )}
     </div>
@@ -417,17 +380,6 @@ const App = () => {
               <span className="user-id-text">ID: {currentUser.userId}</span>
             </div>
             <div className="user-name-text">{currentUser.name}</div>
-            {userProfile && (
-              <div className="profile-completeness">
-                <div className="completeness-bar">
-                  <div 
-                    className="completeness-fill" 
-                    style={{ width: `${userProfile.profileCompleteness}%` }}
-                  ></div>
-                </div>
-                <span className="completeness-text">{userProfile.profileCompleteness}%</span>
-              </div>
-            )}
           </div>
         )}
           <ViewInfoButton onOpen={async () => {
@@ -463,9 +415,13 @@ const App = () => {
     user={currentUser} 
     profile={userProfile} 
     onBack={() => setActivePage('app')}
+    onViewResume={() => setActivePage('view-info')}
     onRefresh={async () => {
   try {
-    // Refresh both user data and profile data
+    // First refresh the auth/me endpoint to trigger completeness recalculation
+    await apiService.me();
+    
+    // Then get the updated profile data
     const [userResponse, profileResponse] = await Promise.all([
       apiService.me(),
       apiService.makeRequest('/profile')
@@ -474,16 +430,8 @@ const App = () => {
     setCurrentUser(userResponse.data);
     setUserProfile(profileResponse.data);
     
-    console.log('Profile refreshed with completion details:', profileResponse.data);
   } catch (error) {
     console.error('Failed to refresh profile:', error);
-    // Fallback to just profile refresh if user data fails
-    try {
-      const profileResponse = await apiService.makeRequest('/profile');
-      setUserProfile(profileResponse.data);
-    } catch (fallbackError) {
-      console.error('Fallback refresh also failed:', fallbackError);
-    }
   }
 }}
   />
@@ -690,11 +638,9 @@ const ResumeParser = ({ editorIntent, clearIntent }) => {
 
   const checkDatabaseStatus = async () => {
     try {
-      await apiService.checkHealth();
+      await apiService.health();
       setDbStatus('connected');
-      console.log('Database connection successful');
     } catch (error) {
-      console.error('Database connection failed:', error);
       setDbStatus('disconnected');
     }
   };
@@ -1365,7 +1311,7 @@ const ResumeParser = ({ editorIntent, clearIntent }) => {
       .replace(/\n{3,}/g, '\n\n')             // Reduce excessive newlines
       .replace(/[^\w\s@.\-+()]/g, ' ')        // Keep only alphanumeric, email, phone chars
       .replace(/\s+([.@])/g, '$1')            // Fix spacing around email/phone chars
-      .replace(/([.@])\s+/g, '$1')            // Fix spacing around email/phone chars
+      .replace(/([.@])\\s+/g, '$1')             // Fix spacing around email/phone chars
       .trim();
   };
 
@@ -1799,7 +1745,7 @@ JSON RESPONSE:`;
       // Clean up the JSON string
       jsonStr = jsonStr
         .replace(/,(\s*[}\]])/g, '$1')           // Remove trailing commas
-        .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control chars
+        .replace(/[\u0001-\u001F\u007F-\u009F]/g, '') // Remove control chars
         .replace(/\r?\n/g, ' ')                  // Replace newlines with spaces
         .replace(/\s+/g, ' ')                    // Normalize whitespace
         .trim();
@@ -2050,7 +1996,7 @@ Return only this JSON format:
       setActiveView('upload');
       setIsAiProcessing(false);
     }
-  }, [aiStatus]);
+  }, [aiStatus, extractTextFromPDF, extractTextFromDOCX, extractTextFromPPT, parseResumeData]);
 
   const handleDrop = useCallback((e) => {
     try {

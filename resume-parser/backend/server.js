@@ -222,6 +222,16 @@ const cleanResumeData = (data) => {
 
 // Calculate profile completeness
 const calculateProfileCompleteness = (user, resume) => {
+   console.log('Calculating completeness for user:', user?.name);
+  console.log('Resume data available:', !!resume);
+  if (resume) {
+    console.log('Resume personal info:', {
+      name: resume.personalInfo?.name,
+      email: resume.personalInfo?.email,
+      phone: resume.personalInfo?.phone,
+      bio: resume.personalInfo?.bio ? `${resume.personalInfo.bio.length} chars` : 'none'
+    });
+  }
   const sections = {
     basicInfo: { weight: 25, items: [] },
     contactInfo: { weight: 15, items: [] },
@@ -230,25 +240,43 @@ const calculateProfileCompleteness = (user, resume) => {
     additional: { weight: 10, items: [] }
   };
 
-  // Basic Info (25%)
-  if (user.name) sections.basicInfo.items.push({ name: 'Full Name', completed: true });
-  else sections.basicInfo.items.push({ name: 'Full Name', completed: false });
-  
-  if (user.email) sections.basicInfo.items.push({ name: 'Email', completed: true });
-  else sections.basicInfo.items.push({ name: 'Email', completed: false });
-  
-  if (resume?.personalInfo?.bio?.length > 20) sections.basicInfo.items.push({ name: 'Professional Bio', completed: true });
-  else sections.basicInfo.items.push({ name: 'Professional Bio (20+ characters)', completed: false });
+ // Basic Info (25%)
+if (user && user.name && user.name.trim().length > 0) {
+  sections.basicInfo.items.push({ name: 'Full Name', completed: true });
+} else {
+  sections.basicInfo.items.push({ name: 'Full Name', completed: false });
+}
 
-  // Contact Info (15%)
-  if (resume?.personalInfo?.phone) sections.contactInfo.items.push({ name: 'Phone Number', completed: true });
-  else sections.contactInfo.items.push({ name: 'Phone Number', completed: false });
-  
-  if (resume?.personalInfo?.location) sections.contactInfo.items.push({ name: 'Location', completed: true });
-  else sections.contactInfo.items.push({ name: 'Location', completed: false });
-  
-  if (resume?.personalInfo?.linkedinLink) sections.contactInfo.items.push({ name: 'LinkedIn Profile', completed: true });
-  else sections.contactInfo.items.push({ name: 'LinkedIn Profile', completed: false });
+if (user && user.email && user.email.trim().length > 0) {
+  sections.basicInfo.items.push({ name: 'Email', completed: true });
+} else {
+  sections.basicInfo.items.push({ name: 'Email', completed: false });
+}
+
+if (resume && resume.personalInfo && resume.personalInfo.bio && resume.personalInfo.bio.trim().length > 20) {
+  sections.basicInfo.items.push({ name: 'Professional Bio', completed: true });
+} else {
+  sections.basicInfo.items.push({ name: 'Professional Bio (20+ characters)', completed: false });
+}
+
+ // Contact Info (15%)
+if (resume && resume.personalInfo && resume.personalInfo.phone && resume.personalInfo.phone.trim().length > 0) {
+  sections.contactInfo.items.push({ name: 'Phone Number', completed: true });
+} else {
+  sections.contactInfo.items.push({ name: 'Phone Number', completed: false });
+}
+
+if (resume && resume.personalInfo && resume.personalInfo.location && resume.personalInfo.location.trim().length > 0) {
+  sections.contactInfo.items.push({ name: 'Location', completed: true });
+} else {
+  sections.contactInfo.items.push({ name: 'Location', completed: false });
+}
+
+if (resume && resume.personalInfo && resume.personalInfo.linkedinLink && resume.personalInfo.linkedinLink.trim().length > 0) {
+  sections.contactInfo.items.push({ name: 'LinkedIn Profile', completed: true });
+} else {
+  sections.contactInfo.items.push({ name: 'LinkedIn Profile', completed: false });
+}
 
   // Professional Experience (35%)
   if (resume?.experience?.length >= 2) {
@@ -308,6 +336,16 @@ const calculateProfileCompleteness = (user, resume) => {
       weight: section.weight
     };
   });
+
+  console.log('Final completeness calculation:', {
+  overall: Math.round(totalScore),
+  sectionDetails: Object.keys(completionDetails).map(key => ({
+    section: key,
+    percentage: completionDetails[key].percentage,
+    completed: completionDetails[key].completed,
+    total: completionDetails[key].total
+  }))
+});
 
   return {
     overall: Math.round(totalScore),
@@ -437,7 +475,6 @@ app.post('/api/auth/login', [
   }
 });
 
-// Updated me route with profile completeness
 app.get('/api/auth/me', authMiddleware, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('userId name email profileInfo');
@@ -445,9 +482,12 @@ app.get('/api/auth/me', authMiddleware, async (req, res) => {
     
     // Get user's resume for completeness calculation
     const resume = await Resume.findOne({ user: user._id });
+    console.log('Found resume for completeness calc:', !!resume);
     
     // Update profile completeness
     const completeness = calculateProfileCompleteness(user, resume);
+    console.log('Calculated completeness:', completeness.overall);
+    
     user.profileInfo.profileCompleteness = completeness.overall;
     if (resume) {
       user.profileInfo.resumeCount = 1;
@@ -465,6 +505,7 @@ app.get('/api/auth/me', authMiddleware, async (req, res) => {
       } 
     });
   } catch (err) {
+    console.error('Error in /api/auth/me:', err);
     return res.status(500).json({ success: false, message: 'Internal server error' });
   }
 });
@@ -530,7 +571,7 @@ app.post('/api/resumes', authMiddleware, validateResumeData, async (req, res) =>
       // Update user profile completeness
       const user = await User.findById(req.user.id);
       const completeness = calculateProfileCompleteness(user, savedResume);
-      user.profileInfo.profileCompleteness = completionData.overall;
+      user.profileInfo.profileCompleteness = completeness.overall;
       user.profileInfo.resumeCount = 1;
       await user.save();
       
