@@ -1088,54 +1088,56 @@ The AI will attempt to process this as a resume, but manual entry may be require
 
   // Camera functions for resume capture
   const openCamera = async () => {
-    try {
-      console.log('📷 Opening camera for resume capture...');
-      setUploadError(null);
-      
-      // Clean up any existing stream first
-      if (cameraStream) {
-        console.log('🧹 Cleaning up existing camera stream');
-        cameraStream.getTracks().forEach(track => track.stop());
-        setCameraStream(null);
-      }
-      
-      console.log('🎥 Requesting camera access...');
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
-          facingMode: 'environment', // Use back camera for document scanning
-          width: { ideal: 1920 },
-          height: { ideal: 1080 }
-        } 
-      });
-      
-      console.log('✅ Camera access granted, setting up stream');
-      setCameraStream(mediaStream);
-      setIsCameraOpen(true);
-      console.log('📷 Camera opened successfully');
-    } catch (err) {
-      console.error('❌ Error accessing camera:', err);
-      let errorMessage = 'Unable to access camera. ';
-      
-      if (err.name === 'NotAllowedError') {
-        errorMessage += 'Please allow camera permissions and try again.';
-      } else if (err.name === 'NotFoundError') {
-        errorMessage += 'No camera found on this device.';
-      } else if (err.name === 'NotSupportedError') {
-        errorMessage += 'Camera not supported in this browser.';
-      } else {
-        errorMessage += 'Please ensure camera permissions are granted.';
-      }
-      
-      setUploadError(errorMessage);
+  try {
+    console.log('📷 Opening camera for resume capture...');
+    setUploadError(null);
+    
+    // Clean up any existing stream first
+    if (cameraStream) {
+      console.log('🧹 Cleaning up existing camera stream');
+      cameraStream.getTracks().forEach(track => track.stop());
+      setCameraStream(null);
     }
-  };
+    
+    console.log('🎥 Requesting camera access...');
+    const mediaStream = await navigator.mediaDevices.getUserMedia({ 
+      video: { 
+        facingMode: 'environment', // Use back camera for document scanning
+        width: { ideal: 1920, max: 1920 },
+        height: { ideal: 1080, max: 1080 }
+      } 
+    });
+    
+    console.log('✅ Camera access granted, setting up stream');
+    setCameraStream(mediaStream);
+    setIsCameraOpen(true);
+    console.log('📷 Camera opened successfully');
+  } catch (err) {
+    console.error('❌ Error accessing camera:', err);
+    let errorMessage = 'Unable to access camera. ';
+    
+    if (err.name === 'NotAllowedError') {
+      errorMessage += 'Please allow camera permissions and try again.';
+    } else if (err.name === 'NotFoundError') {
+      errorMessage += 'No camera found on this device.';
+    } else if (err.name === 'NotSupportedError') {
+      errorMessage += 'Camera not supported in this browser.';
+    } else {
+      errorMessage += 'Please ensure camera permissions are granted.';
+    }
+    
+    setUploadError(errorMessage);
+    setIsCameraOpen(false); // Ensure camera state is reset on error
+  }
+};
 
   const closeCamera = () => {
-    console.log('Closing camera...');
-    
+  console.log('🚪 Closing camera...');
+  
+  try {
     if (cameraStream) {
       cameraStream.getTracks().forEach(track => {
-        console.log('Stopping track:', track.kind);
+        console.log('🛑 Stopping track:', track.kind);
         track.stop();
       });
       setCameraStream(null);
@@ -1144,35 +1146,72 @@ The AI will attempt to process this as a resume, but manual entry may be require
     // Clear the video element
     if (videoRef.current) {
       videoRef.current.srcObject = null;
+      videoRef.current.pause();
     }
     
     setIsCameraOpen(false);
-    console.log('Camera closed, isCameraOpen set to false');
-  };
+    console.log('✅ Camera closed successfully');
+  } catch (error) {
+    console.error('❌ Error closing camera:', error);
+    // Force close anyway
+    setIsCameraOpen(false);
+    setCameraStream(null);
+  }
+};
 
-  const captureResumePhoto = () => {
-    if (videoRef.current && canvasRef.current) {
-      const canvas = canvasRef.current;
-      const video = videoRef.current;
-      const context = canvas.getContext('2d');
-      
-      // Set canvas dimensions to match video
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      
-      // Draw the video frame to canvas
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
-      
-      // Convert canvas to blob and create file
-      canvas.toBlob((blob) => {
-        if (blob) {
-          const file = new File([blob], 'resume-photo.jpg', { type: 'image/jpeg' });
-          closeCamera();
-          handleFileUpload(file);
-        }
-      }, 'image/jpeg', 0.8);
+  const captureResumePhoto = async () => {
+  try {
+    console.log('📸 Capturing resume photo...');
+    
+    if (!videoRef.current || !canvasRef.current) {
+      throw new Error('Video or canvas element not available');
     }
-  };
+
+    const canvas = canvasRef.current;
+    const video = videoRef.current;
+    
+    // Check if video is ready
+    if (video.readyState < 2) {
+      throw new Error('Video not ready for capture');
+    }
+    
+    const context = canvas.getContext('2d');
+    
+    // Set canvas dimensions to match video
+    canvas.width = video.videoWidth || video.clientWidth;
+    canvas.height = video.videoHeight || video.clientHeight;
+    
+    console.log('📐 Canvas dimensions:', canvas.width, 'x', canvas.height);
+    
+    // Draw the video frame to canvas
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    // Convert canvas to blob and create file
+    const blob = await new Promise((resolve) => {
+      canvas.toBlob((blob) => {
+        resolve(blob);
+      }, 'image/jpeg', 0.8);
+    });
+    
+    if (!blob) {
+      throw new Error('Failed to create image from canvas');
+    }
+    
+    const file = new File([blob], 'resume-photo.jpg', { type: 'image/jpeg' });
+    console.log('✅ Photo captured successfully, file size:', file.size);
+    
+    // Close camera before processing file
+    closeCamera();
+    
+    // Process the captured file
+    await handleFileUpload(file);
+    
+  } catch (error) {
+    console.error('❌ Error capturing photo:', error);
+    setUploadError(`Failed to capture photo: ${error.message}`);
+  }
+};
+
 
   // Handle video stream when camera opens
   useEffect(() => {
@@ -2379,6 +2418,45 @@ Return only this JSON format:
     }
   }, [editorIntent, parsedData, clearIntent]);
 
+  useEffect(() => {
+  if (isCameraOpen && cameraStream && videoRef.current) {
+    console.log('🔗 Setting up camera stream for resume capture');
+    
+    const video = videoRef.current;
+    video.srcObject = cameraStream;
+    
+    const handleLoadedMetadata = () => {
+      console.log('📹 Video ready, starting playback');
+      video.play().catch(err => {
+        console.error('Error playing video:', err);
+        setUploadError('Failed to start camera preview');
+      });
+    };
+    
+    video.addEventListener('loadedmetadata', handleLoadedMetadata);
+    
+    return () => {
+      video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+    };
+  }
+}, [isCameraOpen, cameraStream]);
+
+useEffect(() => {
+  return () => {
+    console.log('🧹 Component cleanup: stopping camera stream');
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+    }
+  };
+}, [cameraStream]);
+
+useEffect(() => {
+  if (activeView !== 'upload' && isCameraOpen) {
+    console.log('🔄 View changed, closing camera');
+    closeCamera();
+  }
+}, [activeView]);
+
   return (
     <div className="app-container">
       {/* Navigation Bar */}
@@ -2496,42 +2574,61 @@ Return only this JSON format:
             )}
 
             {isCameraOpen && (
-              <div className="camera-view">
-                {console.log('📷 Rendering camera view, isCameraOpen:', isCameraOpen)}
-                <div className="camera-header">
-                  <h3 className="camera-title">Capture Resume Photo</h3>
-                  <p className="camera-subtitle">Position your resume clearly in the camera view</p>
-                </div>
-                <video 
-                  ref={videoRef} 
-                  autoPlay 
-                  playsInline 
-                  muted
-                  className="camera-video"
-                  onLoadedMetadata={() => {
-                    if (videoRef.current) {
-                      videoRef.current.play().catch(console.error);
-                    }
-                  }}
-                />
-                <div className="camera-controls">
-                  <button 
-                    className="capture-photo-button"
-                    onClick={captureResumePhoto}
-                  >
-                    <Camera className="icon" />
-                    Capture Resume
-                  </button>
-                  <button 
-                    className="cancel-camera-button"
-                    onClick={closeCamera}
-                  >
-                    <X className="icon" />
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            )}
+  <div className="camera-view">
+    <div className="camera-header">
+      <h3 className="camera-title">Capture Resume Photo</h3>
+      <p className="camera-subtitle">Position your resume clearly in the camera view and tap capture</p>
+    </div>
+    
+    <video 
+      ref={videoRef} 
+      autoPlay 
+      playsInline 
+      muted
+      className="camera-video"
+      style={{
+        width: '100%',
+        maxWidth: '600px',
+        height: '400px',
+        objectFit: 'cover',
+        borderRadius: 'var(--border-radius-lg)',
+        boxShadow: 'var(--shadow-lg)',
+        background: 'var(--bg-tertiary)'
+      }}
+      onLoadedMetadata={() => {
+        console.log('📹 Video metadata loaded');
+        if (videoRef.current) {
+          videoRef.current.play().catch(err => {
+            console.error('Error playing video:', err);
+            setUploadError('Failed to start camera preview');
+          });
+        }
+      }}
+      onError={(e) => {
+        console.error('Video element error:', e);
+        setUploadError('Camera preview error occurred');
+      }}
+    />
+    
+    <div className="camera-controls">
+      <button 
+        className="capture-photo-button"
+        onClick={captureResumePhoto}
+        disabled={!cameraStream}
+      >
+        <Camera className="icon" />
+        Capture Resume
+      </button>
+      <button 
+        className="cancel-camera-button"
+        onClick={closeCamera}
+      >
+        <X className="icon" />
+        Cancel
+      </button>
+    </div>
+  </div>
+)}
 
             
           </div>
