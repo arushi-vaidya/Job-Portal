@@ -250,6 +250,7 @@ const ProfileCompletionDetails = ({ completionBreakdown, nextSteps }) => {
     View Resume
   </button>
 )}
+
         <button 
           className="auth-profile-button"
           onClick={() => {
@@ -444,7 +445,7 @@ const App = () => {
 
 const ViewInfoButton = ({ onOpen }) => (
   <div className="view-info">
-    <button className="view-info-button" onClick={onOpen}>View Info</button>
+    <button className="view-info-button" onClick={onOpen}>View Data</button>
   </div>
 
 );
@@ -688,27 +689,26 @@ const ResumeParser = ({ editorIntent, clearIntent }) => {
   };
 
   useEffect(() => {
-  // Auto-save when parsedData changes and database is connected
   const autoSave = async () => {
-    if (parsedData && 
-        parsedData.personalInfo?.name && 
-        parsedData.personalInfo?.email && 
+    // Use editableData if editing, otherwise use parsedData
+    const dataToSave = isEditing ? editableData : parsedData;
+    
+    if (dataToSave && 
+        dataToSave.personalInfo?.name && 
+        dataToSave.personalInfo?.email && 
         dbStatus === 'connected' && 
-        !isSaving && 
-        !isEditing) {
+        !isSaving) {
       
-      console.log('Auto-saving resume data...');
+      console.log('Auto-saving resume data...', isEditing ? 'editing mode' : 'view mode');
       
       try {
         setIsSaving(true);
-        const response = await apiService.saveResume(parsedData);
+        const response = await apiService.saveResume(dataToSave);
         console.log('Auto-save successful:', response);
         
-        // Optional: Show brief success indicator without popup
         setSaveStatus('success');
         setSaveMessage('Resume auto-saved');
         
-        // Clear status after 2 seconds
         setTimeout(() => {
           setSaveStatus(null);
           setSaveMessage('');
@@ -716,7 +716,6 @@ const ResumeParser = ({ editorIntent, clearIntent }) => {
         
       } catch (error) {
         console.error('Auto-save failed:', error);
-        // Silently fail for auto-save, or show minimal notification
         setSaveStatus('error');
         setSaveMessage('Auto-save failed');
         
@@ -730,10 +729,9 @@ const ResumeParser = ({ editorIntent, clearIntent }) => {
     }
   };
 
-  // Debounce auto-save to avoid too frequent saves
-  const timeoutId = setTimeout(autoSave, 1000);
+  const timeoutId = setTimeout(autoSave, 2000); // Increased debounce time
   return () => clearTimeout(timeoutId);
-}, [parsedData, dbStatus, isSaving, isEditing]);
+}, [parsedData, editableData, isEditing, dbStatus, isSaving]);
 
   
 
@@ -785,13 +783,25 @@ const ResumeParser = ({ editorIntent, clearIntent }) => {
     }
   };
 
-  // Enhanced save changes to include database save
   const handleSaveChanges = async () => {
+  // First update parsedData to trigger auto-save
   setParsedData(editableData);
+  
+  // Force an immediate save to database
+  try {
+    setIsSaving(true);
+    await apiService.saveResume(editableData);
+    console.log('Manual save successful');
+  } catch (error) {
+    console.error('Manual save failed:', error);
+    alert('Failed to save changes: ' + error.message);
+    return; // Don't exit edit mode if save failed
+  } finally {
+    setIsSaving(false);
+  }
+  
   setIsEditing(false);
   setManualMode(false);
-  
-  // Don't manually save here - auto-save will handle it
   alert('Changes saved successfully!');
 };
 
@@ -835,19 +845,6 @@ const ResumeParser = ({ editorIntent, clearIntent }) => {
     
     return (
       <div className={`db-status-indicator ${dbStatus}`}>
-        <Database className="db-icon" />
-        <span className="db-status-text">
-          {dbStatus === 'connected' ? 'Database Connected' : 'Database Disconnected'}
-        </span>
-        {dbStatus === 'disconnected' && (
-          <button 
-            onClick={checkDatabaseStatus}
-            className="retry-db-button"
-            title="Retry connection"
-          >
-            <RefreshCw className="retry-icon" />
-          </button>
-        )}
       </div>
     );
   };
@@ -1709,10 +1706,6 @@ JSON RESPONSE:`;
         })
       });
 
-      if (!response.ok) {
-        throw new Error(`AI service error: ${response.status} ${response.statusText}`);
-      }
-
       const data = await response.json();
       let generatedText = data.response?.trim();
       
@@ -2193,6 +2186,14 @@ Return only this JSON format:
     setEditableData(prev => {
       const newData = JSON.parse(JSON.stringify(prev));
       newData[section].splice(index, 1);
+       setTimeout(async () => {
+      try {
+        await apiService.saveResume(newData);
+        console.log('Deletion auto-saved');
+      } catch (error) {
+        console.error('Failed to save deletion:', error);
+      }
+    }, 500);
       return newData;
     });
   };
@@ -2229,6 +2230,14 @@ Return only this JSON format:
     setEditableData(prev => {
       const newData = JSON.parse(JSON.stringify(prev));
       newData[section][itemIndex].description.splice(descIndex, 1);
+       setTimeout(async () => {
+      try {
+        await apiService.saveResume(newData);
+        console.log('Deletion auto-saved');
+      } catch (error) {
+        console.error('Failed to save deletion:', error);
+      }
+    }, 500);
       return newData;
     });
   };
@@ -2338,6 +2347,15 @@ Return only this JSON format:
         console.log('Before removal:', newData.skills);
         newData.skills.splice(index, 1);
         console.log('After removal:', newData.skills);
+
+         setTimeout(async () => {
+      try {
+        await apiService.saveResume(newData);
+        console.log('Deletion auto-saved');
+      } catch (error) {
+        console.error('Failed to save deletion:', error);
+      }
+    }, 500);
         
         return newData;
       });
@@ -2452,6 +2470,15 @@ Return only this JSON format:
         console.log('Before removal:', newData.additionalInformation);
         newData.additionalInformation.splice(index, 1);
         console.log('After removal:', newData.additionalInformation);
+
+         setTimeout(async () => {
+      try {
+        await apiService.saveResume(newData);
+        console.log('Deletion auto-saved');
+      } catch (error) {
+        console.error('Failed to save deletion:', error);
+      }
+    }, 500);
         
         return newData;
       });
@@ -2818,18 +2845,7 @@ Return only this JSON format:
               </>
             )}
 
-            {aiStatus !== 'connected' && !uploadError && (
-              <div className="service-info">
-                <h3>⚠️ AI Service Unavailable</h3>
-                <p>
-                  The AI parsing service is not currently available. You can still create and edit resumes manually using the "Create Resume Manually" option above.
-                </p>
-                <button onClick={checkAiStatus} className="status-retry-button">
-                  <RefreshCw className="status-button-icon" />
-                  Check AI Status
-                </button>
-              </div>
-            )}
+            
           </div>
         )}
 

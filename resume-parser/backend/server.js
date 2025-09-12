@@ -541,29 +541,29 @@ app.post('/api/resumes', authMiddleware, validateResumeData, async (req, res) =>
     const existingResume = await Resume.findOne({ user: req.user.id });
     let savedResume;
     
-    if (existingResume) {
-      Object.assign(existingResume, cleanedData);
-      savedResume = await existingResume.save();
-      
-      // Update user profile completeness
-      const user = await User.findById(req.user.id);
-      const completeness = calculateProfileCompleteness(user, savedResume);
-      user.profileInfo.profileCompleteness = completeness.overall;
-      user.profileInfo.resumeCount = 1;
-      await user.save();
-      
-      res.status(200).json({
-        success: true,
-        message: 'Resume updated successfully',
-        data: {
-          id: savedResume._id,
-          email: savedResume.personalInfo.email,
-          name: savedResume.personalInfo.name,
-          updatedAt: savedResume.updatedAt,
-          isUpdate: true,
-          profileCompleteness: completeness
-        }
-      });
+   if (existingResume) {
+  Object.assign(existingResume, cleanedData);
+  savedResume = await existingResume.save();
+  
+  // Force recalculation by getting fresh data
+  const user = await User.findById(req.user.id);
+  const completeness = calculateProfileCompleteness(user, savedResume);
+  user.profileInfo.profileCompleteness = completeness.overall;
+  user.profileInfo.resumeCount = 1;
+  await user.save();
+  
+  res.status(200).json({
+    success: true,
+    message: 'Resume updated successfully',
+    data: {
+      id: savedResume._id,
+      email: savedResume.personalInfo.email,
+      name: savedResume.personalInfo.name,
+      updatedAt: savedResume.updatedAt,
+      isUpdate: true,
+      profileCompleteness: completeness
+    }
+  });
     } else {
       const newResume = new Resume(cleanedData);
       savedResume = await newResume.save();
