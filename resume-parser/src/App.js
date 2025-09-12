@@ -269,7 +269,7 @@ const App = () => {
   const [currentUser, setCurrentUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [isAuthed, setIsAuthed] = useState(!!apiService.getToken());
-const [activePage, setActivePage] = useState('app'); // 'app' | 'view-info' | 'profile'
+  const [activePage, setActivePage] = useState('app'); // 'app' | 'view-info' | 'profile'
   const [accountResume, setAccountResume] = useState(null);
   const [editorIntent, setEditorIntent] = useState(null); // { mode: 'edit' }
 
@@ -571,6 +571,13 @@ const ResumeParser = ({ editorIntent, clearIntent }) => {
   const [aiProcessingError, setAiProcessingError] = useState(null);
   const [extractedText, setExtractedText] = useState('');
   const [showProcessingPopup, setShowProcessingPopup] = useState(false);
+  const [selectedColor, setSelectedColor] = useState('#4285f4');
+  const colorOptions = [
+  { name: 'Blue', value: '#4285f4' },
+  { name: 'Black', value: '#000000' },
+  { name: 'Green', value: '#059669' },
+  { name: 'Red', value: '#dc2626' }
+];
   const [showAdditionalInfoPopup, setShowAdditionalInfoPopup] = useState(false);
   const [additionalInfo, setAdditionalInfo] = useState({
     currentSalary: '',
@@ -1982,7 +1989,7 @@ Return only this JSON format:
     }
     
     try {
-      const resumeHtml = generateTraditionalResumeTemplate(parsedData);
+      const resumeHtml = generateTraditionalResumeTemplate(parsedData, selectedColor);
       const blob = new Blob([resumeHtml], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       
@@ -2643,6 +2650,17 @@ Return only this JSON format:
             line-height: 1.4;
             color: #000;
         }
+
+        .section-title {
+            font-size: 11pt;
+            font-weight: bold;
+            color: ${selectedColor};
+            text-transform: uppercase;
+            border-bottom: 1px solid ${selectedColor};
+            padding-bottom: 2px;
+            margin-bottom: 10px;
+            letter-spacing: 0.5px;
+        }
         
         @media print {
             body {
@@ -2809,6 +2827,24 @@ Return only this JSON format:
               )}
             </div>
 
+            <div className="color-selection-section">
+              <h3 className="color-selection-title">Resume Color Theme</h3>
+              <div className="color-options">
+                {colorOptions.map((color) => (
+                  <button
+                    key={color.name}
+                    onClick={() => setSelectedColor(color.value)}
+                    className={`color-option ${selectedColor === color.value ? 'active' : ''}`}
+                    style={{ backgroundColor: color.value }}
+                    title={color.name}
+                  >
+                    {selectedColor === color.value && <span className="checkmark">✓</span>}
+                  </button>
+                ))}
+              </div>
+              <p className="color-selection-label">Selected: {colorOptions.find(c => c.value === selectedColor)?.name}</p>
+            </div>
+
             {/* Resume Preview - Formatted like template */}
             <div className="resume-preview">
               <div className="resume-header">
@@ -2870,7 +2906,10 @@ Return only this JSON format:
               {(isEditing || (parsedData?.personalInfo?.bio || parsedData?.personalInfo?.linkedinLink || parsedData?.personalInfo?.githubLink || parsedData?.personalInfo?.currentSalary || parsedData?.personalInfo?.hometown || parsedData?.personalInfo?.currentLocation)) && (
                 <div className="resume-section">
                   <div className="section-header-with-actions">
-                    <h2 className="resume-section-title">PERSONAL INFORMATION</h2>
+                    <h2 className="resume-section-title" style={{ 
+                      color: selectedColor, 
+                      borderBottomColor: selectedColor 
+                    }}>PERSONAL INFORMATION</h2>
                   </div>
                   
                   <div className="personal-info-grid">
@@ -2992,7 +3031,10 @@ Return only this JSON format:
               {(isEditing || (parsedData?.personalInfo?.hobbies && parsedData?.personalInfo?.hobbies.length > 0)) && (
                 <div className="resume-section">
                   <div className="section-header-with-actions">
-                    <h2 className="resume-section-title">HOBBIES & INTERESTS</h2>
+                    <h2 className="resume-section-title" style={{ 
+    color: selectedColor, 
+    borderBottomColor: selectedColor 
+  }}>HOBBIES & INTERESTS</h2>
                     {isEditing && (
                       <button 
                         onClick={() => {
@@ -3064,7 +3106,10 @@ Return only this JSON format:
               {/* Professional Experience Section */}
               <div className="resume-section">
                 <div className="section-header-with-actions">
-                  <h2 className="resume-section-title">PROFESSIONAL EXPERIENCE</h2>
+                  <h2 className="resume-section-title" style={{ 
+                      color: selectedColor, 
+                      borderBottomColor: selectedColor 
+                    }}>PROFESSIONAL EXPERIENCE</h2>
                   {isEditing && (
                     <button onClick={handleAddExperience} className="add-item-button">
                       <Plus className="button-icon" />
@@ -3170,7 +3215,10 @@ Return only this JSON format:
               {/* Education Section */}
               <div className="resume-section">
                 <div className="section-header-with-actions">
-                  <h2 className="resume-section-title">EDUCATION</h2>
+                  <h2 className="resume-section-title" style={{ 
+    color: selectedColor, 
+    borderBottomColor: selectedColor 
+  }}>EDUCATION</h2>
                   {isEditing && (
                     <button onClick={handleAddEducation} className="add-item-button">
                       <Plus className="button-icon" />
@@ -3269,7 +3317,10 @@ Return only this JSON format:
               {/* Technical Skills Section */}
               <div className="resume-section">
                 <div className="section-header-with-actions">
-                  <h2 className="resume-section-title">TECHNICAL SKILLS</h2>
+                  <h2 className="resume-section-title" style={{ 
+    color: selectedColor, 
+    borderBottomColor: selectedColor 
+  }}>TECHNICAL SKILLS</h2>
                   {isEditing && (
                     <button onClick={handleAddSkill} className="add-item-button">
                       <Plus className="button-icon" />
@@ -3353,7 +3404,10 @@ Return only this JSON format:
               {/* Projects Section */}
               <div className="resume-section">
                 <div className="section-header-with-actions">
-                  <h2 className="resume-section-title">KEY PROJECTS</h2>
+                  <h2 className="resume-section-title" style={{ 
+    color: selectedColor, 
+    borderBottomColor: selectedColor 
+  }}>KEY PROJECTS</h2>
                   {isEditing && (
                     <button onClick={handleAddProject} className="add-item-button">
                       <Plus className="button-icon" />
@@ -3432,7 +3486,10 @@ Return only this JSON format:
               {/* Achievements Section */}
               <div className="resume-section">
                 <div className="section-header-with-actions">
-                  <h2 className="resume-section-title">ACHIEVEMENTS & AWARDS</h2>
+                  <h2 className="resume-section-title" style={{ 
+    color: selectedColor, 
+    borderBottomColor: selectedColor 
+  }}>ACHIEVEMENTS & AWARDS</h2>
                   {isEditing && (
                     <button onClick={handleAddAchievement} className="add-item-button">
                       <Plus className="button-icon" />
@@ -3511,7 +3568,10 @@ Return only this JSON format:
               {/* Certificates Section */}
               <div className="resume-section">
                 <div className="section-header-with-actions">
-                  <h2 className="resume-section-title">CERTIFICATIONS & COURSEWORK</h2>
+                  <h2 className="resume-section-title" style={{ 
+    color: selectedColor, 
+    borderBottomColor: selectedColor 
+  }}>CERTIFICATIONS & COURSEWORK</h2>
                   {isEditing && (
                     <button onClick={handleAddCertificate} className="add-item-button">
                       <Plus className="button-icon" />
@@ -3602,7 +3662,10 @@ Return only this JSON format:
               {/* Additional Information Section */}
               <div className="resume-section">
                 <div className="section-header-with-actions">
-                  <h2 className="resume-section-title">ADDITIONAL INFORMATION</h2>
+                  <h2 className="resume-section-title" style={{ 
+    color: selectedColor, 
+    borderBottomColor: selectedColor 
+  }}>ADDITIONAL INFORMATION</h2>
                   {isEditing && (
                     <button onClick={handleAddAdditionalInfo} className="add-item-button">
                       <Plus className="button-icon" />
@@ -3700,4 +3763,3 @@ Return only this JSON format:
   );
 };
 export default App;
-
