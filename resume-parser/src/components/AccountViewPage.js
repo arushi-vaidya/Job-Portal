@@ -1,8 +1,52 @@
-import React from 'react';
-import { CheckCircle, Shield } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { CheckCircle, Shield, User, Camera } from 'lucide-react';
+import apiService from '../services/api';
 
 const AccountViewPage = ({ resume, onBack, onEdit, isAuthenticated }) => {
   const data = React.useMemo(() => normalizeAccountResume(resume), [resume]);
+  const [verificationPhoto, setVerificationPhoto] = useState(null);
+  const [photoLoading, setPhotoLoading] = useState(false);
+  const [verificationData, setVerificationData] = useState(null);
+
+  // Fetch verification data and photo
+  useEffect(() => {
+    const fetchVerificationData = async () => {
+      if (isAuthenticated) {
+        try {
+          setPhotoLoading(true);
+          const verificationResponse = await apiService.getVerificationStatus();
+          setVerificationData(verificationResponse.data?.verification);
+          
+          // If user has a verification photo, fetch it
+          if (verificationResponse.data?.verification?.verificationPhoto?.hasPhoto) {
+            try {
+              const photoResponse = await apiService.getVerificationPhoto();
+              const blob = await photoResponse.blob();
+              const photoUrl = URL.createObjectURL(blob);
+              setVerificationPhoto(photoUrl);
+            } catch (photoError) {
+              console.error('Failed to load verification photo:', photoError);
+            }
+          }
+        } catch (error) {
+          console.error('Failed to fetch verification data:', error);
+        } finally {
+          setPhotoLoading(false);
+        }
+      }
+    };
+
+    fetchVerificationData();
+  }, [isAuthenticated]);
+
+  // Cleanup photo URL on unmount
+  useEffect(() => {
+    return () => {
+      if (verificationPhoto) {
+        URL.revokeObjectURL(verificationPhoto);
+      }
+    };
+  }, [verificationPhoto]);
   return (
     <div className="account-page">
       <div className="account-header">
@@ -34,6 +78,78 @@ const AccountViewPage = ({ resume, onBack, onEdit, isAuthenticated }) => {
         <div className="account-empty">No resume found for this account.</div>
       ) : (
         <div className="account-content">
+          {/* Verification Photo Section */}
+          {isAuthenticated && (
+            <section className="account-section verification-section">
+              <h3>Verification</h3>
+              <div className="verification-info">
+                <div className="verification-status">
+                  <CheckCircle className="icon verified" />
+                  <span>Profile Verified</span>
+                </div>
+                {verificationData && (
+                  <div className="verification-details">
+                    <div className="verification-item">
+                      <span className="label">Verified on:</span>
+                      <span className="value">
+                        {verificationData.verifiedAt 
+                          ? new Date(verificationData.verifiedAt).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric'
+                            })
+                          : 'Unknown'
+                        }
+                      </span>
+                    </div>
+                    <div className="verification-item">
+                      <span className="label">Method:</span>
+                      <span className="value">{verificationData.verificationMethod || 'Unknown'}</span>
+                    </div>
+                    {verificationData.aadharNumber && (
+                      <div className="verification-item">
+                        <span className="label">Aadhar:</span>
+                        <span className="value">**** **** **** {verificationData.aadharNumber.slice(-4)}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                {/* Verification Photo */}
+                <div className="verification-photo-section">
+                  <h4>Verification Photo</h4>
+                  {photoLoading ? (
+                    <div className="photo-loading">
+                      <Camera className="icon" />
+                      <span>Loading verification photo...</span>
+                    </div>
+                  ) : verificationPhoto ? (
+                    <div className="verification-photo-container">
+                      <img 
+                        src={verificationPhoto} 
+                        alt="Verification Photo" 
+                        className="verification-photo"
+                        onError={() => {
+                          console.error('Failed to load verification photo');
+                          setVerificationPhoto(null);
+                        }}
+                      />
+                      <div className="photo-info">
+                        <Camera className="icon" />
+                        <span>Identity verification photo</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="no-photo">
+                      <User className="icon" />
+                      <span>No verification photo available</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </section>
+          )}
+
           <section className="account-section">
             <h3>Personal Info</h3>
             <div className="kv"><span>Name</span><span>{data.personalInfo.name}</span></div>

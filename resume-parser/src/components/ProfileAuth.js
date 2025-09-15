@@ -104,8 +104,8 @@ const ProfileAuth = ({ onBack, onComplete }) => {
   useEffect(() => {
     const checkVerificationStatus = async () => {
       try {
-        const profileResponse = await apiService.makeRequest('/profile');
-        const verification = profileResponse.data?.verification;
+        const response = await apiService.getVerificationStatus();
+        const verification = response.data?.verification;
         
         if (verification?.isVerified && verification?.verificationStatus === 'approved') {
           setIsAlreadyVerified(true);
@@ -181,23 +181,24 @@ const ProfileAuth = ({ onBack, onComplete }) => {
         verifiedAt: new Date().toISOString(),
         verificationMethod: 'photo_aadhar',
         aadharNumber: aadharNumber.replace(/\s/g, ''),
-        // Note: In production, you would also save the photo securely
+        verificationPhoto: photo // Send the base64 photo data
       };
 
       // Update user profile with verification status
-      const response = await apiService.makeRequest('/profile/verify', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(verificationData)
-      });
+      const response = await apiService.verifyProfile(verificationData);
       
       console.log('Verification response:', response);
       setSuccess('Profile verification completed successfully!');
       setStep(4);
     } catch (err) {
       console.error('Verification error:', err);
+      
+      // Check if user is already verified
+      if (err.message && err.message.includes('already verified')) {
+        setError('You are already verified. Re-verification is not allowed.');
+        setStep(4); // Go to success step to show current verification status
+        return;
+      }
       
       // Provide more specific error messages
       let errorMessage = 'Failed to submit verification. Please try again.';

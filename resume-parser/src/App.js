@@ -20,32 +20,31 @@ const App = () => {
   const [activePage, setActivePage] = useState('app'); // 'app' | 'view-info' | 'profile' | 'profile-auth'
   const [accountResume, setAccountResume] = useState(null);
   const [editorIntent, setEditorIntent] = useState(null); // { mode: 'edit' }
-  const [isProfileAuthenticated, setIsProfileAuthenticated] = useState(() => {
-    try {
-      const cached = localStorage.getItem('rp_verification_status');
-      return cached === 'true';
-    } catch {
-      return false;
-    }
-  });
+  const [isProfileAuthenticated, setIsProfileAuthenticated] = useState(false);
+  const [verificationData, setVerificationData] = useState(null);
 
-  // Helper function to update verification status in both state and localStorage
-  const updateVerificationStatus = (isVerified) => {
-    console.log(`🔄 Updating verification status to: ${isVerified}`);
-    console.log(`🔄 Previous status was: ${isProfileAuthenticated}`);
-    
-    // Force update the state
-    setIsProfileAuthenticated(isVerified);
-    
+  // Helper function to update verification status from database
+  const updateVerificationStatus = async () => {
     try {
-      localStorage.setItem('rp_verification_status', isVerified.toString());
-      console.log(`💾 Cached verification status: ${isVerified}`);
+      console.log('🔍 Fetching verification status from database...');
+      const response = await apiService.getVerificationStatus();
+      const verification = response.data?.verification;
       
-      // Verify the cache was set correctly
-      const cached = localStorage.getItem('rp_verification_status');
-      console.log(`🔍 Verification cache verification: ${cached}`);
+      console.log('🔍 Verification data from database:', verification);
+      
+      if (verification?.isVerified && verification?.verificationStatus === 'approved') {
+        console.log('✅ User is verified');
+        setIsProfileAuthenticated(true);
+        setVerificationData(verification);
+      } else {
+        console.log('❌ User is not verified');
+        setIsProfileAuthenticated(false);
+        setVerificationData(verification);
+      }
     } catch (error) {
-      console.error('Failed to cache verification status:', error);
+      console.error('Failed to fetch verification status:', error);
+      setIsProfileAuthenticated(false);
+      setVerificationData(null);
     }
   };
 
@@ -81,17 +80,8 @@ const App = () => {
           const profileResponse = await apiService.makeRequest('/profile');
           setUserProfile(profileResponse.data);
           
-          // Load verification status from profile
-          console.log('🔍 Profile verification data:', profileResponse.data?.verification);
-          console.log('🔍 Current verification status:', isProfileAuthenticated);
-          
-          if (profileResponse.data?.verification?.isVerified) {
-            console.log('✅ Setting profile as authenticated');
-            updateVerificationStatus(true);
-          } else {
-            console.log('❌ Setting profile as not authenticated');
-            updateVerificationStatus(false);
-          }
+          // Load verification status from database
+          await updateVerificationStatus();
         } catch (error) {
           console.error('Failed to load user profile:', error);
         }
@@ -110,7 +100,8 @@ const App = () => {
     setIsAuthed(false);
     setCurrentUser(null);
     setUserProfile(null);
-    updateVerificationStatus(false);
+    setIsProfileAuthenticated(false);
+    setVerificationData(null);
     setActivePage('app');
   };
 
@@ -143,15 +134,8 @@ const App = () => {
         const profileResponse = await apiService.makeRequest('/profile');
         setUserProfile(profileResponse.data);
         
-        // Update verification status from refreshed profile
-        console.log('Refreshed profile verification data:', profileResponse.data?.verification);
-        if (profileResponse.data?.verification?.isVerified) {
-          console.log('Refreshing: Setting profile as authenticated');
-          updateVerificationStatus(true);
-        } else {
-          console.log('Refreshing: Setting profile as not authenticated');
-          updateVerificationStatus(false);
-        }
+        // Update verification status from database
+        await updateVerificationStatus();
       } catch (error) {
         console.error('Failed to refresh profile:', error);
       }
@@ -181,21 +165,7 @@ const App = () => {
         onRefresh={handleRefreshProfile}
         onAuthenticate={() => setActivePage('profile-auth')}
         isAuthenticated={isProfileAuthenticated}
-        onVerificationCheck={async () => {
-          // Force check verification status when profile page loads
-          if (isAuthed && currentUser) {
-            try {
-              const profileResponse = await apiService.makeRequest('/profile');
-              if (profileResponse.data?.verification?.isVerified) {
-                updateVerificationStatus(true);
-              } else {
-                updateVerificationStatus(false);
-              }
-            } catch (error) {
-              console.error('Failed to check verification status:', error);
-            }
-          }
-        }}
+        onVerificationCheck={updateVerificationStatus}
       />
     );
   }
@@ -206,7 +176,8 @@ const App = () => {
         onBack={() => setActivePage('profile')}
         onComplete={async (authData) => {
           console.log('Profile authentication completed:', authData);
-          updateVerificationStatus(true);
+          // Refresh verification status from database
+          await updateVerificationStatus();
           // Refresh profile data to get updated verification status
           await handleRefreshProfile();
           setActivePage('profile');

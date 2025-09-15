@@ -72,6 +72,11 @@ const userSchema = new mongoose.Schema({
     verifiedAt: { type: Date, default: null },
     verificationMethod: { type: String, default: null }, // 'photo_aadhar', 'email', etc.
     aadharNumber: { type: String, default: null },
+    verificationPhoto: { 
+      data: { type: Buffer, default: null },
+      contentType: { type: String, default: null },
+      size: { type: Number, default: null }
+    },
     verificationStatus: { 
       type: String, 
       enum: ['pending', 'approved', 'rejected'], 
@@ -797,11 +802,82 @@ app.get('/api/profile', authMiddleware, async (req, res) => {
   }
 });
 
+// Get verification status endpoint
+app.get('/api/profile/verification', authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('verification');
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'User not found' 
+      });
+    }
+
+    // Don't send the actual photo data in the verification status response
+    const verificationData = {
+      ...user.verification.toObject(),
+      verificationPhoto: user.verification.verificationPhoto?.data ? {
+        hasPhoto: true,
+        contentType: user.verification.verificationPhoto.contentType,
+        size: user.verification.verificationPhoto.size
+      } : null
+    };
+
+    res.json({
+      success: true,
+      data: {
+        verification: verificationData
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching verification status:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Internal server error' 
+    });
+  }
+});
+
+// Get verification photo endpoint
+app.get('/api/profile/verification/photo', authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('verification.verificationPhoto');
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'User not found' 
+      });
+    }
+
+    if (!user.verification.verificationPhoto?.data) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Verification photo not found' 
+      });
+    }
+
+    res.set({
+      'Content-Type': user.verification.verificationPhoto.contentType || 'image/jpeg',
+      'Content-Length': user.verification.verificationPhoto.size,
+      'Cache-Control': 'private, max-age=3600'
+    });
+
+    res.send(user.verification.verificationPhoto.data);
+  } catch (error) {
+    console.error('Error fetching verification photo:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Internal server error' 
+    });
+  }
+});
+
 // Profile verification endpoint
 app.post('/api/profile/verify', authMiddleware, [
   body('isVerified').isBoolean().withMessage('isVerified must be a boolean'),
   body('verificationMethod').notEmpty().withMessage('verificationMethod is required'),
-  body('aadharNumber').optional().isLength({ min: 12, max: 12 }).withMessage('Aadhar number must be 12 digits')
+  body('aadharNumber').optional().isLength({ min: 12, max: 12 }).withMessage('Aadhar number must be 12 digits'),
+  body('verificationPhoto').optional().isBase64().withMessage('verificationPhoto must be base64 encoded')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -813,13 +889,24 @@ app.post('/api/profile/verify', authMiddleware, [
       });
     }
 
-    const { isVerified, verifiedAt, verificationMethod, aadharNumber } = req.body;
+    const { isVerified, verifiedAt, verificationMethod, aadharNumber, verificationPhoto } = req.body;
     
     const user = await User.findById(req.user.id);
     if (!user) {
       return res.status(404).json({ 
         success: false, 
         message: 'User not found' 
+      });
+    }
+
+    // Check if user is already verified and prevent re-verification
+    if (user.verification.isVerified && user.verification.verificationStatus === 'approved') {
+      return res.status(400).json({
+        success: false,
+        message: 'User is already verified. Re-verification is not allowed.',
+        data: {
+          verification: user.verification
+        }
       });
     }
 
@@ -841,14 +928,70 @@ app.post('/api/profile/verify', authMiddleware, [
       user.verification.aadharNumber = cleanAadhar;
     }
 
+    // Handle verification photo
+    if (verificationPhoto) {
+      try {
+        // Extract base64 data and content type
+        const matches = verificationPhoto.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+        if (matches && matches.length === 3) {
+          const contentType = matches[1];
+          const base64Data = matches[2];
+          const buffer = Buffer.from(base64Data, 'base64');
+          
+          // Validate file size (max 5MB)
+          if (buffer.length > 5 * 1024 * 1024) {
+            return res.status(400).json({
+              success: false,
+              message: 'Photo size too large. Maximum size is 5MB.'
+            });
+          }
+
+          // Validate content type
+          if (!contentType.startsWith('image/')) {
+            return res.status(400).json({
+              success: false,
+              message: 'Invalid file type. Only images are allowed.'
+            });
+          }
+
+          user.verification.verificationPhoto = {
+            data: buffer,
+            contentType: contentType,
+            size: buffer.length
+          };
+        } else {
+          return res.status(400).json({
+            success: false,
+            message: 'Invalid photo format. Please provide a valid base64 encoded image.'
+          });
+        }
+      } catch (photoError) {
+        console.error('Error processing verification photo:', photoError);
+        return res.status(400).json({
+          success: false,
+          message: 'Error processing verification photo.'
+        });
+      }
+    }
+
     await user.save();
+
+    // Return verification data without the actual photo buffer
+    const verificationData = {
+      ...user.verification.toObject(),
+      verificationPhoto: user.verification.verificationPhoto?.data ? {
+        hasPhoto: true,
+        contentType: user.verification.verificationPhoto.contentType,
+        size: user.verification.verificationPhoto.size
+      } : null
+    };
 
     res.json({
       success: true,
       message: 'Verification status updated successfully',
       data: {
         userId: user.userId,
-        verification: user.verification
+        verification: verificationData
       }
     });
 

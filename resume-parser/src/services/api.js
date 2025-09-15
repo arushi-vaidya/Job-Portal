@@ -110,6 +110,50 @@ class ApiService {
     }
   }
 
+  // Verification endpoints
+  async getVerificationStatus() {
+    try {
+      const response = await this.makeRequest('/profile/verification');
+      return response;
+    } catch (error) {
+      console.error('Error fetching verification status:', error);
+      throw new Error(`Failed to fetch verification status: ${error.message}`);
+    }
+  }
+
+  async verifyProfile(verificationData) {
+    try {
+      const response = await this.makeRequest('/profile/verify', {
+        method: 'POST',
+        body: JSON.stringify(verificationData)
+      });
+      return response;
+    } catch (error) {
+      console.error('Error verifying profile:', error);
+      throw new Error(`Failed to verify profile: ${error.message}`);
+    }
+  }
+
+  async getVerificationPhoto() {
+    try {
+      const response = await fetch(`${this.baseURL}/profile/verification/photo`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${this.getToken()}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return response;
+    } catch (error) {
+      console.error('Error fetching verification photo:', error);
+      throw new Error(`Failed to fetch verification photo: ${error.message}`);
+    }
+  }
+
   // Health check
   async checkHealth() {
     try {
@@ -412,6 +456,9 @@ export const {
   deleteResume,
   getProfile,
   getAnalytics,
+  getVerificationStatus,
+  verifyProfile,
+  getVerificationPhoto,
   cleanResumeData,
   isValidEmail,
   formatError,
