@@ -87,33 +87,6 @@ const AccountViewPage = ({ resume, onBack, onEdit, isAuthenticated }) => {
                   <CheckCircle className="icon verified" />
                   <span>Profile Verified</span>
                 </div>
-                {verificationData && (
-                  <div className="verification-details">
-                    <div className="verification-item">
-                      <span className="label">Verified on:</span>
-                      <span className="value">
-                        {verificationData.verifiedAt 
-                          ? new Date(verificationData.verifiedAt).toLocaleDateString('en-US', {
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric'
-                            })
-                          : 'Unknown'
-                        }
-                      </span>
-                    </div>
-                    <div className="verification-item">
-                      <span className="label">Method:</span>
-                      <span className="value">{verificationData.verificationMethod || 'Unknown'}</span>
-                    </div>
-                    {verificationData.aadharNumber && (
-                      <div className="verification-item">
-                        <span className="label">Aadhar:</span>
-                        <span className="value">**** **** **** {verificationData.aadharNumber.slice(-4)}</span>
-                      </div>
-                    )}
-                  </div>
-                )}
                 
                 {/* Verification Photo */}
                 <div className="verification-photo-section">
