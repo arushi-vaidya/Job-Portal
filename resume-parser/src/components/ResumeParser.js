@@ -2710,6 +2710,7 @@ useEffect(() => {
 
             {/* Resume Preview - Formatted like template */}
             {/* Resume Preview - Template-aware with immediate changes */}
+{/* Resume Preview - Template-aware with immediate changes */}
 <div className={`resume-preview template-${selectedTemplate}`}>
   {selectedTemplate === 'modern' ? (
     /* MODERN TEMPLATE - Two Column Layout */
@@ -4653,17 +4654,11 @@ useEffect(() => {
 
             {/* Action Buttons - Download and Save to Database */}
             <div className="resume-actions">
-      <div className="template-info-banner">
-        <span className="current-template-label">
-          Current Template: <strong>{selectedTemplate.charAt(0).toUpperCase() + selectedTemplate.slice(1)}</strong>
-        </span>
-        <span className="template-color-preview" style={{ backgroundColor: selectedColor }}></span>
-      </div>
       
       <div className="view-actions">
         <button onClick={downloadPDF} className="download-button">
           <Download className="button-icon" />
-          Download {selectedTemplate.charAt(0).toUpperCase() + selectedTemplate.slice(1)} PDF
+          Download PDF
         </button>
       </div>
       </div>
