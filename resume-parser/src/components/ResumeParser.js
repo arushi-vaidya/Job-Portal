@@ -2767,70 +2767,205 @@ useEffect(() => {
                 <div className="contact-item">📧 {parsedData?.personalInfo?.email || ''}</div>
                 <div className="contact-item">📞 {parsedData?.personalInfo?.phone || ''}</div>
                 <div className="contact-item">📍 {parsedData?.personalInfo?.location || ''}</div>
-                {parsedData?.personalInfo?.linkedinLink && <div className="contact-item">💼 LinkedIn</div>}
-                {parsedData?.personalInfo?.githubLink && <div className="contact-item">💻 GitHub</div>}
               </>
             )}
           </div>
         </div>
-
-        {/* Sidebar Skills */}
-        <div className="resume-section">
-          <div className="section-header-with-actions">
-            <h3 className="resume-section-title" style={{ color: selectedColor, borderBottomColor: selectedColor }}>
-              SKILLS
-            </h3>
-            {isEditing && (
-              <button onClick={handleAddSkill} className="add-item-button">
-                <Plus className="button-icon" />
-                Add
-              </button>
+            {(isEditing || (parsedData?.personalInfo?.bio || parsedData?.personalInfo?.linkedinLink || parsedData?.personalInfo?.githubLink || parsedData?.personalInfo?.currentSalary || parsedData?.personalInfo?.salaryExpectation || parsedData?.personalInfo?.hometown || parsedData?.personalInfo?.currentLocation || (parsedData?.personalInfo?.hobbies && parsedData?.personalInfo?.hobbies.length > 0))) && (
+  <div className="resume-section">
+    <h2 className="resume-section-title" style={{ color: selectedColor }}>
+      Personal Information
+    </h2>
+    
+    <div className="two-column-section">
+      <div className="column">
+        {/* Bio */}
+        {(isEditing || parsedData?.personalInfo?.bio) && (
+          <div class="personal-info-entry">
+            <h4 class="personal-info-label">Professional Summary</h4>
+            {isEditing ? (
+              <textarea
+                className="editable-input personal-textarea"
+                rows={4}
+                value={editableData?.personalInfo?.bio || ''}
+                onChange={(e) => updateEditableData('personalInfo', 'bio', e.target.value)}
+                placeholder="Brief professional summary"
+              />
+            ) : (
+              <p class="personal-info-text">{parsedData?.personalInfo?.bio}</p>
             )}
           </div>
-          {((isEditing ? editableData?.skills : parsedData?.skills) || []).length > 0 ? (
-            <div className="resume-skills-text">
-              {isEditing ? (
-                <div className="skills-inputs">
-                  {(editableData?.skills || []).map((skill, index) => (
-                    <div key={index} className="skill-input">
-                      <div className="skill-tag" style={{ borderLeftColor: selectedColor }}>
-                        <input
-                          type="text"
-                          value={skill}
-                          onChange={(e) => {
-                            setEditableData(prev => {
-                              const newData = JSON.parse(JSON.stringify(prev));
-                              if (!newData.skills) newData.skills = [];
-                              newData.skills[index] = e.target.value;
-                              return newData;
-                            });
-                          }}
-                          className="editable-input skill-input-field"
-                          placeholder="Skill"
-                        />
-                        <button onClick={() => handleRemoveSkill(index)} className="remove-skill-button">
-                          <Trash2 className="button-icon" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+        )}
+
+        {/* Salary Information */}
+        {(isEditing || parsedData?.personalInfo?.currentSalary || parsedData?.personalInfo?.salaryExpectation) && (
+          <div class="personal-info-entry">
+            <h4 class="personal-info-label">Compensation</h4>
+            <div class="salary-info">
+              {(isEditing || parsedData?.personalInfo?.currentSalary) && (
+                <div class="salary-item">
+                  <span class="salary-label">Current:</span>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editableData?.personalInfo?.currentSalary || ''}
+                      onChange={(e) => updateEditableData('personalInfo', 'currentSalary', e.target.value)}
+                      className="editable-input salary-input"
+                      placeholder="Current salary"
+                    />
+                  ) : (
+                    <span class="salary-value">{parsedData?.personalInfo?.currentSalary}</span>
+                  )}
                 </div>
-              ) : (
-                <div className="skills-list">
-                  {parsedData?.skills?.map((skill, index) => (
-                    <div key={index} className="skill-tag" style={{ borderLeftColor: selectedColor }}>
-                      {skill}
-                    </div>
-                  ))}
+              )}
+              
+              {(isEditing || parsedData?.personalInfo?.salaryExpectation) && (
+                <div class="salary-item">
+                  <span class="salary-label">Expected:</span>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editableData?.personalInfo?.salaryExpectation || ''}
+                      onChange={(e) => updateEditableData('personalInfo', 'salaryExpectation', e.target.value)}
+                      className="editable-input salary-input"
+                      placeholder="Expected salary"
+                    />
+                  ) : (
+                    <span class="salary-value">{parsedData?.personalInfo?.salaryExpectation}</span>
+                  )}
                 </div>
               )}
             </div>
-          ) : (
-            <div className="empty-section">
-              {isEditing ? 'No skills yet. Click "Add" to add one.' : 'No skills available.'}
+          </div>
+        )}
+      </div>
+      
+      <div className="column">
+        {/* Location Information */}
+        {(isEditing || parsedData?.personalInfo?.hometown || parsedData?.personalInfo?.currentLocation) && (
+          <div class="personal-info-entry">
+            <h4 class="personal-info-label">Location Details</h4>
+            <div class="location-info">
+              {(isEditing || parsedData?.personalInfo?.hometown) && (
+                <div class="location-item">
+                  <span class="location-label">Hometown:</span>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editableData?.personalInfo?.hometown || ''}
+                      onChange={(e) => updateEditableData('personalInfo', 'hometown', e.target.value)}
+                      className="editable-input location-input"
+                      placeholder="Hometown"
+                    />
+                  ) : (
+                    <span class="location-value">{parsedData?.personalInfo?.hometown}</span>
+                  )}
+                </div>
+              )}
+              
+              {(isEditing || parsedData?.personalInfo?.currentLocation) && (
+                <div class="location-item">
+                  <span class="location-label">Current:</span>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editableData?.personalInfo?.currentLocation || ''}
+                      onChange={(e) => updateEditableData('personalInfo', 'currentLocation', e.target.value)}
+                      className="editable-input location-input"
+                      placeholder="Current location"
+                    />
+                  ) : (
+                    <span class="location-value">{parsedData?.personalInfo?.currentLocation}</span>
+                  )}
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </div>
+        )}
+
+        {/* Hobbies */}
+        {(isEditing || (parsedData?.personalInfo?.hobbies && parsedData?.personalInfo?.hobbies.length > 0)) && (
+          <div class="personal-info-entry">
+            <div className="section-header-with-actions">
+              <h4 class="personal-info-label">Interests & Hobbies</h4>
+              {isEditing && (
+                <button 
+                  onClick={() => {
+                    setEditableData(prev => {
+                      const newData = JSON.parse(JSON.stringify(prev));
+                      if (!newData.personalInfo) newData.personalInfo = {};
+                      if (!newData.personalInfo.hobbies) newData.personalInfo.hobbies = [];
+                      newData.personalInfo.hobbies.push('');
+                      return newData;
+                    });
+                  }} 
+                  className="add-item-button"
+                >
+                  <Plus className="button-icon" />
+                  Add
+                </button>
+              )}
+            </div>
+            
+            {((isEditing ? editableData?.personalInfo?.hobbies : parsedData?.personalInfo?.hobbies) || []).length > 0 ? (
+              <div className="hobbies-grid">
+                {isEditing ? (
+                  <div className="hobbies-inputs">
+                    {(editableData?.personalInfo?.hobbies || []).map((hobby, index) => (
+                      <div key={index} className="hobby-input">
+                        <input
+                          type="text"
+                          value={hobby}
+                          onChange={(e) => {
+                            setEditableData(prev => {
+                              const newData = JSON.parse(JSON.stringify(prev));
+                              if (!newData.personalInfo) newData.personalInfo = {};
+                              if (!newData.personalInfo.hobbies) newData.personalInfo.hobbies = [];
+                              newData.personalInfo.hobbies[index] = e.target.value;
+                              return newData;
+                            });
+                          }}
+                          className="editable-input hobby-input-field"
+                          placeholder="Hobby"
+                        />
+                        <button 
+                          onClick={() => {
+                            setEditableData(prev => {
+                              const newData = JSON.parse(JSON.stringify(prev));
+                              if (newData.personalInfo && newData.personalInfo.hobbies) {
+                                newData.personalInfo.hobbies.splice(index, 1);
+                              }
+                              return newData;
+                            });
+                          }}
+                          className="remove-hobby-button"
+                        >
+                          <Trash2 className="button-icon" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  (parsedData?.personalInfo?.hobbies || []).map((hobby, index) => (
+                    <span key={index} className="hobby-tag" style={{ borderLeftColor: selectedColor }}>
+                      {hobby}
+                    </span>
+                  ))
+                )}
+              </div>
+            ) : (
+              <div className="empty-section">
+                {isEditing ? 'No hobbies added yet.' : 'No hobbies available.'}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  </div>
+)}
+  
+        
 
         {/* Sidebar Education */}
         <div className="resume-section">
@@ -3073,6 +3208,63 @@ useEffect(() => {
           )}
         </div>
 
+        <div className="resume-section">
+          <div className="section-header-with-actions">
+            <h3 className="resume-section-title" style={{ color: selectedColor, borderBottomColor: selectedColor }}>
+              SKILLS
+            </h3>
+            {isEditing && (
+              <button onClick={handleAddSkill} className="add-item-button">
+                <Plus className="button-icon" />
+                Add
+              </button>
+            )}
+          </div>
+          {((isEditing ? editableData?.skills : parsedData?.skills) || []).length > 0 ? (
+            <div className="resume-skills-text">
+              {isEditing ? (
+                <div className="skills-inputs">
+                  {(editableData?.skills || []).map((skill, index) => (
+                    <div key={index} className="skill-input">
+                      <div className="skill-tag" style={{ borderLeftColor: selectedColor }}>
+                        <input
+                          type="text"
+                          value={skill}
+                          onChange={(e) => {
+                            setEditableData(prev => {
+                              const newData = JSON.parse(JSON.stringify(prev));
+                              if (!newData.skills) newData.skills = [];
+                              newData.skills[index] = e.target.value;
+                              return newData;
+                            });
+                          }}
+                          className="editable-input skill-input-field"
+                          placeholder="Skill"
+                        />
+                        <button onClick={() => handleRemoveSkill(index)} className="remove-skill-button">
+                          <Trash2 className="button-icon" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="skills-list">
+                  {parsedData?.skills?.map((skill, index) => (
+                    <div key={index} className="skill-tag" style={{ borderLeftColor: selectedColor }}>
+                      {skill}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="empty-section">
+              {isEditing ? 'No skills yet. Click "Add" to add one.' : 'No skills available.'}
+            </div>
+          )}
+        </div>
+
         {/* Projects Section */}
         <div className="resume-section">
           <div className="section-header-with-actions">
@@ -3283,13 +3475,212 @@ useEffect(() => {
               <span>{parsedData?.personalInfo?.email || ''}</span>
               <span>{parsedData?.personalInfo?.phone || ''}</span>
               <span>{parsedData?.personalInfo?.location || ''}</span>
-              {parsedData?.personalInfo?.linkedinLink && <span>LinkedIn Profile</span>}
-              {parsedData?.personalInfo?.githubLink && <span>GitHub Profile</span>}
             </>
           )}
         </div>
       </div>
+          {/* Personal Information Section */}
+<div className="resume-section">
+  <h2 className="resume-section-title" style={{ color: selectedColor }}>
+    Personal Information
+  </h2>
+  
+  <div className="personal-info-grid">
+    {/* Bio */}
+    <div className="personal-info-full-width">
+      <h4 className="personal-info-label">Bio</h4>
+      {isEditing ? (
+        <textarea
+          className="editable-input personal-textarea"
+          rows={3}
+          value={editableData?.personalInfo?.bio || ''}
+          onChange={(e) => updateEditableData('personalInfo', 'bio', e.target.value)}
+          placeholder="Brief professional summary"
+        />
+      ) : (
+        <p className="personal-info-text">{parsedData?.personalInfo?.bio || 'No bio available'}</p>
+      )}
+    </div>
 
+    <div className="two-column-section">
+      <div className="column">
+        {/* LinkedIn */}
+        <div className="personal-info-entry">
+          <h4 className="personal-info-label">LinkedIn</h4>
+          {isEditing ? (
+            <input
+              type="url"
+              value={editableData?.personalInfo?.linkedinLink || ''}
+              onChange={(e) => updateEditableData('personalInfo', 'linkedinLink', e.target.value)}
+              className="editable-input personal-input"
+              placeholder="LinkedIn profile URL"
+            />
+          ) : (
+            <div className="personal-info-text">
+              {parsedData?.personalInfo?.linkedinLink ? (
+                <a href={parsedData.personalInfo.linkedinLink} target="_blank" rel="noopener noreferrer" className="personal-link">
+                  {parsedData.personalInfo.linkedinLink}
+                </a>
+              ) : (
+                'Not provided'
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* GitHub */}
+        <div className="personal-info-entry">
+          <h4 className="personal-info-label">GitHub</h4>
+          {isEditing ? (
+            <input
+              type="url"
+              value={editableData?.personalInfo?.githubLink || ''}
+              onChange={(e) => updateEditableData('personalInfo', 'githubLink', e.target.value)}
+              className="editable-input personal-input"
+              placeholder="GitHub profile URL"
+            />
+          ) : (
+            <div className="personal-info-text">
+              {parsedData?.personalInfo?.githubLink ? (
+                <a href={parsedData.personalInfo.githubLink} target="_blank" rel="noopener noreferrer" className="personal-link">
+                  {parsedData.personalInfo.githubLink}
+                </a>
+              ) : (
+                'Not provided'
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Salary Expectation */}
+        <div className="personal-info-entry">
+          <h4 className="personal-info-label">Salary Expectation</h4>
+          {isEditing ? (
+            <input
+              type="text"
+              value={editableData?.personalInfo?.salaryExpectation || ''}
+              onChange={(e) => updateEditableData('personalInfo', 'salaryExpectation', e.target.value)}
+              className="editable-input personal-input"
+              placeholder="e.g., $85,000 or ₹15 LPA"
+            />
+          ) : (
+            <div className="personal-info-text">{parsedData?.personalInfo?.salaryExpectation || 'Not specified'}</div>
+          )}
+        </div>
+      </div>
+      
+      <div className="column">
+        {/* Hometown */}
+        <div className="personal-info-entry">
+          <h4 className="personal-info-label">Hometown</h4>
+          {isEditing ? (
+            <input
+              type="text"
+              value={editableData?.personalInfo?.hometown || ''}
+              onChange={(e) => updateEditableData('personalInfo', 'hometown', e.target.value)}
+              className="editable-input personal-input"
+              placeholder="e.g., Mumbai, Maharashtra"
+            />
+          ) : (
+            <div className="personal-info-text">{parsedData?.personalInfo?.hometown || 'Not specified'}</div>
+          )}
+        </div>
+
+        {/* Current Location */}
+        <div className="personal-info-entry">
+          <h4 className="personal-info-label">Current Location</h4>
+          {isEditing ? (
+            <input
+              type="text"
+              value={editableData?.personalInfo?.currentLocation || ''}
+              onChange={(e) => updateEditableData('personalInfo', 'currentLocation', e.target.value)}
+              className="editable-input personal-input"
+              placeholder="e.g., Bengaluru, Karnataka"
+            />
+          ) : (
+            <div className="personal-info-text">{parsedData?.personalInfo?.currentLocation || 'Not specified'}</div>
+          )}
+        </div>
+
+        {/* Hobbies */}
+        <div className="personal-info-entry">
+          <div className="section-header-with-actions">
+            <h4 className="personal-info-label">Hobbies</h4>
+            {isEditing && (
+              <button 
+                onClick={() => {
+                  setEditableData(prev => {
+                    const newData = JSON.parse(JSON.stringify(prev));
+                    if (!newData.personalInfo) newData.personalInfo = {};
+                    if (!newData.personalInfo.hobbies) newData.personalInfo.hobbies = [];
+                    newData.personalInfo.hobbies.push('');
+                    return newData;
+                  });
+                }} 
+                className="add-item-button"
+              >
+                <Plus className="button-icon" />
+                Add
+              </button>
+            )}
+          </div>
+          
+          {((isEditing ? editableData?.personalInfo?.hobbies : parsedData?.personalInfo?.hobbies) || []).length > 0 ? (
+            <div className="hobbies-grid">
+              {isEditing ? (
+                <div className="hobbies-inputs">
+                  {(editableData?.personalInfo?.hobbies || []).map((hobby, index) => (
+                    <div key={index} className="hobby-input">
+                      <input
+                        type="text"
+                        value={hobby}
+                        onChange={(e) => {
+                          setEditableData(prev => {
+                            const newData = JSON.parse(JSON.stringify(prev));
+                            if (!newData.personalInfo) newData.personalInfo = {};
+                            if (!newData.personalInfo.hobbies) newData.personalInfo.hobbies = [];
+                            newData.personalInfo.hobbies[index] = e.target.value;
+                            return newData;
+                          });
+                        }}
+                        className="editable-input hobby-input-field"
+                        placeholder="e.g., Photography, Gaming"
+                      />
+                      <button 
+                        onClick={() => {
+                          setEditableData(prev => {
+                            const newData = JSON.parse(JSON.stringify(prev));
+                            if (newData.personalInfo && newData.personalInfo.hobbies) {
+                              newData.personalInfo.hobbies.splice(index, 1);
+                            }
+                            return newData;
+                          });
+                        }}
+                        className="remove-hobby-button"
+                      >
+                        <Trash2 className="button-icon" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                (parsedData?.personalInfo?.hobbies || []).map((hobby, index) => (
+                  <span key={index} className="hobby-tag" style={{ borderLeftColor: selectedColor }}>
+                    {hobby}
+                  </span>
+                ))
+              )}
+            </div>
+          ) : (
+            <div className="empty-section">
+              {isEditing ? 'No hobbies added yet.' : 'No hobbies listed.'}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
       {/* Executive Experience Section */}
       <div className="resume-section">
         <div className="section-header-with-actions">
