@@ -110,6 +110,7 @@ const resumeSchema = new mongoose.Schema({
     location: { type: String, trim: true, default: '' },
     bio: { type: String, trim: true, default: '' },
     currentSalary: { type: String, trim: true, default: '' },
+    salaryExpectation: { type: String, trim: true, default: '' },
     linkedinLink: { type: String, trim: true, default: '' },
     githubLink: { type: String, trim: true, default: '' },
     hometown: { type: String, trim: true, default: '' },
@@ -238,18 +239,18 @@ const cleanResumeData = (data) => {
   return cleaned;
 };
 
-// Calculate profile completeness
-const calculateProfileCompleteness = (user, resume) => {
-   console.log('Calculating completeness for user:', user?.name);
-  console.log('Resume data available:', !!resume);
+  const calculateProfileCompleteness = (user, resume) => {
   if (resume) {
     console.log('Resume personal info:', {
       name: resume.personalInfo?.name,
       email: resume.personalInfo?.email,
       phone: resume.personalInfo?.phone,
-      bio: resume.personalInfo?.bio ? `${resume.personalInfo.bio.length} chars` : 'none'
+      bio: resume.personalInfo?.bio ? `${resume.personalInfo.bio.length} chars` : 'none',
+      currentSalary: resume.personalInfo?.currentSalary ? 'present' : 'none',
+      salaryExpectation: resume.personalInfo?.salaryExpectation ? 'present' : 'none'
     });
   }
+  
   const sections = {
     basicInfo: { weight: 25, items: [] },
     contactInfo: { weight: 15, items: [] },
@@ -258,43 +259,43 @@ const calculateProfileCompleteness = (user, resume) => {
     additional: { weight: 10, items: [] }
   };
 
- // Basic Info (25%)
-if (user && user.name && user.name.trim().length > 0) {
-  sections.basicInfo.items.push({ name: 'Full Name', completed: true });
-} else {
-  sections.basicInfo.items.push({ name: 'Full Name', completed: false });
-}
+  // Basic Info (25%)
+  if (user && user.name && user.name.trim().length > 0) {
+    sections.basicInfo.items.push({ name: 'Full Name', completed: true });
+  } else {
+    sections.basicInfo.items.push({ name: 'Full Name', completed: false });
+  }
 
-if (user && user.email && user.email.trim().length > 0) {
-  sections.basicInfo.items.push({ name: 'Email', completed: true });
-} else {
-  sections.basicInfo.items.push({ name: 'Email', completed: false });
-}
+  if (user && user.email && user.email.trim().length > 0) {
+    sections.basicInfo.items.push({ name: 'Email', completed: true });
+  } else {
+    sections.basicInfo.items.push({ name: 'Email', completed: false });
+  }
 
-if (resume && resume.personalInfo && resume.personalInfo.bio && resume.personalInfo.bio.trim().length > 20) {
-  sections.basicInfo.items.push({ name: 'Professional Bio', completed: true });
-} else {
-  sections.basicInfo.items.push({ name: 'Professional Bio (20+ characters)', completed: false });
-}
+  if (resume && resume.personalInfo && resume.personalInfo.bio && resume.personalInfo.bio.trim().length > 20) {
+    sections.basicInfo.items.push({ name: 'Professional Bio', completed: true });
+  } else {
+    sections.basicInfo.items.push({ name: 'Professional Bio (20+ characters)', completed: false });
+  }
 
- // Contact Info (15%)
-if (resume && resume.personalInfo && resume.personalInfo.phone && resume.personalInfo.phone.trim().length > 0) {
-  sections.contactInfo.items.push({ name: 'Phone Number', completed: true });
-} else {
-  sections.contactInfo.items.push({ name: 'Phone Number', completed: false });
-}
+  // Contact Info (15%)
+  if (resume && resume.personalInfo && resume.personalInfo.phone && resume.personalInfo.phone.trim().length > 0) {
+    sections.contactInfo.items.push({ name: 'Phone Number', completed: true });
+  } else {
+    sections.contactInfo.items.push({ name: 'Phone Number', completed: false });
+  }
 
-if (resume && resume.personalInfo && resume.personalInfo.location && resume.personalInfo.location.trim().length > 0) {
-  sections.contactInfo.items.push({ name: 'Location', completed: true });
-} else {
-  sections.contactInfo.items.push({ name: 'Location', completed: false });
-}
+  if (resume && resume.personalInfo && resume.personalInfo.location && resume.personalInfo.location.trim().length > 0) {
+    sections.contactInfo.items.push({ name: 'Location', completed: true });
+  } else {
+    sections.contactInfo.items.push({ name: 'Location', completed: false });
+  }
 
-if (resume && resume.personalInfo && resume.personalInfo.linkedinLink && resume.personalInfo.linkedinLink.trim().length > 0) {
-  sections.contactInfo.items.push({ name: 'LinkedIn Profile', completed: true });
-} else {
-  sections.contactInfo.items.push({ name: 'LinkedIn Profile', completed: false });
-}
+  if (resume && resume.personalInfo && resume.personalInfo.linkedinLink && resume.personalInfo.linkedinLink.trim().length > 0) {
+    sections.contactInfo.items.push({ name: 'LinkedIn Profile', completed: true });
+  } else {
+    sections.contactInfo.items.push({ name: 'LinkedIn Profile', completed: false });
+  }
 
   // Professional Experience (35%)
   if (resume?.experience?.length >= 2) {
@@ -330,6 +331,13 @@ if (resume && resume.personalInfo && resume.personalInfo.linkedinLink && resume.
   if (resume?.achievements?.length >= 1) sections.additional.items.push({ name: 'Achievements', completed: true });
   else sections.additional.items.push({ name: 'Achievements', completed: false });
 
+  // Add salary expectation to additional section
+  if (resume?.personalInfo?.salaryExpectation && resume.personalInfo.salaryExpectation.trim().length > 0) {
+    sections.additional.items.push({ name: 'Salary Expectation', completed: true });
+  } else {
+    sections.additional.items.push({ name: 'Salary Expectation', completed: false });
+  }
+
   // Calculate weighted score
   let totalScore = 0;
   const completionDetails = {};
@@ -356,14 +364,14 @@ if (resume && resume.personalInfo && resume.personalInfo.linkedinLink && resume.
   });
 
   console.log('Final completeness calculation:', {
-  overall: Math.round(totalScore),
-  sectionDetails: Object.keys(completionDetails).map(key => ({
-    section: key,
-    percentage: completionDetails[key].percentage,
-    completed: completionDetails[key].completed,
-    total: completionDetails[key].total
-  }))
-});
+    overall: Math.round(totalScore),
+    sectionDetails: Object.keys(completionDetails).map(key => ({
+      section: key,
+      percentage: completionDetails[key].percentage,
+      completed: completionDetails[key].completed,
+      total: completionDetails[key].total
+    }))
+  });
 
   return {
     overall: Math.round(totalScore),

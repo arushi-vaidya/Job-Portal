@@ -38,7 +38,7 @@ const calculateProfileCompleteness = (resumeData) => {
   }
   
   // Additional Information (15 points)
-  const additionalFields = ['linkedinLink', 'githubLink', 'hometown', 'currentLocation'];
+  const additionalFields = ['linkedinLink', 'githubLink', 'hometown', 'currentLocation', 'salaryExpectation'];
   additionalFields.forEach(field => {
     totalFields++;
     if (resumeData.personalInfo?.[field] && resumeData.personalInfo[field].trim()) {
@@ -267,6 +267,7 @@ const ProfilePage = ({ user, profile, onBack, onViewResume, onRefresh, onAuthent
                     {calculateProfileCompleteness(resumeData) < 80 && <li>🔗 Add LinkedIn and GitHub links</li>}
                     {calculateProfileCompleteness(resumeData) < 60 && <li>💼 Add work experience details</li>}
                     {calculateProfileCompleteness(resumeData) < 40 && <li>🎓 Add education information</li>}
+                    {calculateProfileCompleteness(resumeData) < 80 && <li>💰 Add salary expectation</li>}
                   </ul>
                 </div>
               </div>

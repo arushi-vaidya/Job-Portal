@@ -130,6 +130,8 @@ const AccountViewPage = ({ resume, onBack, onEdit, isAuthenticated }) => {
             <div className="kv"><span>Phone</span><span>{data.personalInfo.phone}</span></div>
             <div className="kv"><span>Location</span><span>{data.personalInfo.location}</span></div>
             <div className="kv"><span>Bio</span><span>{data.personalInfo.bio}</span></div>
+            <div className="kv"><span>Current Salary</span><span>{data.personalInfo.currentSalary}</span></div>
+            <div className="kv"><span>Salary Expectation</span><span>{data.personalInfo.salaryExpectation}</span></div>
             <div className="kv"><span>LinkedIn</span><span>{data.personalInfo.linkedinLink}</span></div>
             <div className="kv"><span>GitHub</span><span>{data.personalInfo.githubLink}</span></div>
             <div className="kv"><span>Hometown</span><span>{data.personalInfo.hometown}</span></div>
@@ -240,6 +242,8 @@ function normalizeAccountResume(r) {
       githubLink: r?.personalInfo?.githubLink || '-',
       hometown: r?.personalInfo?.hometown || '-',
       currentLocation: r?.personalInfo?.currentLocation || '-',
+      currentSalary: r?.personalInfo?.currentSalary || '-',
+      salaryExpectation: r?.personalInfo?.salaryExpectation || '-', // Add this new field
       hobbies: Array.isArray(r?.personalInfo?.hobbies) ? r.personalInfo.hobbies : []
     },
     experience: Array.isArray(r?.experience) ? r.experience : [],

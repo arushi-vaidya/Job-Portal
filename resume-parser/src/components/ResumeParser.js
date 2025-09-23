@@ -32,6 +32,7 @@ const ResumeParser = ({ editorIntent, clearIntent, isAuthenticated }) => {
   const [showAdditionalInfoPopup, setShowAdditionalInfoPopup] = useState(false);
   const [additionalInfo, setAdditionalInfo] = useState({
     currentSalary: '',
+    salaryExpectation: '',
     linkedinLink: '',
     githubLink: '',
     hometown: '',
@@ -550,6 +551,16 @@ const ResumeParser = ({ editorIntent, clearIntent, isAuthenticated }) => {
                 />
               </div>
               <div className="form-group">
+              <label>Salary Expectation</label>
+              <input
+                type="text"
+                value={additionalInfo.salaryExpectation}
+                onChange={(e) => updateAdditionalInfo('salaryExpectation', e.target.value)}
+                placeholder="e.g., $85,000 or ₹15 LPA"
+                className="popup-input"
+              />
+            </div>
+              <div className="form-group">
                 <label>Hometown</label>
                 <input
                   type="text"
@@ -703,6 +714,7 @@ const ResumeParser = ({ editorIntent, clearIntent, isAuthenticated }) => {
         currentSalary: '',
         linkedinLink: '',
         githubLink: '',
+        salaryExpectation: '',
         hometown: '',
         currentLocation: '',
         hobbies: []
@@ -971,19 +983,20 @@ const extractTextFromPPT = async (file) => {
   const validateAndFixStructure = (data) => {
     return {
       personalInfo: {
-        name: (data.personalInfo?.name || '').toString().trim(),
-        email: (data.personalInfo?.email || '').toString().trim(),
-        phone: (data.personalInfo?.phone || '').toString().trim(),
-        location: (data.personalInfo?.location || '').toString().trim(),
-        // New fields
-        currentSalary: (data.personalInfo?.currentSalary || '').toString().trim(),
-        linkedinLink: (data.personalInfo?.linkedinLink || '').toString().trim(),
-        githubLink: (data.personalInfo?.githubLink || '').toString().trim(),
-        hometown: (data.personalInfo?.hometown || '').toString().trim(),
-        currentLocation: (data.personalInfo?.currentLocation || '').toString().trim(),
-        hobbies: Array.isArray(data.personalInfo?.hobbies) ? 
-          data.personalInfo.hobbies.map(h => h.toString().trim()).filter(Boolean) : []
-      },
+      name: (data.personalInfo?.name || '').toString().trim(),
+      email: (data.personalInfo?.email || '').toString().trim(),
+      phone: (data.personalInfo?.phone || '').toString().trim(),
+      location: (data.personalInfo?.location || '').toString().trim(),
+      // New fields
+      currentSalary: (data.personalInfo?.currentSalary || '').toString().trim(),
+      salaryExpectation: (data.personalInfo?.salaryExpectation || '').toString().trim(), // Add this
+      linkedinLink: (data.personalInfo?.linkedinLink || '').toString().trim(),
+      githubLink: (data.personalInfo?.githubLink || '').toString().trim(),
+      hometown: (data.personalInfo?.hometown || '').toString().trim(),
+      currentLocation: (data.personalInfo?.currentLocation || '').toString().trim(),
+      hobbies: Array.isArray(data.personalInfo?.hobbies) ? 
+        data.personalInfo.hobbies.map(h => h.toString().trim()).filter(Boolean) : []
+    },
       experience: Array.isArray(data.experience) ? data.experience.map(exp => ({
         position: (exp.position || '').toString().trim(),
         company: (exp.company || '').toString().trim(),
@@ -1089,12 +1102,10 @@ The AI will attempt to process this as a resume, but manual entry may be require
   // Camera functions for resume capture
   const openCamera = async () => {
   try {
-    console.log('📷 Opening camera for resume capture...');
     setUploadError(null);
     
     // Clean up any existing stream first
     if (cameraStream) {
-      console.log('🧹 Cleaning up existing camera stream');
       cameraStream.getTracks().forEach(track => track.stop());
       setCameraStream(null);
     }
@@ -1289,6 +1300,7 @@ REQUIRED JSON STRUCTURE:
     "phone": "",
     "location": "",
     "currentSalary": "",
+    "salaryExpectation": "",
     "linkedinLink": "",
     "githubLink": "",
     "hometown": "",
@@ -1405,8 +1417,6 @@ JSON RESPONSE:`;
         // Validate and fix the structure
         const validatedData = validateAndFixStructure(parsedData);
         
-        console.log('Successfully parsed resume data with', 
-          Object.keys(validatedData).length, 'sections');
         return validatedData;
         
       } catch (parseError) {
@@ -1750,7 +1760,6 @@ Return only this JSON format:
 
   // Update editable data
   const updateEditableData = (section, field, value, index = null) => {
-    console.log(`Updating ${section}.${field}${index !== null ? `[${index}]` : ''} to:`, value);
     
     setEditableData(prev => {
       try {
@@ -1769,7 +1778,6 @@ Return only this JSON format:
           }
           newData[section][field] = value;
         }
-        console.log('Updated data:', newData);
         return newData;
       } catch (error) {
         console.error('Error updating editable data:', error);
@@ -1780,10 +1788,6 @@ Return only this JSON format:
 
   // Add new item to a section
   const addNewItem = (section) => {
-    console.log('=== ADD NEW ITEM CALLED ===');
-    console.log('Section:', section);
-    console.log('Current editableData:', editableData);
-    console.log('Current isEditing:', isEditing);
     
     if (!isEditing) {
       console.error('Not in edit mode');
@@ -1799,7 +1803,6 @@ Return only this JSON format:
     
     try {
       setEditableData(prev => {
-        console.log('Previous editable data:', prev);
         
         if (!prev) {
           console.error('Previous data is null');
@@ -1807,20 +1810,16 @@ Return only this JSON format:
         }
         
         const newData = JSON.parse(JSON.stringify(prev));
-        console.log('Cloned data:', newData);
         
         // Ensure the section array exists
         if (!newData[section]) {
-          console.log(`Creating new array for section: ${section}`);
           newData[section] = [];
         }
         
         const newItem = getDefaultItem(section);
-        console.log('New item to add:', newItem);
+
         
         newData[section].push(newItem);
-        console.log(`Added item to ${section}. New length:`, newData[section].length);
-        console.log('Final updated data:', newData);
         
         return newData;
       });
@@ -1828,7 +1827,6 @@ Return only this JSON format:
       // Force a re-render for Safari
       if (isSafari) {
         setTimeout(() => {
-          console.log('Safari: Forcing re-render after add');
           setEditableData(current => current);
         }, 100);
       }
@@ -1927,7 +1925,6 @@ Return only this JSON format:
     
     try {
       setEditableData(prev => {
-        console.log('Previous editable data:', prev);
         
         if (!prev) {
           console.error('Previous data is null');
@@ -1938,12 +1935,10 @@ Return only this JSON format:
         
         // Ensure skills array exists
         if (!newData.skills) {
-          console.log('Creating new skills array');
           newData.skills = [];
         }
         
         newData.skills.push('');
-        console.log('Added new skill. Total skills:', newData.skills.length);
         
         return newData;
       });
@@ -2821,6 +2816,23 @@ useEffect(() => {
                           />
                         ) : (
                           <span className="personal-info-text">{parsedData?.personalInfo?.currentSalary}</span>
+                        )}
+                      </div>
+                    )}
+
+                    {(isEditing || parsedData?.personalInfo?.salaryExpectation) && (
+                      <div className="personal-info-item">
+                        <label className="personal-info-label">Salary Expectation:</label>
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            value={editableData?.personalInfo?.salaryExpectation || ''}
+                            onChange={(e) => updateEditableData('personalInfo', 'salaryExpectation', e.target.value)}
+                            className="editable-input personal-info-input"
+                            placeholder="e.g., $85,000 or ₹15 LPA"
+                          />
+                        ) : (
+                          <span className="personal-info-text">{parsedData?.personalInfo?.salaryExpectation}</span>
                         )}
                       </div>
                     )}
