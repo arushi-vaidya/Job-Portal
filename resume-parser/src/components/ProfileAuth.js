@@ -20,8 +20,6 @@ const ProfileAuth = ({ onBack, onComplete }) => {
   const openCamera = async () => {
     try {
       setError('');
-      
-      // Clean up any existing stream first
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
         setStream(null);
@@ -48,8 +46,6 @@ const ProfileAuth = ({ onBack, onComplete }) => {
       stream.getTracks().forEach(track => track.stop());
       setStream(null);
     }
-    
-    // Clear the video element
     if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
@@ -62,15 +58,9 @@ const ProfileAuth = ({ onBack, onComplete }) => {
       const canvas = canvasRef.current;
       const video = videoRef.current;
       const context = canvas.getContext('2d');
-      
-      // Set canvas dimensions to match video
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-      
-      // Draw the video frame to canvas
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
-      
-      // Convert canvas to blob
       canvas.toBlob((blob) => {
         if (blob) {
           const file = new File([blob], 'camera-capture.jpg', { type: 'image/jpeg' });
@@ -85,7 +75,7 @@ const ProfileAuth = ({ onBack, onComplete }) => {
   const handleRetakePhoto = () => {
     setPhoto(null);
     setPhotoPreview(null);
-    closeCamera(); // Ensure camera is properly closed
+    closeCamera(); 
     setStep(1);
   };
 
@@ -111,11 +101,10 @@ const ProfileAuth = ({ onBack, onComplete }) => {
           setIsAlreadyVerified(true);
           setVerificationData(verification);
           setSuccess('Your profile is already verified!');
-          setStep(4); // Skip to success step
+          setStep(4); 
         }
       } catch (error) {
         console.error('Failed to check verification status:', error);
-        // Continue with normal verification flow if check fails
       }
     };
     
@@ -132,8 +121,7 @@ const ProfileAuth = ({ onBack, onComplete }) => {
   }, [stream]);
 
   const handleAadharChange = (e) => {
-    let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
-    // Format as XXXX XXXX XXXX
+    let value = e.target.value.replace(/\D/g, ''); 
     if (value.length > 12) value = value.substring(0, 12);
     if (value.length > 8) {
       value = value.substring(0, 8) + ' ' + value.substring(8);
@@ -145,7 +133,6 @@ const ProfileAuth = ({ onBack, onComplete }) => {
   };
 
   const validateAadhar = (aadhar) => {
-    // Remove spaces and check if it's 12 digits
     const cleanAadhar = aadhar.replace(/\s/g, '');
     return /^\d{12}$/.test(cleanAadhar);
   };

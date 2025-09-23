@@ -1,6 +1,4 @@
-/* JobDekho*/
 
-/* Reset and base styles */
 * {
   margin: 0;
   padding: 0;
@@ -6856,8 +6854,6 @@ body {
     transition: none;
   }
 }
-
-/* Template-specific resume preview styles - Add to ResumeParser.css */
 
 /* Base resume preview styles */
 .resume-preview {

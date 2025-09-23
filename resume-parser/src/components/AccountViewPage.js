@@ -39,7 +39,6 @@ const AccountViewPage = ({ resume, onBack, onEdit, isAuthenticated }) => {
     fetchVerificationData();
   }, [isAuthenticated]);
 
-  // Cleanup photo URL on unmount
   useEffect(() => {
     return () => {
       if (verificationPhoto) {

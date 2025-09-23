@@ -1,13 +1,12 @@
 /* eslint-disable react-hooks/rules-of-hooks */
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { Upload, Download, Eye, Menu, X, Edit3, Save, Plus, Trash2, FileText, RefreshCw, Database, CheckCircle, User, Star, Calendar, Award } from 'lucide-react';
+import { User } from 'lucide-react';
 import './ResumeParser.css';
 import apiService from './services/api';
 
 // Import extracted components
 import LoginView from './components/LoginView';
 import ProfilePage from './components/ProfilePage';
-import ProfileCompletionDetails from './components/ProfileCompletionDetails';
 import AccountViewPage from './components/AccountViewPage';
 import ViewInfoButton from './components/ViewInfoButton';
 import ResumeParser from './components/ResumeParser';

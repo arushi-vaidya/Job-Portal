@@ -1,7 +1,3 @@
-// ResumeTemplateGenerators.js
-// Create this as a new file in src/components/
-
-// Classic Professional Template (Original Enhanced)
 export const generateClassicTemplate = (data, selectedColor = '#4285f4') => {
   const name = data.personalInfo?.name || 'Your Name';
   const email = data.personalInfo?.email || '';

@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
-import { Upload, Download, Eye, Menu, X, Edit3, Save, Plus, Trash2, FileText, RefreshCw, Database, CheckCircle, User, Star, Calendar, Award, Shield, Camera } from 'lucide-react';
+import { Upload, Download, Eye, X, Edit3, Save, Plus, Trash2, FileText, RefreshCw, CheckCircle, Shield, Camera } from 'lucide-react';
 import apiService from '../services/api';
 import TemplateSelector from './TemplateSelector';
 import { generateClassicTemplate, generateModernTemplate, generateExecutiveTemplate } from './ResumeTemplateGenerators';
@@ -17,7 +17,7 @@ const ResumeParser = ({ editorIntent, clearIntent, isAuthenticated }) => {
   const [isAiProcessing, setIsAiProcessing] = useState(false);
   const [aiProcessingComplete, setAiProcessingComplete] = useState(false);
   const [aiProcessingError, setAiProcessingError] = useState(null);
-  const [extractedText, setExtractedText] = useState('');
+  const [setExtractedText] = useState('');
   const [showProcessingPopup, setShowProcessingPopup] = useState(false);
   const [selectedColor, setSelectedColor] = useState('#4285f4');
   const [isCameraOpen, setIsCameraOpen] = useState(false);
@@ -44,9 +44,9 @@ const ResumeParser = ({ editorIntent, clearIntent, isAuthenticated }) => {
   });
 
   // New state for database integration
-  const [dbStatus, setDbStatus] = useState('checking'); // 'checking', 'connected', 'disconnected'
+  const [dbStatus, setDbStatus] = useState('checking'); 
   const [isSaving, setIsSaving] = useState(false);
-  const [saveStatus, setSaveStatus] = useState(null); // null, 'success', 'error'
+  const [saveStatus, setSaveStatus] = useState(null); 
   const [saveMessage, setSaveMessage] = useState('');
   const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
   
@@ -176,55 +176,6 @@ const ResumeParser = ({ editorIntent, clearIntent, isAuthenticated }) => {
   return () => clearTimeout(timeoutId);
 }, [parsedData, editableData, isEditing, dbStatus, isSaving]);
 
-  
-
-  // Save to database function
-  const saveToDatabase = async (dataToSave = null) => {
-    const resumeData = dataToSave || parsedData;
-    
-    if (!resumeData) {
-      alert('No resume data available to save.');
-      return;
-    }
-
-    // Validate required fields
-    if (!resumeData.personalInfo?.name || !resumeData.personalInfo?.email) {
-      alert('Name and email are required to save to database.');
-      return;
-    }
-
-    setIsSaving(true);
-    setSaveStatus(null);
-    setSaveMessage('');
-
-    try {
-      const response = await apiService.saveResume(resumeData);
-      
-      setSaveStatus('success');
-      setSaveMessage(response.message || 'Resume saved successfully!');
-      setShowSaveConfirmation(true);
-      
-      console.log('Resume saved to database:', response);
-      
-      // Auto-hide confirmation after 3 seconds
-      setTimeout(() => {
-        setShowSaveConfirmation(false);
-      }, 3000);
-
-    } catch (error) {
-      console.error('Error saving to database:', error);
-      setSaveStatus('error');
-      setSaveMessage(error.message || 'Failed to save resume to database.');
-      setShowSaveConfirmation(true);
-      
-      // Auto-hide error after 5 seconds
-      setTimeout(() => {
-        setShowSaveConfirmation(false);
-      }, 5000);
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   const handleSaveChanges = async () => {
   // First update parsedData to trigger auto-save
@@ -1052,17 +1003,9 @@ const extractTextFromPPT = async (file) => {
         reader.onload = async (e) => {
           try {
             const base64Image = e.target.result;
-            
-            // For now, we'll use a simple approach that converts the image to text
-            // In a real implementation, you might want to use a proper OCR service
-            // or integrate with Google Vision API, AWS Textract, etc.
-            
-            // Create a canvas to process the image
             const img = new Image();
             img.onload = () => {
               try {
-                // For demonstration, we'll return a placeholder text
-                // In production, you would integrate with an OCR service
                 const placeholderText = `[Image Resume Uploaded]
                 
 This appears to be a resume image. To extract text from this image, please ensure:

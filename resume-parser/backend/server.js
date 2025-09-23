@@ -10,21 +10,6 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
-app.use(cors({
-  origin: (origin, callback) => {
-    const allowed = [
-      process.env.FRONTEND_URL || 'http://localhost:3000',
-      'http://localhost:3000',
-      'http://localhost:5173'
-    ];
-    // Allow requests with no origin (mobile apps, etc.)
-    if (!origin) return callback(null, true);
-    if (allowed.includes(origin)) return callback(null, true);
-    return callback(new Error('Not allowed by CORS'));
-  },
-  credentials: true
-}));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
@@ -100,7 +85,7 @@ userSchema.pre('save', function(next) {
 
 const User = mongoose.model('User', userSchema);
 
-// Resume Schema (keeping existing structure)
+// Resume Schema
 const resumeSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', unique: true, sparse: true },
   personalInfo: {
@@ -177,7 +162,7 @@ resumeSchema.index({ user: 1 }, { unique: true, sparse: true });
 
 const Resume = mongoose.model('Resume', resumeSchema);
 
-// Helper functions (keeping existing validation)
+// Helper functions 
 const validateResumeData = [
   body('personalInfo.name')
     .notEmpty()
@@ -203,7 +188,7 @@ const validateResumeData = [
 
 const cleanResumeData = (data) => {
   const cleaned = { ...data };
-  
+
   const cleanArray = (arr) => {
     if (!Array.isArray(arr)) return [];
     return arr.filter(item => {
@@ -240,17 +225,6 @@ const cleanResumeData = (data) => {
 };
 
   const calculateProfileCompleteness = (user, resume) => {
-  if (resume) {
-    console.log('Resume personal info:', {
-      name: resume.personalInfo?.name,
-      email: resume.personalInfo?.email,
-      phone: resume.personalInfo?.phone,
-      bio: resume.personalInfo?.bio ? `${resume.personalInfo.bio.length} chars` : 'none',
-      currentSalary: resume.personalInfo?.currentSalary ? 'present' : 'none',
-      salaryExpectation: resume.personalInfo?.salaryExpectation ? 'present' : 'none'
-    });
-  }
-  
   const sections = {
     basicInfo: { weight: 25, items: [] },
     contactInfo: { weight: 15, items: [] },
@@ -362,17 +336,6 @@ const cleanResumeData = (data) => {
       weight: section.weight
     };
   });
-
-  console.log('Final completeness calculation:', {
-    overall: Math.round(totalScore),
-    sectionDetails: Object.keys(completionDetails).map(key => ({
-      section: key,
-      percentage: completionDetails[key].percentage,
-      completed: completionDetails[key].completed,
-      total: completionDetails[key].total
-    }))
-  });
-
   return {
     overall: Math.round(totalScore),
     sections: completionDetails
@@ -508,11 +471,9 @@ app.get('/api/auth/me', authMiddleware, async (req, res) => {
     
     // Get user's resume for completeness calculation
     const resume = await Resume.findOne({ user: user._id });
-    console.log('Found resume for completeness calc:', !!resume);
     
     // Update profile completeness
     const completeness = calculateProfileCompleteness(user, resume);
-    console.log('Calculated completeness:', completeness.overall);
     
     user.profileInfo.profileCompleteness = completeness.overall;
     if (resume) {
@@ -536,7 +497,7 @@ app.get('/api/auth/me', authMiddleware, async (req, res) => {
   }
 });
 
-// Health check (existing)
+// Health check
 app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'ok', 
@@ -645,7 +606,7 @@ app.post('/api/resumes', authMiddleware, validateResumeData, async (req, res) =>
   }
 });
 
-// Get all resumes (existing - keeping same functionality)
+// Get all resumes
 app.get('/api/resumes', authMiddleware, async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -698,7 +659,7 @@ app.get('/api/resumes', authMiddleware, async (req, res) => {
   }
 });
 
-// Get single resume by ID (existing)
+// Get single resume by ID
 app.get('/api/resumes/:id', authMiddleware, async (req, res) => {
   try {
     const resume = await Resume.findOne({ _id: req.params.id, user: req.user.id });
@@ -733,7 +694,7 @@ app.get('/api/resumes/:id', authMiddleware, async (req, res) => {
   }
 });
 
-// Delete resume by ID (existing)
+// Delete resume by ID 
 app.delete('/api/resumes/:id', authMiddleware, async (req, res) => {
   try {
     const resume = await Resume.findOneAndDelete({ _id: req.params.id, user: req.user.id });
@@ -1149,13 +1110,7 @@ app.use((req, res) => {
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {
-  console.log('SIGTERM received, shutting down gracefully');
-  try {
     await mongoose.connection.close();
-    console.log('MongoDB connection closed');
-  } catch (error) {
-    console.error('Error closing MongoDB connection:', error);
-  }
   process.exit(0);
 });
 
@@ -1176,10 +1131,8 @@ const startServer = async () => {
     await connectDB();
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log(`🔗 API Base URL: http://localhost:${PORT}/api`);
       console.log(`📝 Health Check: http://localhost:${PORT}/api/health`);
-      console.log(`👤 New Feature: User IDs and Profile Management`);
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);

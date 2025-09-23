@@ -1,8 +1,4 @@
-// TemplateSelector.js
-// Updated version without preview button - template changes reflect immediately in View Results
-
 import React from 'react';
-import { Download } from 'lucide-react';
 
 const TemplateSelector = ({ selectedTemplate, onTemplateChange, selectedColor, onDownload }) => {
   const templates = [
