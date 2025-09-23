@@ -5742,3 +5742,346 @@ body {
     transition: none;
   }
 }
+
+/* Template-specific resume preview styles - Add to ResumeParser.css */
+
+/* Base resume preview styles */
+.resume-preview {
+  background: var(--bg-primary);
+  border-radius: var(--border-radius-xl);
+  padding: var(--spacing-2xl);
+  box-shadow: var(--shadow-2xl);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  font-family: Arial, sans-serif;
+  max-width: 8.5in;
+  margin: 0 auto var(--spacing-xl);
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.resume-preview::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 2px;
+  background: var(--gradient-secondary);
+  border-radius: var(--border-radius-xl);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: xor;
+  -webkit-mask-composite: xor;
+}
+
+/* Classic Template Styling */
+.resume-preview.template-classic {
+  font-family: Arial, sans-serif;
+}
+
+.resume-preview.template-classic .resume-header {
+  text-align: center;
+  margin-bottom: var(--spacing-xl);
+  padding-bottom: var(--spacing-lg);
+  border-bottom: 2px solid var(--border-light);
+}
+
+.resume-preview.template-classic .resume-name {
+  font-size: 2rem;
+  font-weight: bold;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-sm);
+  line-height: 1.2;
+}
+
+.resume-preview.template-classic .resume-section-title {
+  font-size: 1rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  border-bottom: 2px solid;
+  padding-bottom: 4px;
+  margin-bottom: var(--spacing-md);
+  letter-spacing: 0.5px;
+}
+
+/* Modern Template Styling */
+.resume-preview.template-modern {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  display: flex;
+  gap: var(--spacing-xl);
+  padding: var(--spacing-lg);
+  min-height: 600px;
+}
+
+.resume-preview.template-modern .resume-sidebar {
+  width: 35%;
+  background: #f8f9fa;
+  padding: var(--spacing-lg);
+  border-radius: var(--border-radius-lg);
+  border-right: 4px solid;
+}
+
+.resume-preview.template-modern .resume-main-content {
+  width: 65%;
+  padding: var(--spacing-lg);
+}
+
+.resume-preview.template-modern .resume-header {
+  text-align: left;
+  margin-bottom: var(--spacing-lg);
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.resume-preview.template-modern .resume-name {
+  font-size: 1.8rem;
+  font-weight: bold;
+  margin-bottom: var(--spacing-sm);
+  line-height: 1.1;
+}
+
+.resume-preview.template-modern .resume-contact {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  font-size: 0.9rem;
+}
+
+.resume-preview.template-modern .resume-section-title {
+  font-size: 0.9rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: var(--spacing-md);
+  border-bottom: 2px solid;
+  padding-bottom: 3px;
+}
+
+/* Executive Template Styling */
+.resume-preview.template-executive {
+  font-family: 'Times New Roman', serif;
+  color: #2c3e50;
+}
+
+.resume-preview.template-executive .resume-header {
+  text-align: center;
+  margin-bottom: var(--spacing-2xl);
+  padding-bottom: var(--spacing-lg);
+  border-bottom: 3px solid;
+}
+
+.resume-preview.template-executive .resume-name {
+  font-size: 2.2rem;
+  font-weight: 300;
+  margin-bottom: var(--spacing-md);
+  letter-spacing: 1px;
+  font-family: 'Georgia', serif;
+}
+
+.resume-preview.template-executive .resume-contact {
+  display: flex;
+  justify-content: center;
+  gap: var(--spacing-lg);
+  flex-wrap: wrap;
+  margin-top: var(--spacing-md);
+  font-size: 0.9rem;
+  color: #7f8c8d;
+}
+
+.resume-preview.template-executive .resume-section {
+  margin-bottom: var(--spacing-2xl);
+}
+
+.resume-preview.template-executive .resume-section-title {
+  font-size: 1.1rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  position: relative;
+  padding-bottom: var(--spacing-sm);
+  margin-bottom: var(--spacing-lg);
+}
+
+.resume-preview.template-executive .resume-section-title::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 60px;
+  height: 2px;
+  background: currentColor;
+}
+
+.resume-preview.template-executive .resume-entry {
+  margin-bottom: var(--spacing-xl);
+  padding-bottom: var(--spacing-lg);
+  border-bottom: 1px solid #ecf0f1;
+}
+
+.resume-preview.template-executive .resume-entry:last-child {
+  border-bottom: none;
+}
+
+/* Template-specific skill styling */
+.resume-preview.template-modern .resume-skills-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.resume-preview.template-modern .skill-tag {
+  background: white;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: 4px;
+  font-size: 0.8rem;
+  border-left: 3px solid;
+}
+
+.resume-preview.template-executive .resume-skills-text {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+
+.resume-preview.template-executive .skill-tag {
+  background: #ecf0f1;
+  color: #2c3e50;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  border-left: 3px solid;
+}
+
+/* Two-column layouts for executive template */
+.resume-preview.template-executive .two-column-section {
+  display: flex;
+  gap: var(--spacing-2xl);
+  margin-bottom: var(--spacing-2xl);
+}
+
+.resume-preview.template-executive .column {
+  flex: 1;
+}
+
+/* Enhanced entry styling for executive */
+.resume-preview.template-executive .resume-entry-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--spacing-sm);
+}
+
+.resume-preview.template-executive .resume-company-position {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #2c3e50;
+}
+
+.resume-preview.template-executive .resume-duration {
+  font-size: 0.9rem;
+  color: #7f8c8d;
+  font-style: italic;
+  text-align: right;
+  min-width: 120px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .resume-preview.template-modern {
+    flex-direction: column;
+    gap: var(--spacing-lg);
+  }
+  
+  .resume-preview.template-modern .resume-sidebar,
+  .resume-preview.template-modern .resume-main-content {
+    width: 100%;
+  }
+  
+  .resume-preview.template-executive .two-column-section {
+    flex-direction: column;
+    gap: var(--spacing-lg);
+  }
+  
+  .resume-preview.template-executive .resume-contact {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+}
+
+/* Template info banner improvements */
+.template-info-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  justify-content: center;
+  margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius-lg);
+  border: 1px solid var(--border-light);
+}
+
+.current-template-label {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.template-color-preview {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: 2px solid var(--border-light);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Updated template actions */
+.template-actions {
+  display: flex;
+  gap: var(--spacing-md);
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: var(--spacing-lg);
+}
+
+.download-template-button {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md) var(--spacing-xl);
+  border: none;
+  border-radius: var(--border-radius-lg);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.95rem;
+  background: var(--gradient-primary);
+  color: white;
+  box-shadow: var(--shadow-purple);
+  position: relative;
+  overflow: hidden;
+}
+
+.download-template-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  transition: left 0.6s ease;
+}
+
+.download-template-button:hover::before {
+  left: 100%;
+}
+
+.download-template-button:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.button-icon {
+  width: 16px;
+  height: 16px;
+}

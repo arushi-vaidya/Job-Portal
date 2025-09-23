@@ -1,12 +1,10 @@
 // TemplateSelector.js
-// Create this as a new file in src/components/
+// Updated version without preview button - template changes reflect immediately in View Results
 
-import React, { useState } from 'react';
-import { Eye, Download } from 'lucide-react';
+import React from 'react';
+import { Download } from 'lucide-react';
 
 const TemplateSelector = ({ selectedTemplate, onTemplateChange, selectedColor, onDownload }) => {
-  const [isPreviewMode, setIsPreviewMode] = useState(false);
-
   const templates = [
     {
       id: 'classic',
@@ -34,8 +32,6 @@ const TemplateSelector = ({ selectedTemplate, onTemplateChange, selectedColor, o
   return (
     <div className="template-selector-section">
       <h3 className="template-selector-title">Choose Resume Template</h3>
-      <p className="template-selector-subtitle">Select a layout that best fits your career level and industry</p>
-      
       <div className="template-grid">
         {templates.map((template) => (
           <div
@@ -94,45 +90,7 @@ const TemplateSelector = ({ selectedTemplate, onTemplateChange, selectedColor, o
       </div>
       
       <div className="template-actions">
-        <button 
-          className="preview-template-button"
-          onClick={() => setIsPreviewMode(!isPreviewMode)}
-        >
-          <Eye className="button-icon" />
-          {isPreviewMode ? 'Hide Preview' : 'Preview Layout'}
-        </button>
-        
-        <button 
-          className="download-template-button"
-          onClick={onDownload}
-        >
-          <Download className="button-icon" />
-          Download Selected Template
-        </button>
       </div>
-      
-      {isPreviewMode && (
-        <div className="template-preview-modal">
-          <div className="preview-modal-content">
-            <div className="preview-modal-header">
-              <h4>Template Preview: {templates.find(t => t.id === selectedTemplate)?.name}</h4>
-              <button 
-                className="close-preview-button"
-                onClick={() => setIsPreviewMode(false)}
-              >
-                ×
-              </button>
-            </div>
-            <div className={`full-preview preview-${selectedTemplate}`}>
-              <div className="full-preview-description">
-                <p><strong>Layout:</strong> {templates.find(t => t.id === selectedTemplate)?.preview}</p>
-                <p><strong>Best for:</strong> {templates.find(t => t.id === selectedTemplate)?.description}</p>
-                <p><strong>Color:</strong> <span className="color-preview" style={{backgroundColor: selectedColor}}></span> {selectedColor}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

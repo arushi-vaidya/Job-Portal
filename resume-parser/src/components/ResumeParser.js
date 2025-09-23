@@ -2709,911 +2709,1947 @@ useEffect(() => {
             </div>
 
             {/* Resume Preview - Formatted like template */}
-            <div className="resume-preview">
-              <div className="resume-header">
-                <h1 className="resume-name">
+            {/* Resume Preview - Template-aware with immediate changes */}
+<div className={`resume-preview template-${selectedTemplate}`}>
+  {selectedTemplate === 'modern' ? (
+    /* MODERN TEMPLATE - Two Column Layout */
+    <div className="resume-modern-layout">
+      <div className="resume-sidebar">
+        {/* Header in Sidebar */}
+        <div className="resume-header">
+          <h1 className="resume-name" style={{ color: selectedColor }}>
+            {isEditing ? (
+              <input
+                type="text"
+                value={editableData?.personalInfo?.name || ''}
+                onChange={(e) => updateEditableData('personalInfo', 'name', e.target.value)}
+                className="editable-input name-input"
+                placeholder="Your Name"
+              />
+            ) : (
+              parsedData?.personalInfo?.name || 'Your Name'
+            )}
+          </h1>
+          <div className="resume-contact">
+            {isEditing ? (
+              <>
+                <div className="contact-item">
+                  📧 <input
+                    type="email"
+                    value={editableData?.personalInfo?.email || ''}
+                    onChange={(e) => updateEditableData('personalInfo', 'email', e.target.value)}
+                    className="editable-input contact-input"
+                    placeholder="Email"
+                  />
+                </div>
+                <div className="contact-item">
+                  📞 <input
+                    type="tel"
+                    value={editableData?.personalInfo?.phone || ''}
+                    onChange={(e) => updateEditableData('personalInfo', 'phone', e.target.value)}
+                    className="editable-input contact-input"
+                    placeholder="Phone"
+                  />
+                </div>
+                <div className="contact-item">
+                  📍 <input
+                    type="text"
+                    value={editableData?.personalInfo?.location || ''}
+                    onChange={(e) => updateEditableData('personalInfo', 'location', e.target.value)}
+                    className="editable-input contact-input"
+                    placeholder="Location"
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="contact-item">📧 {parsedData?.personalInfo?.email || ''}</div>
+                <div className="contact-item">📞 {parsedData?.personalInfo?.phone || ''}</div>
+                <div className="contact-item">📍 {parsedData?.personalInfo?.location || ''}</div>
+                {parsedData?.personalInfo?.linkedinLink && <div className="contact-item">💼 LinkedIn</div>}
+                {parsedData?.personalInfo?.githubLink && <div className="contact-item">💻 GitHub</div>}
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Sidebar Skills */}
+        <div className="resume-section">
+          <div className="section-header-with-actions">
+            <h3 className="resume-section-title" style={{ color: selectedColor, borderBottomColor: selectedColor }}>
+              SKILLS
+            </h3>
+            {isEditing && (
+              <button onClick={handleAddSkill} className="add-item-button">
+                <Plus className="button-icon" />
+                Add
+              </button>
+            )}
+          </div>
+          {((isEditing ? editableData?.skills : parsedData?.skills) || []).length > 0 ? (
+            <div className="resume-skills-text">
+              {isEditing ? (
+                <div className="skills-inputs">
+                  {(editableData?.skills || []).map((skill, index) => (
+                    <div key={index} className="skill-input">
+                      <div className="skill-tag" style={{ borderLeftColor: selectedColor }}>
+                        <input
+                          type="text"
+                          value={skill}
+                          onChange={(e) => {
+                            setEditableData(prev => {
+                              const newData = JSON.parse(JSON.stringify(prev));
+                              if (!newData.skills) newData.skills = [];
+                              newData.skills[index] = e.target.value;
+                              return newData;
+                            });
+                          }}
+                          className="editable-input skill-input-field"
+                          placeholder="Skill"
+                        />
+                        <button onClick={() => handleRemoveSkill(index)} className="remove-skill-button">
+                          <Trash2 className="button-icon" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="skills-list">
+                  {parsedData?.skills?.map((skill, index) => (
+                    <div key={index} className="skill-tag" style={{ borderLeftColor: selectedColor }}>
+                      {skill}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="empty-section">
+              {isEditing ? 'No skills yet. Click "Add" to add one.' : 'No skills available.'}
+            </div>
+          )}
+        </div>
+
+        {/* Sidebar Education */}
+        <div className="resume-section">
+          <div className="section-header-with-actions">
+            <h3 className="resume-section-title" style={{ color: selectedColor, borderBottomColor: selectedColor }}>
+              EDUCATION
+            </h3>
+            {isEditing && (
+              <button onClick={handleAddEducation} className="add-item-button">
+                <Plus className="button-icon" />
+                Add
+              </button>
+            )}
+          </div>
+          {((isEditing ? editableData?.education : parsedData?.education) || []).length > 0 ? (
+            (isEditing ? editableData?.education : parsedData?.education)?.map((edu, index) => (
+              <div key={index} className="resume-entry">
+                {isEditing && (
+                  <div className="entry-actions">
+                    <button onClick={() => removeItem('education', index)} className="remove-item-button">
+                      <Trash2 className="button-icon" />
+                    </button>
+                  </div>
+                )}
+                <div className="sidebar-year" style={{ color: selectedColor }}>
                   {isEditing ? (
                     <input
                       type="text"
-                      value={editableData?.personalInfo?.name || ''}
-                      onChange={(e) => {
-                        console.log('Updating name to:', e.target.value);
-                        updateEditableData('personalInfo', 'name', e.target.value);
-                      }}
-                      onInput={(e) => {
-                        // Safari sometimes needs onInput for immediate updates
-                        console.log('Input event - updating name to:', e.target.value);
-                        updateEditableData('personalInfo', 'name', e.target.value);
-                      }}
-                      className="editable-input name-input"
-                      placeholder="Your Name"
+                      value={editableData?.education[index]?.year || ''}
+                      onChange={(e) => updateEditableData('education', 'year', e.target.value, index)}
+                      className="editable-input year-input"
+                      placeholder="Year"
                     />
                   ) : (
-                    parsedData?.personalInfo?.name || 'Your Name'
+                    edu.year || 'Year'
                   )}
-                </h1>
-                <div className="resume-contact">
+                </div>
+                <div className="sidebar-degree">
                   {isEditing ? (
-                    <div className="contact-inputs">
-                      <input
-                        type="email"
-                        value={editableData?.personalInfo?.email || ''}
-                        onChange={(e) => updateEditableData('personalInfo', 'email', e.target.value)}
-                        className="editable-input contact-input"
-                        placeholder="Email"
-                      />
-                      <span className="contact-separator">|</span>
-                      <input
-                        type="tel"
-                        value={editableData?.personalInfo?.phone || ''}
-                        onChange={(e) => updateEditableData('personalInfo', 'phone', e.target.value)}
-                        className="editable-input contact-input"
-                        placeholder="Phone"
-                      />
-                      <span className="contact-separator">|</span>
-                      <input
-                        type="text"
-                        value={editableData?.personalInfo?.location || ''}
-                        onChange={(e) => updateEditableData('personalInfo', 'location', e.target.value)}
-                        className="editable-input contact-input"
-                        placeholder="Location"
-                      />
-                    </div>
+                    <input
+                      type="text"
+                      value={editableData?.education[index]?.degree || ''}
+                      onChange={(e) => updateEditableData('education', 'degree', e.target.value, index)}
+                      className="editable-input degree-input"
+                      placeholder="Degree"
+                    />
                   ) : (
-                    `${parsedData?.personalInfo?.email || ''} | ${parsedData?.personalInfo?.phone || ''} | ${parsedData?.personalInfo?.location || ''}`
+                    edu.degree || 'Degree'
+                  )}
+                </div>
+                <div className="sidebar-institution">
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editableData?.education[index]?.institution || ''}
+                      onChange={(e) => updateEditableData('education', 'institution', e.target.value, index)}
+                      className="editable-input institution-input"
+                      placeholder="Institution"
+                    />
+                  ) : (
+                    edu.institution || 'Institution'
                   )}
                 </div>
               </div>
+            ))
+          ) : (
+            <div className="empty-section">
+              {isEditing ? 'No education yet. Click "Add" to add one.' : 'No education available.'}
+            </div>
+          )}
+        </div>
 
-              {/* Additional Personal Information Section */}
-              {(isEditing || (parsedData?.personalInfo?.bio || parsedData?.personalInfo?.linkedinLink || parsedData?.personalInfo?.githubLink || parsedData?.personalInfo?.currentSalary || parsedData?.personalInfo?.hometown || parsedData?.personalInfo?.currentLocation)) && (
-                <div className="resume-section">
-                  <div className="section-header-with-actions">
-                    <h2 className="resume-section-title" style={{ 
-                      color: selectedColor, 
-                      borderBottomColor: selectedColor 
-                    }}>PERSONAL INFORMATION</h2>
+        {/* Sidebar Certificates */}
+        <div className="resume-section">
+          <div className="section-header-with-actions">
+            <h3 className="resume-section-title" style={{ color: selectedColor, borderBottomColor: selectedColor }}>
+              CERTIFICATIONS
+            </h3>
+            {isEditing && (
+              <button onClick={handleAddCertificate} className="add-item-button">
+                <Plus className="button-icon" />
+                Add
+              </button>
+            )}
+          </div>
+          {((isEditing ? editableData?.certificates : parsedData?.certificates) || []).length > 0 ? (
+            (isEditing ? editableData?.certificates : parsedData?.certificates)?.map((cert, index) => (
+              <div key={index} className="sidebar-entry">
+                {isEditing && (
+                  <div className="entry-actions">
+                    <button onClick={() => removeItem('certificates', index)} className="remove-item-button">
+                      <Trash2 className="button-icon" />
+                    </button>
                   </div>
-                  
-                  <div className="personal-info-grid">
-                    {/* Bio */}
-                    {(isEditing || parsedData?.personalInfo?.bio) && (
-                      <div className="personal-info-item">
-                        <label className="personal-info-label">Bio:</label>
-                        {isEditing ? (
-                          <textarea
-                            className="editable-input personal-info-input"
-                            rows={3}
-                            value={editableData?.personalInfo?.bio || ''}
-                            onChange={(e) => updateEditableData('personalInfo', 'bio', e.target.value)}
-                            placeholder="Brief summary about you"
-                          />
-                        ) : (
-                          <span className="personal-info-text">{parsedData?.personalInfo?.bio}</span>
-                        )}
-                      </div>
-                    )}
-                    {/* LinkedIn */}
-                    {(isEditing || parsedData?.personalInfo?.linkedinLink) && (
-                      <div className="personal-info-item">
-                        <label className="personal-info-label">LinkedIn:</label>
-                        {isEditing ? (
-                          <input
-                            type="url"
-                            value={editableData?.personalInfo?.linkedinLink || ''}
-                            onChange={(e) => updateEditableData('personalInfo', 'linkedinLink', e.target.value)}
-                            className="editable-input personal-info-input"
-                            placeholder="LinkedIn Profile URL"
-                          />
-                        ) : (
-                          <a href={parsedData?.personalInfo?.linkedinLink || '#'} target={parsedData?.personalInfo?.linkedinLink ? "_blank" : undefined} rel={parsedData?.personalInfo?.linkedinLink ? "noopener noreferrer" : undefined} className="personal-info-link">
-                            {parsedData?.personalInfo?.linkedinLink}
-                          </a>
-                        )}
-                      </div>
-                    )}
+                )}
+                <div className="sidebar-cert">
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editableData?.certificates[index]?.title || ''}
+                      onChange={(e) => updateEditableData('certificates', 'title', e.target.value, index)}
+                      className="editable-input cert-title-input"
+                      placeholder="Certificate Title"
+                    />
+                  ) : (
+                    cert.title || 'Certificate'
+                  )}
+                </div>
+                <div className="sidebar-issuer">
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editableData?.certificates[index]?.issuer || ''}
+                      onChange={(e) => updateEditableData('certificates', 'issuer', e.target.value, index)}
+                      className="editable-input cert-issuer-input"
+                      placeholder="Issuer"
+                    />
+                  ) : (
+                    cert.issuer || 'Issuer'
+                  )}
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="empty-section">
+              {isEditing ? 'No certificates yet. Click "Add" to add one.' : 'No certificates available.'}
+            </div>
+          )}
+        </div>
+      </div>
 
-                    {/* GitHub */}
-                    {(isEditing || parsedData?.personalInfo?.githubLink) && (
-                      <div className="personal-info-item">
-                        <label className="personal-info-label">GitHub:</label>
-                        {isEditing ? (
-                          <input
-                            type="url"
-                            value={editableData?.personalInfo?.githubLink || ''}
-                            onChange={(e) => updateEditableData('personalInfo', 'githubLink', e.target.value)}
-                            className="editable-input personal-info-input"
-                            placeholder="GitHub Profile URL"
-                          />
-                        ) : (
-                          <a href={parsedData?.personalInfo?.githubLink || '#'} target={parsedData?.personalInfo?.githubLink ? "_blank" : undefined} rel={parsedData?.personalInfo?.githubLink ? "noopener noreferrer" : undefined} className="personal-info-link">
-                            {parsedData?.personalInfo?.githubLink}
-                          </a>
-                        )}
-                      </div>
+      <div className="resume-main-content">
+        {/* Main Experience Section */}
+        <div className="resume-section">
+          <div className="section-header-with-actions">
+            <h2 className="resume-section-title" style={{ color: selectedColor, borderBottomColor: selectedColor }}>
+              PROFESSIONAL EXPERIENCE
+            </h2>
+            {isEditing && (
+              <button onClick={handleAddExperience} className="add-item-button">
+                <Plus className="button-icon" />
+                Add Experience
+              </button>
+            )}
+          </div>
+          {((isEditing ? editableData?.experience : parsedData?.experience) || []).length > 0 ? (
+            (isEditing ? editableData?.experience : parsedData?.experience)?.map((exp, index) => (
+              <div key={index} className="resume-entry">
+                {isEditing && (
+                  <div className="entry-actions">
+                    <button onClick={() => removeItem('experience', index)} className="remove-item-button">
+                      <Trash2 className="button-icon" />
+                    </button>
+                  </div>
+                )}
+                <div className="exp-header">
+                  <div className="exp-position">
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={editableData?.experience[index]?.position || ''}
+                        onChange={(e) => updateEditableData('experience', 'position', e.target.value, index)}
+                        className="editable-input position-input"
+                        placeholder="Position"
+                      />
+                    ) : (
+                      exp.position || 'Position'
                     )}
-
-                    {/* Current Salary */}
-                    {(isEditing || parsedData?.personalInfo?.currentSalary) && (
-                      <div className="personal-info-item">
-                        <label className="personal-info-label">Current Salary:</label>
-                        {isEditing ? (
-                          <input
-                            type="text"
-                            value={editableData?.personalInfo?.currentSalary || ''}
-                            onChange={(e) => updateEditableData('personalInfo', 'currentSalary', e.target.value)}
-                            className="editable-input personal-info-input"
-                            placeholder="e.g., $75,000 or ₹12 LPA"
-                          />
-                        ) : (
-                          <span className="personal-info-text">{parsedData?.personalInfo?.currentSalary}</span>
-                        )}
-                      </div>
-                    )}
-
-                    {(isEditing || parsedData?.personalInfo?.salaryExpectation) && (
-                      <div className="personal-info-item">
-                        <label className="personal-info-label">Salary Expectation:</label>
-                        {isEditing ? (
-                          <input
-                            type="text"
-                            value={editableData?.personalInfo?.salaryExpectation || ''}
-                            onChange={(e) => updateEditableData('personalInfo', 'salaryExpectation', e.target.value)}
-                            className="editable-input personal-info-input"
-                            placeholder="e.g., $85,000 or ₹15 LPA"
-                          />
-                        ) : (
-                          <span className="personal-info-text">{parsedData?.personalInfo?.salaryExpectation}</span>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Hometown */}
-                    {(isEditing || parsedData?.personalInfo?.hometown) && (
-                      <div className="personal-info-item">
-                        <label className="personal-info-label">Hometown:</label>
-                        {isEditing ? (
-                          <input
-                            type="text"
-                            value={editableData?.personalInfo?.hometown || ''}
-                            onChange={(e) => updateEditableData('personalInfo', 'hometown', e.target.value)}
-                            className="editable-input personal-info-input"
-                            placeholder="e.g., Mumbai, Maharashtra"
-                          />
-                        ) : (
-                          <span className="personal-info-text">{parsedData?.personalInfo?.hometown}</span>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Current Location */}
-                    {(isEditing || parsedData?.personalInfo?.currentLocation) && (
-                      <div className="personal-info-item">
-                        <label className="personal-info-label">Current Location:</label>
-                        {isEditing ? (
-                          <input
-                            type="text"
-                            value={editableData?.personalInfo?.currentLocation || ''}
-                            onChange={(e) => updateEditableData('personalInfo', 'currentLocation', e.target.value)}
-                            className="editable-input personal-info-input"
-                            placeholder="e.g., Bengaluru, Karnataka"
-                          />
-                        ) : (
-                          <span className="personal-info-text">{parsedData?.personalInfo?.currentLocation}</span>
-                        )}
-                      </div>
+                  </div>
+                  <div className="exp-duration">
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={editableData?.experience[index]?.duration || ''}
+                        onChange={(e) => updateEditableData('experience', 'duration', e.target.value, index)}
+                        className="editable-input duration-input"
+                        placeholder="Duration"
+                      />
+                    ) : (
+                      exp.duration || 'Duration'
                     )}
                   </div>
                 </div>
-              )}
+                <div className="exp-company" style={{ color: selectedColor }}>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editableData?.experience[index]?.company || ''}
+                      onChange={(e) => updateEditableData('experience', 'company', e.target.value, index)}
+                      className="editable-input company-input"
+                      placeholder="Company"
+                    />
+                  ) : (
+                    exp.company || 'Company'
+                  )}
+                </div>
+                {/* Description handling */}
+                <div className="description-section">
+                  {isEditing ? (
+                    <div className="description-inputs">
+                      {(editableData?.experience[index]?.description || []).map((desc, descIndex) => (
+                        <div key={descIndex} className="description-line">
+                          <input
+                            type="text"
+                            value={desc}
+                            onChange={(e) => updateDescriptionLine('experience', index, descIndex, e.target.value)}
+                            className="editable-input description-input"
+                            placeholder="Description line"
+                          />
+                          <button 
+                            onClick={() => removeDescriptionLine('experience', index, descIndex)}
+                            className="remove-line-button"
+                            disabled={(editableData?.experience[index]?.description || []).length <= 1}
+                          >
+                            <Trash2 className="button-icon" />
+                          </button>
+                        </div>
+                      ))}
+                      <button onClick={() => addDescriptionLine('experience', index)} className="add-line-button">
+                        <Plus className="button-icon" />
+                        Add Line
+                      </button>
+                    </div>
+                  ) : (
+                    exp.description && Array.isArray(exp.description) && exp.description.length > 0 && (
+                      <ul className="exp-list">
+                        {exp.description.map((desc, descIndex) => (
+                          <li key={descIndex}>{desc}</li>
+                        ))}
+                      </ul>
+                    )
+                  )}
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="empty-section">
+              {isEditing ? 'No experience yet. Click "Add Experience" to add one.' : 'No experience available.'}
+            </div>
+          )}
+        </div>
 
-              {/* Hobbies & Interests Section */}
-              {(isEditing || (parsedData?.personalInfo?.hobbies && parsedData?.personalInfo?.hobbies.length > 0)) && (
-                <div className="resume-section">
-                  <div className="section-header-with-actions">
-                    <h2 className="resume-section-title" style={{ 
-    color: selectedColor, 
-    borderBottomColor: selectedColor 
-  }}>HOBBIES & INTERESTS</h2>
-                    {isEditing && (
-                      <button 
-                        onClick={() => {
+        {/* Projects Section */}
+        <div className="resume-section">
+          <div className="section-header-with-actions">
+            <h2 className="resume-section-title" style={{ color: selectedColor, borderBottomColor: selectedColor }}>
+              KEY PROJECTS
+            </h2>
+            {isEditing && (
+              <button onClick={handleAddProject} className="add-item-button">
+                <Plus className="button-icon" />
+                Add Project
+              </button>
+            )}
+          </div>
+          {((isEditing ? editableData?.projects : parsedData?.projects) || []).length > 0 ? (
+            (isEditing ? editableData?.projects : parsedData?.projects)?.map((project, index) => (
+              <div key={index} className="resume-entry">
+                {isEditing && (
+                  <div className="entry-actions">
+                    <button onClick={() => removeItem('projects', index)} className="remove-item-button">
+                      <Trash2 className="button-icon" />
+                    </button>
+                  </div>
+                )}
+                <div className="project-title">
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editableData?.projects[index]?.title || ''}
+                      onChange={(e) => updateEditableData('projects', 'title', e.target.value, index)}
+                      className="editable-input project-title-input"
+                      placeholder="Project Title"
+                    />
+                  ) : (
+                    project.title || 'Project Title'
+                  )}
+                </div>
+                <div className="description-section">
+                  {isEditing ? (
+                    <div className="description-inputs">
+                      {(editableData?.projects[index]?.description || []).map((desc, descIndex) => (
+                        <div key={descIndex} className="description-line">
+                          <input
+                            type="text"
+                            value={desc}
+                            onChange={(e) => updateDescriptionLine('projects', index, descIndex, e.target.value)}
+                            className="editable-input description-input"
+                            placeholder="Description line"
+                          />
+                          <button 
+                            onClick={() => removeDescriptionLine('projects', index, descIndex)}
+                            className="remove-line-button"
+                            disabled={(editableData?.projects[index]?.description || []).length <= 1}
+                          >
+                            <Trash2 className="button-icon" />
+                          </button>
+                        </div>
+                      ))}
+                      <button onClick={() => addDescriptionLine('projects', index)} className="add-line-button">
+                        <Plus className="button-icon" />
+                        Add Line
+                      </button>
+                    </div>
+                  ) : (
+                    project.description && Array.isArray(project.description) && project.description.length > 0 && (
+                      <ul className="exp-list">
+                        {project.description.map((desc, descIndex) => (
+                          <li key={descIndex}>{desc}</li>
+                        ))}
+                      </ul>
+                    )
+                  )}
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="empty-section">
+              {isEditing ? 'No projects yet. Click "Add Project" to add one.' : 'No projects available.'}
+            </div>
+          )}
+        </div>
+
+        {/* Achievements Section */}
+        <div className="resume-section">
+          <div className="section-header-with-actions">
+            <h2 className="resume-section-title" style={{ color: selectedColor, borderBottomColor: selectedColor }}>
+              ACHIEVEMENTS
+            </h2>
+            {isEditing && (
+              <button onClick={handleAddAchievement} className="add-item-button">
+                <Plus className="button-icon" />
+                Add Achievement
+              </button>
+            )}
+          </div>
+          {((isEditing ? editableData?.achievements : parsedData?.achievements) || []).length > 0 ? (
+            (isEditing ? editableData?.achievements : parsedData?.achievements)?.map((achievement, index) => (
+              <div key={index} className="resume-entry">
+                {isEditing && (
+                  <div className="entry-actions">
+                    <button onClick={() => removeItem('achievements', index)} className="remove-item-button">
+                      <Trash2 className="button-icon" />
+                    </button>
+                  </div>
+                )}
+                <div className="project-title">
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editableData?.achievements[index]?.title || ''}
+                      onChange={(e) => updateEditableData('achievements', 'title', e.target.value, index)}
+                      className="editable-input achievement-title-input"
+                      placeholder="Achievement Title"
+                    />
+                  ) : (
+                    achievement.title || 'Achievement Title'
+                  )}
+                </div>
+                <div className="description-section">
+                  {isEditing ? (
+                    <div className="description-inputs">
+                      {(editableData?.achievements[index]?.description || []).map((desc, descIndex) => (
+                        <div key={descIndex} className="description-line">
+                          <input
+                            type="text"
+                            value={desc}
+                            onChange={(e) => updateDescriptionLine('achievements', index, descIndex, e.target.value)}
+                            className="editable-input description-input"
+                            placeholder="Description line"
+                          />
+                          <button 
+                            onClick={() => removeDescriptionLine('achievements', index, descIndex)}
+                            className="remove-line-button"
+                            disabled={(editableData?.achievements[index]?.description || []).length <= 1}
+                          >
+                            <Trash2 className="button-icon" />
+                          </button>
+                        </div>
+                      ))}
+                      <button onClick={() => addDescriptionLine('achievements', index)} className="add-line-button">
+                        <Plus className="button-icon" />
+                        Add Line
+                      </button>
+                    </div>
+                  ) : (
+                    achievement.description && Array.isArray(achievement.description) && achievement.description.length > 0 && (
+                      <ul className="exp-list">
+                        {achievement.description.map((desc, descIndex) => (
+                          <li key={descIndex}>{desc}</li>
+                        ))}
+                      </ul>
+                    )
+                  )}
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="empty-section">
+              {isEditing ? 'No achievements yet. Click "Add Achievement" to add one.' : 'No achievements available.'}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  ) : selectedTemplate === 'executive' ? (
+    /* EXECUTIVE TEMPLATE - Sophisticated Layout */
+    <div className="resume-executive-layout">
+      <div className="resume-header" style={{ borderBottomColor: selectedColor }}>
+        <h1 className="resume-name" style={{ color: selectedColor }}>
+          {isEditing ? (
+            <input
+              type="text"
+              value={editableData?.personalInfo?.name || ''}
+              onChange={(e) => updateEditableData('personalInfo', 'name', e.target.value)}
+              className="editable-input name-input"
+              placeholder="Your Name"
+            />
+          ) : (
+            parsedData?.personalInfo?.name || 'Your Name'
+          )}
+        </h1>
+        <div className="resume-contact">
+          {isEditing ? (
+            <>
+              <input
+                type="email"
+                value={editableData?.personalInfo?.email || ''}
+                onChange={(e) => updateEditableData('personalInfo', 'email', e.target.value)}
+                className="editable-input contact-input"
+                placeholder="Email"
+              />
+              <input
+                type="tel"
+                value={editableData?.personalInfo?.phone || ''}
+                onChange={(e) => updateEditableData('personalInfo', 'phone', e.target.value)}
+                className="editable-input contact-input"
+                placeholder="Phone"
+              />
+              <input
+                type="text"
+                value={editableData?.personalInfo?.location || ''}
+                onChange={(e) => updateEditableData('personalInfo', 'location', e.target.value)}
+                className="editable-input contact-input"
+                placeholder="Location"
+              />
+            </>
+          ) : (
+            <>
+              <span>{parsedData?.personalInfo?.email || ''}</span>
+              <span>{parsedData?.personalInfo?.phone || ''}</span>
+              <span>{parsedData?.personalInfo?.location || ''}</span>
+              {parsedData?.personalInfo?.linkedinLink && <span>LinkedIn Profile</span>}
+              {parsedData?.personalInfo?.githubLink && <span>GitHub Profile</span>}
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Executive Experience Section */}
+      <div className="resume-section">
+        <div className="section-header-with-actions">
+          <h2 className="resume-section-title" style={{ color: selectedColor }}>
+            Professional Experience
+          </h2>
+          {isEditing && (
+            <button onClick={handleAddExperience} className="add-item-button">
+              <Plus className="button-icon" />
+              Add Experience
+            </button>
+          )}
+        </div>
+        {((isEditing ? editableData?.experience : parsedData?.experience) || []).length > 0 ? (
+          (isEditing ? editableData?.experience : parsedData?.experience)?.map((exp, index) => (
+            <div key={index} className="resume-entry">
+              {isEditing && (
+                <div className="entry-actions">
+                  <button onClick={() => removeItem('experience', index)} className="remove-item-button">
+                    <Trash2 className="button-icon" />
+                  </button>
+                </div>
+              )}
+              <div className="resume-entry-header">
+                <div className="exp-left">
+                  <div className="exp-position">
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={editableData?.experience[index]?.position || ''}
+                        onChange={(e) => updateEditableData('experience', 'position', e.target.value, index)}
+                        className="editable-input position-input"
+                        placeholder="Position"
+                      />
+                    ) : (
+                      exp.position || 'Position'
+                    )}
+                  </div>
+                  <div className="exp-company" style={{ color: selectedColor }}>
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={editableData?.experience[index]?.company || ''}
+                        onChange={(e) => updateEditableData('experience', 'company', e.target.value, index)}
+                        className="editable-input company-input"
+                        placeholder="Company"
+                      />
+                    ) : (
+                      exp.company || 'Company'
+                    )}
+                  </div>
+                </div>
+                <div className="exp-duration">
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editableData?.experience[index]?.duration || ''}
+                      onChange={(e) => updateEditableData('experience', 'duration', e.target.value, index)}
+                      className="editable-input duration-input"
+                      placeholder="Duration"
+                    />
+                  ) : (
+                    exp.duration || 'Duration'
+                  )}
+                </div>
+              </div>
+              <div className="description-section">
+                {isEditing ? (
+                  <div className="description-inputs">
+                    {(editableData?.experience[index]?.description || []).map((desc, descIndex) => (
+                      <div key={descIndex} className="description-line">
+                        <input
+                          type="text"
+                          value={desc}
+                          onChange={(e) => updateDescriptionLine('experience', index, descIndex, e.target.value)}
+                          className="editable-input description-input"
+                          placeholder="Description line"
+                        />
+                        <button 
+                          onClick={() => removeDescriptionLine('experience', index, descIndex)}
+                          className="remove-line-button"
+                          disabled={(editableData?.experience[index]?.description || []).length <= 1}
+                        >
+                          <Trash2 className="button-icon" />
+                        </button>
+                      </div>
+                    ))}
+                    <button onClick={() => addDescriptionLine('experience', index)} className="add-line-button">
+                      <Plus className="button-icon" />
+                      Add Line
+                    </button>
+                  </div>
+                ) : (
+                  exp.description && Array.isArray(exp.description) && exp.description.length > 0 && (
+                    <div className="exp-description">
+                      {exp.description.map((desc, descIndex) => (
+                        <p key={descIndex} className="exp-point">• {desc}</p>
+                      ))}
+                    </div>
+                  )
+                )}
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="empty-section">
+            {isEditing ? 'No experience yet. Click "Add Experience" to add one.' : 'No experience available.'}
+          </div>
+        )}
+      </div>
+
+      {/* Executive Two-Column Section */}
+      <div className="two-column-section">
+        <div className="column">
+          {/* Education Column */}
+          <div className="resume-section">
+            <div className="section-header-with-actions">
+              <h3 className="sub-title" style={{ color: selectedColor }}>Education</h3>
+              {isEditing && (
+                <button onClick={handleAddEducation} className="add-item-button">
+                  <Plus className="button-icon" />
+                  Add
+                </button>
+              )}
+            </div>
+            {((isEditing ? editableData?.education : parsedData?.education) || []).length > 0 ? (
+              (isEditing ? editableData?.education : parsedData?.education)?.map((edu, index) => (
+                <div key={index} className="edu-entry">
+                  {isEditing && (
+                    <div className="entry-actions">
+                      <button onClick={() => removeItem('education', index)} className="remove-item-button">
+                        <Trash2 className="button-icon" />
+                      </button>
+                    </div>
+                  )}
+                  <div className="edu-degree">
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={editableData?.education[index]?.degree || ''}
+                        onChange={(e) => updateEditableData('education', 'degree', e.target.value, index)}
+                        className="editable-input degree-input"
+                        placeholder="Degree"
+                      />
+                    ) : (
+                      edu.degree || 'Degree'
+                    )}
+                  </div>
+                  <div className="edu-institution" style={{ color: selectedColor }}>
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={editableData?.education[index]?.institution || ''}
+                        onChange={(e) => updateEditableData('education', 'institution', e.target.value, index)}
+                        className="editable-input institution-input"
+                        placeholder="Institution"
+                      />
+                    ) : (
+                      edu.institution || 'Institution'
+                    )}
+                  </div>
+                  <div className="edu-year">
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={editableData?.education[index]?.year || ''}
+                        onChange={(e) => updateEditableData('education', 'year', e.target.value, index)}
+                        className="editable-input year-input"
+                        placeholder="Year"
+                      />
+                    ) : (
+                      edu.year || 'Year'
+                    )}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="empty-section">
+                {isEditing ? 'No education yet.' : 'No education available.'}
+              </div>
+            )}
+          </div>
+
+          {/* Certifications */}
+          <div className="resume-section">
+            <div className="section-header-with-actions">
+              <h3 className="sub-title" style={{ color: selectedColor }}>Certifications</h3>
+              {isEditing && (
+                <button onClick={handleAddCertificate} className="add-item-button">
+                  <Plus className="button-icon" />
+                  Add
+                </button>
+              )}
+            </div>
+            {((isEditing ? editableData?.certificates : parsedData?.certificates) || []).length > 0 ? (
+              (isEditing ? editableData?.certificates : parsedData?.certificates)?.map((cert, index) => (
+                <div key={index} className="cert-entry">
+                  {isEditing && (
+                    <div className="entry-actions">
+                      <button onClick={() => removeItem('certificates', index)} className="remove-item-button">
+                        <Trash2 className="button-icon" />
+                      </button>
+                    </div>
+                  )}
+                  <span className="cert-title">
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={editableData?.certificates[index]?.title || ''}
+                        onChange={(e) => updateEditableData('certificates', 'title', e.target.value, index)}
+                        className="editable-input cert-title-input"
+                        placeholder="Certificate Title"
+                      />
+                    ) : (
+                      cert.title || 'Certificate'
+                    )}
+                  </span>
+                  {cert.issuer || isEditing ? (
+                    <>
+                      {' - '}
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={editableData?.certificates[index]?.issuer || ''}
+                          onChange={(e) => updateEditableData('certificates', 'issuer', e.target.value, index)}
+                          className="editable-input cert-issuer-input"
+                          placeholder="Issuer"
+                        />
+                      ) : (
+                        cert.issuer
+                      )}
+                    </>
+                  ) : null}
+                </div>
+              ))
+            ) : (
+              <div className="empty-section">
+                {isEditing ? 'No certificates yet.' : 'No certificates available.'}
+              </div>
+            )}
+          </div>
+        </div>
+        
+        <div className="column">
+          {/* Skills Column */}
+          <div className="resume-section">
+            <div className="section-header-with-actions">
+              <h3 className="sub-title" style={{ color: selectedColor }}>Core Competencies</h3>
+              {isEditing && (
+                <button onClick={handleAddSkill} className="add-item-button">
+                  <Plus className="button-icon" />
+                  Add
+                </button>
+              )}
+            </div>
+            {((isEditing ? editableData?.skills : parsedData?.skills) || []).length > 0 ? (
+              <div className="skills-grid">
+                {isEditing ? (
+                  <div className="skills-inputs">
+                    {(editableData?.skills || []).map((skill, index) => (
+                      <div key={index} className="skill-input">
+                        <div className="skill-tag" style={{ borderLeftColor: selectedColor }}>
+                          <input
+                            type="text"
+                            value={skill}
+                            onChange={(e) => {
+                              setEditableData(prev => {
+                                const newData = JSON.parse(JSON.stringify(prev));
+                                if (!newData.skills) newData.skills = [];
+                                newData.skills[index] = e.target.value;
+                                return newData;
+                              });
+                            }}
+                            className="editable-input skill-input-field"
+                            placeholder="Skill"
+                          />
+                          <button onClick={() => handleRemoveSkill(index)} className="remove-skill-button">
+                            <Trash2 className="button-icon" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  parsedData?.skills?.map((skill, index) => (
+                    <div key={index} className="skill-tag" style={{ borderLeftColor: selectedColor }}>
+                      {skill}
+                    </div>
+                  ))
+                )}
+              </div>
+            ) : (
+              <div className="empty-section">
+                {isEditing ? 'No skills yet.' : 'No skills available.'}
+              </div>
+            )}
+          </div>
+
+          {/* Achievements Column */}
+          <div className="resume-section">
+            <div className="section-header-with-actions">
+              <h3 className="sub-title" style={{ color: selectedColor }}>Key Achievements</h3>
+              {isEditing && (
+                <button onClick={handleAddAchievement} className="add-item-button">
+                  <Plus className="button-icon" />
+                  Add
+                </button>
+              )}
+            </div>
+            {((isEditing ? editableData?.achievements : parsedData?.achievements) || []).length > 0 ? (
+              (isEditing ? editableData?.achievements : parsedData?.achievements)?.map((achievement, index) => (
+                <div key={index} className="achievement-entry">
+                  {isEditing && (
+                    <div className="entry-actions">
+                      <button onClick={() => removeItem('achievements', index)} className="remove-item-button">
+                        <Trash2 className="button-icon" />
+                      </button>
+                    </div>
+                  )}
+                  <div className="achievement-title">
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={editableData?.achievements[index]?.title || ''}
+                        onChange={(e) => updateEditableData('achievements', 'title', e.target.value, index)}
+                        className="editable-input achievement-title-input"
+                        placeholder="Achievement Title"
+                      />
+                    ) : (
+                      achievement.title || 'Achievement'
+                    )}
+                  </div>
+                  {achievement.description?.length > 0 && !isEditing && (
+                    <div className="achievement-desc">{achievement.description[0]}</div>
+                  )}
+                  {isEditing && (
+                    <div className="description-section">
+                      <div className="description-inputs">
+                        {(editableData?.achievements[index]?.description || []).map((desc, descIndex) => (
+                          <div key={descIndex} className="description-line">
+                            <input
+                              type="text"
+                              value={desc}
+                              onChange={(e) => updateDescriptionLine('achievements', index, descIndex, e.target.value)}
+                              className="editable-input description-input"
+                              placeholder="Description line"
+                            />
+                            <button 
+                              onClick={() => removeDescriptionLine('achievements', index, descIndex)}
+                              className="remove-line-button"
+                              disabled={(editableData?.achievements[index]?.description || []).length <= 1}
+                            >
+                              <Trash2 className="button-icon" />
+                            </button>
+                          </div>
+                        ))}
+                        <button onClick={() => addDescriptionLine('achievements', index)} className="add-line-button">
+                          <Plus className="button-icon" />
+                          Add Line
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))
+            ) : (
+              <div className="empty-section">
+                {isEditing ? 'No achievements yet.' : 'No achievements available.'}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Executive Projects Section */}
+      <div className="resume-section">
+        <div className="section-header-with-actions">
+          <h2 className="resume-section-title" style={{ color: selectedColor }}>
+            Notable Projects
+          </h2>
+          {isEditing && (
+            <button onClick={handleAddProject} className="add-item-button">
+              <Plus className="button-icon" />
+              Add Project
+            </button>
+          )}
+        </div>
+        {((isEditing ? editableData?.projects : parsedData?.projects) || []).length > 0 ? (
+          <div className="projects-grid">
+            {(isEditing ? editableData?.projects : parsedData?.projects)?.map((project, index) => (
+              <div key={index} className="project-card" style={{ borderLeftColor: selectedColor }}>
+                {isEditing && (
+                  <div className="entry-actions">
+                    <button onClick={() => removeItem('projects', index)} className="remove-item-button">
+                      <Trash2 className="button-icon" />
+                    </button>
+                  </div>
+                )}
+                <div className="project-title">
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editableData?.projects[index]?.title || ''}
+                      onChange={(e) => updateEditableData('projects', 'title', e.target.value, index)}
+                      className="editable-input project-title-input"
+                      placeholder="Project Title"
+                    />
+                  ) : (
+                    project.title || 'Project Title'
+                  )}
+                </div>
+                {project.description?.length > 0 && !isEditing && (
+                  <div className="project-desc">{project.description[0]}</div>
+                )}
+                {isEditing && (
+                  <div className="description-section">
+                    <div className="description-inputs">
+                      {(editableData?.projects[index]?.description || []).map((desc, descIndex) => (
+                        <div key={descIndex} className="description-line">
+                          <input
+                            type="text"
+                            value={desc}
+                            onChange={(e) => updateDescriptionLine('projects', index, descIndex, e.target.value)}
+                            className="editable-input description-input"
+                            placeholder="Description line"
+                          />
+                          <button 
+                            onClick={() => removeDescriptionLine('projects', index, descIndex)}
+                            className="remove-line-button"
+                            disabled={(editableData?.projects[index]?.description || []).length <= 1}
+                          >
+                            <Trash2 className="button-icon" />
+                          </button>
+                        </div>
+                      ))}
+                      <button onClick={() => addDescriptionLine('projects', index)} className="add-line-button">
+                        <Plus className="button-icon" />
+                        Add Line
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="empty-section">
+            {isEditing ? 'No projects yet. Click "Add Project" to add one.' : 'No projects available.'}
+          </div>
+        )}
+      </div>
+    </div>
+  ) : (
+    /* CLASSIC TEMPLATE - Traditional Single Column Layout */
+    <div className="resume-classic-layout">
+      <div className="resume-header">
+        <h1 className="resume-name">
+          {isEditing ? (
+            <input
+              type="text"
+              value={editableData?.personalInfo?.name || ''}
+              onChange={(e) => {
+                console.log('Updating name to:', e.target.value);
+                updateEditableData('personalInfo', 'name', e.target.value);
+              }}
+              onInput={(e) => {
+                // Safari sometimes needs onInput for immediate updates
+                console.log('Input event - updating name to:', e.target.value);
+                updateEditableData('personalInfo', 'name', e.target.value);
+              }}
+              className="editable-input name-input"
+              placeholder="Your Name"
+            />
+          ) : (
+            parsedData?.personalInfo?.name || 'Your Name'
+          )}
+        </h1>
+        <div className="resume-contact">
+          {isEditing ? (
+            <div className="contact-inputs">
+              <input
+                type="email"
+                value={editableData?.personalInfo?.email || ''}
+                onChange={(e) => updateEditableData('personalInfo', 'email', e.target.value)}
+                className="editable-input contact-input"
+                placeholder="Email"
+              />
+              <span className="contact-separator">|</span>
+              <input
+                type="tel"
+                value={editableData?.personalInfo?.phone || ''}
+                onChange={(e) => updateEditableData('personalInfo', 'phone', e.target.value)}
+                className="editable-input contact-input"
+                placeholder="Phone"
+              />
+              <span className="contact-separator">|</span>
+              <input
+                type="text"
+                value={editableData?.personalInfo?.location || ''}
+                onChange={(e) => updateEditableData('personalInfo', 'location', e.target.value)}
+                className="editable-input contact-input"
+                placeholder="Location"
+              />
+            </div>
+          ) : (
+            `${parsedData?.personalInfo?.email || ''} | ${parsedData?.personalInfo?.phone || ''} | ${parsedData?.personalInfo?.location || ''}`
+          )}
+        </div>
+      </div>
+
+      {/* Additional Personal Information Section */}
+      {(isEditing || (parsedData?.personalInfo?.bio || parsedData?.personalInfo?.linkedinLink || parsedData?.personalInfo?.githubLink || parsedData?.personalInfo?.currentSalary || parsedData?.personalInfo?.hometown || parsedData?.personalInfo?.currentLocation)) && (
+        <div className="resume-section">
+          <div className="section-header-with-actions">
+            <h2 className="resume-section-title" style={{ 
+              color: selectedColor, 
+              borderBottomColor: selectedColor 
+            }}>PERSONAL INFORMATION</h2>
+          </div>
+          
+          <div className="personal-info-grid">
+            {/* Bio */}
+            {(isEditing || parsedData?.personalInfo?.bio) && (
+              <div className="personal-info-item">
+                <label className="personal-info-label">Bio:</label>
+                {isEditing ? (
+                  <textarea
+                    className="editable-input personal-info-input"
+                    rows={3}
+                    value={editableData?.personalInfo?.bio || ''}
+                    onChange={(e) => updateEditableData('personalInfo', 'bio', e.target.value)}
+                    placeholder="Brief summary about you"
+                  />
+                ) : (
+                  <span className="personal-info-text">{parsedData?.personalInfo?.bio}</span>
+                )}
+              </div>
+            )}
+            {/* LinkedIn */}
+            {(isEditing || parsedData?.personalInfo?.linkedinLink) && (
+              <div className="personal-info-item">
+                <label className="personal-info-label">LinkedIn:</label>
+                {isEditing ? (
+                  <input
+                    type="url"
+                    value={editableData?.personalInfo?.linkedinLink || ''}
+                    onChange={(e) => updateEditableData('personalInfo', 'linkedinLink', e.target.value)}
+                    className="editable-input personal-info-input"
+                    placeholder="LinkedIn Profile URL"
+                  />
+                ) : (
+                  <a href={parsedData?.personalInfo?.linkedinLink || '#'} target={parsedData?.personalInfo?.linkedinLink ? "_blank" : undefined} rel={parsedData?.personalInfo?.linkedinLink ? "noopener noreferrer" : undefined} className="personal-info-link">
+                    {parsedData?.personalInfo?.linkedinLink}
+                  </a>
+                )}
+              </div>
+            )}
+
+            {/* GitHub */}
+            {(isEditing || parsedData?.personalInfo?.githubLink) && (
+              <div className="personal-info-item">
+                <label className="personal-info-label">GitHub:</label>
+                {isEditing ? (
+                  <input
+                    type="url"
+                    value={editableData?.personalInfo?.githubLink || ''}
+                    onChange={(e) => updateEditableData('personalInfo', 'githubLink', e.target.value)}
+                    className="editable-input personal-info-input"
+                    placeholder="GitHub Profile URL"
+                  />
+                ) : (
+                  <a href={parsedData?.personalInfo?.githubLink || '#'} target={parsedData?.personalInfo?.githubLink ? "_blank" : undefined} rel={parsedData?.personalInfo?.githubLink ? "noopener noreferrer" : undefined} className="personal-info-link">
+                    {parsedData?.personalInfo?.githubLink}
+                  </a>
+                )}
+              </div>
+            )}
+
+            {/* Current Salary */}
+            {(isEditing || parsedData?.personalInfo?.currentSalary) && (
+              <div className="personal-info-item">
+                <label className="personal-info-label">Current Salary:</label>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={editableData?.personalInfo?.currentSalary || ''}
+                    onChange={(e) => updateEditableData('personalInfo', 'currentSalary', e.target.value)}
+                    className="editable-input personal-info-input"
+                    placeholder="e.g., $75,000 or ₹12 LPA"
+                  />
+                ) : (
+                  <span className="personal-info-text">{parsedData?.personalInfo?.currentSalary}</span>
+                )}
+              </div>
+            )}
+
+            {(isEditing || parsedData?.personalInfo?.salaryExpectation) && (
+              <div className="personal-info-item">
+                <label className="personal-info-label">Salary Expectation:</label>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={editableData?.personalInfo?.salaryExpectation || ''}
+                    onChange={(e) => updateEditableData('personalInfo', 'salaryExpectation', e.target.value)}
+                    className="editable-input personal-info-input"
+                    placeholder="e.g., $85,000 or ₹15 LPA"
+                  />
+                ) : (
+                  <span className="personal-info-text">{parsedData?.personalInfo?.salaryExpectation}</span>
+                )}
+              </div>
+            )}
+
+            {/* Hometown */}
+            {(isEditing || parsedData?.personalInfo?.hometown) && (
+              <div className="personal-info-item">
+                <label className="personal-info-label">Hometown:</label>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={editableData?.personalInfo?.hometown || ''}
+                    onChange={(e) => updateEditableData('personalInfo', 'hometown', e.target.value)}
+                    className="editable-input personal-info-input"
+                    placeholder="e.g., Mumbai, Maharashtra"
+                  />
+                ) : (
+                  <span className="personal-info-text">{parsedData?.personalInfo?.hometown}</span>
+                )}
+              </div>
+            )}
+
+            {/* Current Location */}
+            {(isEditing || parsedData?.personalInfo?.currentLocation) && (
+              <div className="personal-info-item">
+                <label className="personal-info-label">Current Location:</label>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={editableData?.personalInfo?.currentLocation || ''}
+                    onChange={(e) => updateEditableData('personalInfo', 'currentLocation', e.target.value)}
+                    className="editable-input personal-info-input"
+                    placeholder="e.g., Bengaluru, Karnataka"
+                  />
+                ) : (
+                  <span className="personal-info-text">{parsedData?.personalInfo?.currentLocation}</span>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Hobbies & Interests Section */}
+      {(isEditing || (parsedData?.personalInfo?.hobbies && parsedData?.personalInfo?.hobbies.length > 0)) && (
+        <div className="resume-section">
+          <div className="section-header-with-actions">
+            <h2 className="resume-section-title" style={{ 
+              color: selectedColor, 
+              borderBottomColor: selectedColor 
+            }}>HOBBIES & INTERESTS</h2>
+            {isEditing && (
+              <button 
+                onClick={() => {
+                  setEditableData(prev => {
+                    const newData = JSON.parse(JSON.stringify(prev));
+                    if (!newData.personalInfo) newData.personalInfo = {};
+                    if (!newData.personalInfo.hobbies) newData.personalInfo.hobbies = [];
+                    newData.personalInfo.hobbies.push('');
+                    return newData;
+                  });
+                }} 
+                className="add-item-button"
+              >
+                <Plus className="button-icon" />
+                Add Hobby
+              </button>
+            )}
+          </div>
+          {((isEditing ? editableData?.personalInfo?.hobbies : parsedData?.personalInfo?.hobbies) || []).length > 0 ? (
+            <div className="resume-skills-text">
+              {isEditing ? (
+                <div className="hobbies-inputs">
+                  {(editableData?.personalInfo?.hobbies || []).map((hobby, index) => (
+                    <div key={`hobby-edit-${index}`} className="hobby-input">
+                      <input
+                        type="text"
+                        value={hobby}
+                        onChange={(e) => {
                           setEditableData(prev => {
                             const newData = JSON.parse(JSON.stringify(prev));
                             if (!newData.personalInfo) newData.personalInfo = {};
                             if (!newData.personalInfo.hobbies) newData.personalInfo.hobbies = [];
-                            newData.personalInfo.hobbies.push('');
+                            newData.personalInfo.hobbies[index] = e.target.value;
                             return newData;
                           });
-                        }} 
-                        className="add-item-button"
+                        }}
+                        className="editable-input hobby-input-field"
+                        placeholder="e.g., Photography, Hiking, Gaming"
+                      />
+                      <button 
+                        onClick={() => {
+                          setEditableData(prev => {
+                            const newData = JSON.parse(JSON.stringify(prev));
+                            if (newData.personalInfo && newData.personalInfo.hobbies) {
+                              newData.personalInfo.hobbies.splice(index, 1);
+                            }
+                            return newData;
+                          });
+                        }}
+                        className="remove-hobby-button"
                       >
-                        <Plus className="button-icon" />
-                        Add Hobby
+                        <Trash2 className="button-icon" />
                       </button>
-                    )}
-                  </div>
-                  {((isEditing ? editableData?.personalInfo?.hobbies : parsedData?.personalInfo?.hobbies) || []).length > 0 ? (
-                    <div className="resume-skills-text">
-                      {isEditing ? (
-                        <div className="hobbies-inputs">
-                          {(editableData?.personalInfo?.hobbies || []).map((hobby, index) => (
-                            <div key={`hobby-edit-${index}`} className="hobby-input">
-                              <input
-                                type="text"
-                                value={hobby}
-                                onChange={(e) => {
-                                  setEditableData(prev => {
-                                    const newData = JSON.parse(JSON.stringify(prev));
-                                    if (!newData.personalInfo) newData.personalInfo = {};
-                                    if (!newData.personalInfo.hobbies) newData.personalInfo.hobbies = [];
-                                    newData.personalInfo.hobbies[index] = e.target.value;
-                                    return newData;
-                                  });
-                                }}
-                                className="editable-input hobby-input-field"
-                                placeholder="e.g., Photography, Hiking, Gaming"
-                              />
-                              <button 
-                                onClick={() => {
-                                  setEditableData(prev => {
-                                    const newData = JSON.parse(JSON.stringify(prev));
-                                    if (newData.personalInfo && newData.personalInfo.hobbies) {
-                                      newData.personalInfo.hobbies.splice(index, 1);
-                                    }
-                                    return newData;
-                                  });
-                                }}
-                                className="remove-hobby-button"
-                              >
-                                <Trash2 className="button-icon" />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        (parsedData?.personalInfo?.hobbies || []).join(' | ')
-                      )}
                     </div>
-                  ) : (
-                    <div className="empty-section">
-                      {isEditing ? 'No hobbies added yet. Click "Add Hobby" to add one.' : 'No hobbies information available.'}
-                    </div>
-                  )}
+                  ))}
+                </div>
+              ) : (
+                (parsedData?.personalInfo?.hobbies || []).join(' | ')
+              )}
+            </div>
+          ) : (
+            <div className="empty-section">
+              {isEditing ? 'No hobbies added yet. Click "Add Hobby" to add one.' : 'No hobbies information available.'}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Professional Experience Section */}
+      <div className="resume-section">
+        <div className="section-header-with-actions">
+          <h2 className="resume-section-title" style={{ 
+              color: selectedColor, 
+              borderBottomColor: selectedColor 
+            }}>PROFESSIONAL EXPERIENCE</h2>
+          {isEditing && (
+            <button onClick={handleAddExperience} className="add-item-button">
+              <Plus className="button-icon" />
+              Add Experience
+            </button>
+          )}
+        </div>
+        {((isEditing ? editableData?.experience : parsedData?.experience) || []).length > 0 ? (
+          (isEditing ? editableData.experience : parsedData.experience).map((exp, index) => (
+            <div key={index} className="resume-entry">
+              {isEditing && (
+                <div className="entry-actions">
+                  <button onClick={() => removeItem('experience', index)} className="remove-item-button">
+                    <Trash2 className="button-icon" />
+                  </button>
                 </div>
               )}
-
-              {/* Professional Experience Section */}
-              <div className="resume-section">
-                <div className="section-header-with-actions">
-                  <h2 className="resume-section-title" style={{ 
-                      color: selectedColor, 
-                      borderBottomColor: selectedColor 
-                    }}>PROFESSIONAL EXPERIENCE</h2>
-                  {isEditing && (
-                    <button onClick={handleAddExperience} className="add-item-button">
-                      <Plus className="button-icon" />
-                      Add Experience
-                    </button>
+              <div className="resume-entry-header">
+                <div className="resume-company-position">
+                  {isEditing ? (
+                    <>
+                      <input
+                        type="text"
+                        value={editableData?.experience[index]?.company || ''}
+                        onChange={(e) => updateEditableData('experience', 'company', e.target.value, index)}
+                        className="editable-input company-input"
+                        placeholder="Company"
+                      />
+                      <span className="separator">,</span>
+                      <input
+                        type="text"
+                        value={editableData?.experience[index]?.position || ''}
+                        onChange={(e) => updateEditableData('experience', 'position', e.target.value, index)}
+                        className="editable-input position-input"
+                        placeholder="Position"
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <strong>{exp.company || 'Company'}</strong>, {exp.position || 'Position'}
+                    </>
                   )}
                 </div>
-                {((isEditing ? editableData?.experience : parsedData?.experience) || []).length > 0 ? (
-                  (isEditing ? editableData.experience : parsedData.experience).map((exp, index) => (
-                    <div key={index} className="resume-entry">
-                      {isEditing && (
-                        <div className="entry-actions">
-                          <button onClick={() => removeItem('experience', index)} className="remove-item-button">
-                            <Trash2 className="button-icon" />
-                          </button>
-                        </div>
-                      )}
-                      <div className="resume-entry-header">
-                        <div className="resume-company-position">
-                          {isEditing ? (
-                            <>
-                              <input
-                                type="text"
-                                value={editableData?.experience[index]?.company || ''}
-                                onChange={(e) => updateEditableData('experience', 'company', e.target.value, index)}
-                                className="editable-input company-input"
-                                placeholder="Company"
-                              />
-                              <span className="separator">,</span>
-                              <input
-                                type="text"
-                                value={editableData?.experience[index]?.position || ''}
-                                onChange={(e) => updateEditableData('experience', 'position', e.target.value, index)}
-                                className="editable-input position-input"
-                                placeholder="Position"
-                              />
-                            </>
-                          ) : (
-                            <>
-                              <strong>{exp.company || 'Company'}</strong>, {exp.position || 'Position'}
-                            </>
-                          )}
-                        </div>
-                        <div className="resume-duration">
-                          {isEditing ? (
-                            <input
-                              type="text"
-                              value={editableData?.experience[index]?.duration || ''}
-                              onChange={(e) => updateEditableData('experience', 'duration', e.target.value, index)}
-                              className="editable-input duration-input"
-                              placeholder="Duration"
-                            />
-                          ) : (
-                            <em>{exp.duration || 'Duration'}</em>
-                          )}
-                        </div>
-                      </div>
-                      <div className="description-section">
-                        {isEditing ? (
-                          <div className="description-inputs">
-                            {(editableData?.experience[index]?.description || []).map((desc, descIndex) => (
-                              <div key={descIndex} className="description-line">
-                                <input
-                                  type="text"
-                                  value={desc}
-                                  onChange={(e) => updateDescriptionLine('experience', index, descIndex, e.target.value)}
-                                  className="editable-input description-input"
-                                  placeholder="Description line"
-                                />
-                                <button 
-                                  onClick={() => removeDescriptionLine('experience', index, descIndex)}
-                                  className="remove-line-button"
-                                  disabled={(editableData?.experience[index]?.description || []).length <= 1}
-                                >
-                                  <Trash2 className="button-icon" />
-                                </button>
-                              </div>
-                            ))}
-                            <button onClick={() => addDescriptionLine('experience', index)} className="add-line-button">
-                              <Plus className="button-icon" />
-                              Add Line
-                            </button>
-                          </div>
-                        ) : (
-                          exp.description && Array.isArray(exp.description) && exp.description.length > 0 && (
-                            <ul className="resume-bullet-list">
-                              {exp.description.map((desc, descIndex) => (
-                                <li key={descIndex}>{desc}</li>
-                              ))}
-                            </ul>
-                          )
-                        )}
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="empty-section">
-                    {isEditing ? 'No experience entries yet. Click "Add Experience" to add one.' : 'No experience information available.'}
-                  </div>
-                )}
+                <div className="resume-duration">
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editableData?.experience[index]?.duration || ''}
+                      onChange={(e) => updateEditableData('experience', 'duration', e.target.value, index)}
+                      className="editable-input duration-input"
+                      placeholder="Duration"
+                    />
+                  ) : (
+                    <em>{exp.duration || 'Duration'}</em>
+                  )}
+                </div>
               </div>
-
-              {/* Education Section */}
-              <div className="resume-section">
-                <div className="section-header-with-actions">
-                  <h2 className="resume-section-title" style={{ 
-    color: selectedColor, 
-    borderBottomColor: selectedColor 
-  }}>EDUCATION</h2>
-                  {isEditing && (
-                    <button onClick={handleAddEducation} className="add-item-button">
+              <div className="description-section">
+                {isEditing ? (
+                  <div className="description-inputs">
+                    {(editableData?.experience[index]?.description || []).map((desc, descIndex) => (
+                      <div key={descIndex} className="description-line">
+                        <input
+                          type="text"
+                          value={desc}
+                          onChange={(e) => updateDescriptionLine('experience', index, descIndex, e.target.value)}
+                          className="editable-input description-input"
+                          placeholder="Description line"
+                        />
+                        <button 
+                          onClick={() => removeDescriptionLine('experience', index, descIndex)}
+                          className="remove-line-button"
+                          disabled={(editableData?.experience[index]?.description || []).length <= 1}
+                        >
+                          <Trash2 className="button-icon" />
+                        </button>
+                      </div>
+                    ))}
+                    <button onClick={() => addDescriptionLine('experience', index)} className="add-line-button">
                       <Plus className="button-icon" />
-                      Add Education
+                      Add Line
                     </button>
-                  )}
-                </div>
-                {((isEditing ? editableData?.education : parsedData?.education) || []).length > 0 ? (
-                  (isEditing ? editableData.education : parsedData.education).map((edu, index) => (
-                    <div key={index} className="resume-entry">
-                      {isEditing && (
-                        <div className="entry-actions">
-                          <button onClick={() => removeItem('education', index)} className="remove-item-button">
-                            <Trash2 className="button-icon" />
-                          </button>
-                        </div>
-                      )}
-                      <div className="resume-entry-header">
-                        <div className="resume-company-position">
-                          {isEditing ? (
-                            <input
-                              type="text"
-                              value={editableData?.education[index]?.institution || ''}
-                              onChange={(e) => updateEditableData('education', 'institution', e.target.value, index)}
-                              className="editable-input institution-input"
-                              placeholder="Institution"
-                            />
-                          ) : (
-                            <strong>{edu.institution || 'Institution'}</strong>
-                          )}
-                        </div>
-                        <div className="resume-duration">
-                          {isEditing ? (
-                            <input
-                              type="text"
-                              value={editableData?.education[index]?.year || ''}
-                              onChange={(e) => updateEditableData('education', 'year', e.target.value, index)}
-                              className="editable-input year-input"
-                              placeholder="Year"
-                            />
-                          ) : (
-                            <em>{edu.year || 'Year'}</em>
-                          )}
-                        </div>
-                      </div>
-                      <div className="resume-education-details">
-                        {isEditing ? (
-                          <input
-                            type="text"
-                            value={editableData?.education[index]?.degree || ''}
-                            onChange={(e) => updateEditableData('education', 'degree', e.target.value, index)}
-                            className="editable-input degree-input"
-                            placeholder="Degree"
-                          />
-                        ) : (
-                          edu.degree || 'Degree'
-                        )}
-                      </div>
-                      {isEditing && (
-                        <div className="description-section">
-                          <div className="description-inputs">
-                            {(editableData?.education[index]?.description || []).map((desc, descIndex) => (
-                              <div key={descIndex} className="description-line">
-                                <input
-                                  type="text"
-                                  value={desc}
-                                  onChange={(e) => updateDescriptionLine('education', index, descIndex, e.target.value)}
-                                  className="editable-input description-input"
-                                  placeholder="Description line"
-                                />
-                                <button 
-                                  onClick={() => removeDescriptionLine('education', index, descIndex)}
-                                  className="remove-line-button"
-                                  disabled={(editableData?.education[index]?.description || []).length <= 1}
-                                >
-                                  <Trash2 className="button-icon" />
-                                </button>
-                              </div>
-                            ))}
-                            <button onClick={() => addDescriptionLine('education', index)} className="add-line-button">
-                              <Plus className="button-icon" />
-                              Add Line
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))
-                ) : (
-                  <div className="empty-section">
-                    {isEditing ? 'No education entries yet. Click "Add Education" to add one.' : 'No education information available.'}
-                  </div>
-                )}
-              </div>
-
-              {/* Technical Skills Section */}
-              <div className="resume-section">
-                <div className="section-header-with-actions">
-                  <h2 className="resume-section-title" style={{ 
-    color: selectedColor, 
-    borderBottomColor: selectedColor 
-  }}>TECHNICAL SKILLS</h2>
-                  {isEditing && (
-                    <button onClick={handleAddSkill} className="add-item-button">
-                      <Plus className="button-icon" />
-                      Add Skill
-                    </button>
-                  )}
-                </div>
-                {((isEditing ? editableData?.skills : parsedData?.skills) || []).length > 0 ? (
-                  <div className="resume-skills-text">
-                    {isEditing ? (
-                      <div className="skills-inputs">
-                        {(isEditing ? editableData.skills : parsedData.skills).map((skill, index) => (
-                          <div key={`skill-${index}-${skill}`} className="skill-input">
-                            <input
-                              type="text"
-                              value={skill}
-                              onChange={(e) => {
-                                console.log(`Updating skill at index ${index} to:`, e.target.value);
-                                setEditableData(prev => {
-                                  const newData = JSON.parse(JSON.stringify(prev));
-                                  if (!newData.skills) newData.skills = [];
-                                  newData.skills[index] = e.target.value;
-                                  return newData;
-                                });
-                              }}
-                              onInput={(e) => {
-                                // Safari sometimes needs onInput for immediate updates
-                                console.log(`Input event - updating skill at index ${index} to:`, e.target.value);
-                                setEditableData(prev => {
-                                  const newData = JSON.parse(JSON.stringify(prev));
-                                  if (!newData.skills) newData.skills = [];
-                                  newData.skills[index] = e.target.value;
-                                  return newData;
-                                });
-                              }}
-                              className="editable-input skill-input-field"
-                              placeholder="Skill"
-                            />
-                            <button 
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                console.log('Remove skill button clicked for index:', index);
-                                handleRemoveSkill(index);
-                              }}
-                              onMouseDown={(e) => {
-                                // Safari-specific event handling
-                                e.preventDefault();
-                                console.log('Mouse down on remove skill button for index:', index);
-                              }}
-                              className="remove-skill-button"
-                              type="button"
-                              style={{
-                                // Safari-specific styles
-                                WebkitAppearance: 'none',
-                                WebkitUserSelect: 'none',
-                                WebkitTapHighlightColor: 'transparent',
-                                WebkitTouchCallout: 'none',
-                                WebkitTransform: 'translateZ(0)',
-                                transform: 'translateZ(0)',
-                                position: 'relative',
-                                zIndex: 1
-                              }}
-                            >
-                              <Trash2 className="button-icon" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      (isEditing ? editableData.skills : parsedData.skills).join(' | ')
-                    )}
                   </div>
                 ) : (
-                  <div className="empty-section">
-                    {isEditing ? 'No skills yet. Click "Add Skill" to add one.' : 'No skills information available.'}
-                  </div>
-                )}
-              </div>
-
-              {/* Projects Section */}
-              <div className="resume-section">
-                <div className="section-header-with-actions">
-                  <h2 className="resume-section-title" style={{ 
-    color: selectedColor, 
-    borderBottomColor: selectedColor 
-  }}>KEY PROJECTS</h2>
-                  {isEditing && (
-                    <button onClick={handleAddProject} className="add-item-button">
-                      <Plus className="button-icon" />
-                      Add Project
-                    </button>
-                  )}
-                </div>
-                {((isEditing ? editableData?.projects : parsedData?.projects) || []).length > 0 ? (
-                  (isEditing ? editableData.projects : parsedData.projects).map((project, index) => (
-                    <div key={index} className="resume-entry">
-                      {isEditing && (
-                        <div className="entry-actions">
-                          <button onClick={() => removeItem('projects', index)} className="remove-item-button">
-                            <Trash2 className="button-icon" />
-                          </button>
-                        </div>
-                      )}
-                      <div className="resume-project-title">
-                        {isEditing ? (
-                          <input
-                            type="text"
-                            value={editableData?.projects[index]?.title || ''}
-                            onChange={(e) => updateEditableData('projects', 'title', e.target.value, index)}
-                            className="editable-input project-title-input"
-                            placeholder="Project Title"
-                          />
-                        ) : (
-                          <strong>{project.title || 'Project Title'}</strong>
-                        )}
-                      </div>
-                      <div className="description-section">
-                        {isEditing ? (
-                          <div className="description-inputs">
-                            {(editableData?.projects[index]?.description || []).map((desc, descIndex) => (
-                              <div key={descIndex} className="description-line">
-                                <input
-                                  type="text"
-                                  value={desc}
-                                  onChange={(e) => updateDescriptionLine('projects', index, descIndex, e.target.value)}
-                                  className="editable-input description-input"
-                                  placeholder="Description line"
-                                />
-                                <button 
-                                  onClick={() => removeDescriptionLine('projects', index, descIndex)}
-                                  className="remove-line-button"
-                                  disabled={(editableData?.projects[index]?.description || []).length <= 1}
-                                >
-                                  <Trash2 className="button-icon" />
-                                </button>
-                              </div>
-                            ))}
-                            <button onClick={() => addDescriptionLine('projects', index)} className="add-line-button">
-                              <Plus className="button-icon" />
-                              Add Line
-                            </button>
-                          </div>
-                        ) : (
-                          project.description && Array.isArray(project.description) && project.description.length > 0 && (
-                            <ul className="resume-bullet-list">
-                              {project.description.map((desc, descIndex) => (
-                                <li key={descIndex}>{desc}</li>
-                              ))}
-                            </ul>
-                          )
-                        )}
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="empty-section">
-                    {isEditing ? 'No projects yet. Click "Add Project" to add one.' : 'No projects information available.'}
-                  </div>
-                )}
-              </div>
-
-              {/* Achievements Section */}
-              <div className="resume-section">
-                <div className="section-header-with-actions">
-                  <h2 className="resume-section-title" style={{ 
-    color: selectedColor, 
-    borderBottomColor: selectedColor 
-  }}>ACHIEVEMENTS & AWARDS</h2>
-                  {isEditing && (
-                    <button onClick={handleAddAchievement} className="add-item-button">
-                      <Plus className="button-icon" />
-                      Add Achievement
-                    </button>
-                  )}
-                </div>
-                {((isEditing ? editableData?.achievements : parsedData?.achievements) || []).length > 0 ? (
-                  (isEditing ? editableData.achievements : parsedData.achievements).map((achievement, index) => (
-                    <div key={index} className="resume-entry">
-                      {isEditing && (
-                        <div className="entry-actions">
-                          <button onClick={() => removeItem('achievements', index)} className="remove-item-button">
-                            <Trash2 className="button-icon" />
-                          </button>
-                        </div>
-                      )}
-                      <div className="resume-project-title">
-                        {isEditing ? (
-                          <input
-                            type="text"
-                            value={editableData?.achievements[index]?.title || ''}
-                            onChange={(e) => updateEditableData('achievements', 'title', e.target.value, index)}
-                            className="editable-input achievement-title-input"
-                            placeholder="Achievement Title"
-                          />
-                        ) : (
-                          <strong>{achievement.title || 'Achievement Title'}</strong>
-                        )}
-                      </div>
-                      <div className="description-section">
-                        {isEditing ? (
-                          <div className="description-inputs">
-                            {(editableData?.achievements[index]?.description || []).map((desc, descIndex) => (
-                              <div key={descIndex} className="description-line">
-                                <input
-                                  type="text"
-                                  value={desc}
-                                  onChange={(e) => updateDescriptionLine('achievements', index, descIndex, e.target.value)}
-                                  className="editable-input description-input"
-                                  placeholder="Description line"
-                                />
-                                <button 
-                                  onClick={() => removeDescriptionLine('achievements', index, descIndex)}
-                                  className="remove-line-button"
-                                  disabled={(editableData?.achievements[index]?.description || []).length <= 1}
-                                >
-                                  <Trash2 className="button-icon" />
-                                </button>
-                              </div>
-                            ))}
-                            <button onClick={() => addDescriptionLine('achievements', index)} className="add-line-button">
-                              <Plus className="button-icon" />
-                              Add Line
-                            </button>
-                          </div>
-                        ) : (
-                          achievement.description && Array.isArray(achievement.description) && achievement.description.length > 0 && (
-                            <ul className="resume-bullet-list">
-                              {achievement.description.map((desc, descIndex) => (
-                                <li key={descIndex}>{desc}</li>
-                              ))}
-                            </ul>
-                          )
-                        )}
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="empty-section">
-                    {isEditing ? 'No achievements yet. Click "Add Achievement" to add one.' : 'No achievements information available.'}
-                  </div>
-                )}
-              </div>
-
-              {/* Certificates Section */}
-              <div className="resume-section">
-                <div className="section-header-with-actions">
-                  <h2 className="resume-section-title" style={{ 
-    color: selectedColor, 
-    borderBottomColor: selectedColor 
-  }}>CERTIFICATIONS & COURSEWORK</h2>
-                  {isEditing && (
-                    <button onClick={handleAddCertificate} className="add-item-button">
-                      <Plus className="button-icon" />
-                      Add Certificate
-                    </button>
-                  )}
-                </div>
-                {((isEditing ? editableData?.certificates : parsedData?.certificates) || []).length > 0 ? (
-                  <div className="resume-skills-text">
-                    {isEditing ? (
-                      <div className="certificates-inputs">
-                        {(isEditing ? editableData.certificates : parsedData.certificates).map((cert, index) => (
-                          <div key={`cert-${index}-${cert.title}`} className="certificate-input">
-                            <input
-                              type="text"
-                              value={editableData?.certificates[index]?.title || ''}
-                              onChange={(e) => {
-                                console.log(`Updating cert title at index ${index} to:`, e.target.value);
-                                updateEditableData('certificates', 'title', e.target.value, index);
-                              }}
-                              onInput={(e) => {
-                                // Safari sometimes needs onInput for immediate updates
-                                console.log(`Input event - updating cert title at index ${index} to:`, e.target.value);
-                                updateEditableData('certificates', 'title', e.target.value, index);
-                              }}
-                              className="editable-input cert-title-input"
-                              placeholder="Certificate Title"
-                            />
-                            <span className="separator">(</span>
-                            <input
-                              type="text"
-                              value={editableData?.certificates[index]?.issuer || ''}
-                              onChange={(e) => {
-                                console.log(`Updating cert issuer at index ${index} to:`, e.target.value);
-                                updateEditableData('certificates', 'issuer', e.target.value, index);
-                              }}
-                              onInput={(e) => {
-                                // Safari sometimes needs onInput for immediate updates
-                                console.log(`Input event - updating cert issuer at index ${index} to:`, e.target.value);
-                                updateEditableData('certificates', 'issuer', e.target.value, index);
-                              }}
-                              className="editable-input cert-issuer-input"
-                              placeholder="Issuer"
-                            />
-                            <span className="separator">)</span>
-                            <button 
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                console.log('Remove certificate button clicked for index:', index);
-                                handleRemoveCertificate(index);
-                              }}
-                              onMouseDown={(e) => {
-                                // Safari-specific event handling
-                                e.preventDefault();
-                                console.log('Mouse down on remove certificate button for index:', index);
-                              }}
-                              className="remove-cert-button"
-                              type="button"
-                              style={{
-                                // Safari-specific styles
-                                WebkitAppearance: 'none',
-                                WebkitUserSelect: 'none',
-                                WebkitTapHighlightColor: 'transparent',
-                                WebkitTouchCallout: 'none',
-                                WebkitTransform: 'translateZ(0)',
-                                transform: 'translateZ(0)',
-                                position: 'relative',
-                                zIndex: 1
-                              }}
-                            >
-                              <Trash2 className="button-icon" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      (isEditing ? editableData.certificates : parsedData.certificates).map(cert => `${cert.title} (${cert.issuer || 'Provider'})`).join(' | ')
-                    )}
-                  </div>
-                ) : (
-                  <div className="empty-section">
-                    {isEditing ? 'No certificates yet. Click "Add Certificate" to add one.' : 'No certificates information available.'}
-                  </div>
-                )}
-              </div>
-
-              {/* Additional Information Section */}
-              <div className="resume-section">
-                <div className="section-header-with-actions">
-                  <h2 className="resume-section-title" style={{ 
-    color: selectedColor, 
-    borderBottomColor: selectedColor 
-  }}>ADDITIONAL INFORMATION</h2>
-                  {isEditing && (
-                    <button onClick={handleAddAdditionalInfo} className="add-item-button">
-                      <Plus className="button-icon" />
-                      Add Info
-                    </button>
-                  )}
-                </div>
-                {((isEditing ? editableData?.additionalInformation : parsedData?.additionalInformation) || []).length > 0 ? (
-                  <div className="resume-skills-text">
-                    {isEditing ? (
-                      <div className="additional-info-inputs">
-                        {(isEditing ? editableData.additionalInformation : parsedData.additionalInformation).map((info, index) => (
-                          <div key={index} className="additional-info-input">
-                            <input
-                              type="text"
-                              value={info}
-                              onChange={(e) => {
-                                setEditableData(prev => {
-                                  const newData = JSON.parse(JSON.stringify(prev));
-                                  newData.additionalInformation[index] = e.target.value;
-                                  return newData;
-                                });
-                              }}
-                              className="editable-input additional-info-input-field"
-                              placeholder="Additional information"
-                            />
-                            <button 
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                console.log('Remove additional info button clicked for index:', index);
-                                handleRemoveAdditionalInfo(index);
-                              }}
-                              onMouseDown={(e) => {
-                                // Safari-specific event handling
-                                e.preventDefault();
-                                console.log('Mouse down on remove additional info button for index:', index);
-                              }}
-                              className="remove-info-button"
-                              type="button"
-                              style={{
-                                // Safari-specific styles
-                                WebkitAppearance: 'none',
-                                WebkitUserSelect: 'none',
-                                WebkitTapHighlightColor: 'transparent',
-                                WebkitTouchCallout: 'none',
-                                WebkitTransform: 'translateZ(0)',
-                                transform: 'translateZ(0)',
-                                position: 'relative',
-                                zIndex: 1
-                              }}
-                            >
-                              <Trash2 className="button-icon" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      (isEditing ? editableData.additionalInformation : parsedData.additionalInformation).join(' | ')
-                    )}
-                  </div>
-                ) : (
-                  <div className="empty-section">
-                    {isEditing ? 'No additional information yet. Click "Add Info" to add one.' : 'No additional information available.'}
-                  </div>
+                  exp.description && Array.isArray(exp.description) && exp.description.length > 0 && (
+                    <ul className="resume-bullet-list">
+                      {exp.description.map((desc, descIndex) => (
+                        <li key={descIndex}>{desc}</li>
+                      ))}
+                    </ul>
+                  )
                 )}
               </div>
             </div>
+          ))
+        ) : (
+          <div className="empty-section">
+            {isEditing ? 'No experience entries yet. Click "Add Experience" to add one.' : 'No experience information available.'}
+          </div>
+        )}
+      </div>
+
+      {/* Education Section */}
+      <div className="resume-section">
+        <div className="section-header-with-actions">
+          <h2 className="resume-section-title" style={{ 
+            color: selectedColor, 
+            borderBottomColor: selectedColor 
+          }}>EDUCATION</h2>
+          {isEditing && (
+            <button onClick={handleAddEducation} className="add-item-button">
+              <Plus className="button-icon" />
+              Add Education
+            </button>
+          )}
+        </div>
+        {((isEditing ? editableData?.education : parsedData?.education) || []).length > 0 ? (
+          (isEditing ? editableData.education : parsedData.education).map((edu, index) => (
+            <div key={index} className="resume-entry">
+              {isEditing && (
+                <div className="entry-actions">
+                  <button onClick={() => removeItem('education', index)} className="remove-item-button">
+                    <Trash2 className="button-icon" />
+                  </button>
+                </div>
+              )}
+              <div className="resume-entry-header">
+                <div className="resume-company-position">
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editableData?.education[index]?.institution || ''}
+                      onChange={(e) => updateEditableData('education', 'institution', e.target.value, index)}
+                      className="editable-input institution-input"
+                      placeholder="Institution"
+                    />
+                  ) : (
+                    <strong>{edu.institution || 'Institution'}</strong>
+                  )}
+                </div>
+                <div className="resume-duration">
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editableData?.education[index]?.year || ''}
+                      onChange={(e) => updateEditableData('education', 'year', e.target.value, index)}
+                      className="editable-input year-input"
+                      placeholder="Year"
+                    />
+                  ) : (
+                    <em>{edu.year || 'Year'}</em>
+                  )}
+                </div>
+              </div>
+              <div className="resume-education-details">
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={editableData?.education[index]?.degree || ''}
+                    onChange={(e) => updateEditableData('education', 'degree', e.target.value, index)}
+                    className="editable-input degree-input"
+                    placeholder="Degree"
+                  />
+                ) : (
+                  edu.degree || 'Degree'
+                )}
+              </div>
+              {isEditing && (
+                <div className="description-section">
+                  <div className="description-inputs">
+                    {(editableData?.education[index]?.description || []).map((desc, descIndex) => (
+                      <div key={descIndex} className="description-line">
+                        <input
+                          type="text"
+                          value={desc}
+                          onChange={(e) => updateDescriptionLine('education', index, descIndex, e.target.value)}
+                          className="editable-input description-input"
+                          placeholder="Description line"
+                        />
+                        <button 
+                          onClick={() => removeDescriptionLine('education', index, descIndex)}
+                          className="remove-line-button"
+                          disabled={(editableData?.education[index]?.description || []).length <= 1}
+                        >
+                          <Trash2 className="button-icon" />
+                        </button>
+                      </div>
+                    ))}
+                    <button onClick={() => addDescriptionLine('education', index)} className="add-line-button">
+                      <Plus className="button-icon" />
+                      Add Line
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))
+        ) : (
+          <div className="empty-section">
+            {isEditing ? 'No education entries yet. Click "Add Education" to add one.' : 'No education information available.'}
+          </div>
+        )}
+      </div>
+
+      {/* Technical Skills Section */}
+      <div className="resume-section">
+        <div className="section-header-with-actions">
+          <h2 className="resume-section-title" style={{ 
+            color: selectedColor, 
+            borderBottomColor: selectedColor 
+          }}>TECHNICAL SKILLS</h2>
+          {isEditing && (
+            <button onClick={handleAddSkill} className="add-item-button">
+              <Plus className="button-icon" />
+              Add Skill
+            </button>
+          )}
+        </div>
+        {((isEditing ? editableData?.skills : parsedData?.skills) || []).length > 0 ? (
+          <div className="resume-skills-text">
+            {isEditing ? (
+              <div className="skills-inputs">
+                {(isEditing ? editableData.skills : parsedData.skills).map((skill, index) => (
+                  <div key={`skill-${index}-${skill}`} className="skill-input">
+                    <input
+                      type="text"
+                      value={skill}
+                      onChange={(e) => {
+                        console.log(`Updating skill at index ${index} to:`, e.target.value);
+                        setEditableData(prev => {
+                          const newData = JSON.parse(JSON.stringify(prev));
+                          if (!newData.skills) newData.skills = [];
+                          newData.skills[index] = e.target.value;
+                          return newData;
+                        });
+                      }}
+                      onInput={(e) => {
+                        // Safari sometimes needs onInput for immediate updates
+                        console.log(`Input event - updating skill at index ${index} to:`, e.target.value);
+                        setEditableData(prev => {
+                          const newData = JSON.parse(JSON.stringify(prev));
+                          if (!newData.skills) newData.skills = [];
+                          newData.skills[index] = e.target.value;
+                          return newData;
+                        });
+                      }}
+                      className="editable-input skill-input-field"
+                      placeholder="Skill"
+                    />
+                    <button 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('Remove skill button clicked for index:', index);
+                        handleRemoveSkill(index);
+                      }}
+                      onMouseDown={(e) => {
+                        // Safari-specific event handling
+                        e.preventDefault();
+                        console.log('Mouse down on remove skill button for index:', index);
+                      }}
+                      className="remove-skill-button"
+                      type="button"
+                      style={{
+                        // Safari-specific styles
+                        WebkitAppearance: 'none',
+                        WebkitUserSelect: 'none',
+                        WebkitTapHighlightColor: 'transparent',
+                        WebkitTouchCallout: 'none',
+                        WebkitTransform: 'translateZ(0)',
+                        transform: 'translateZ(0)',
+                        position: 'relative',
+                        zIndex: 1
+                      }}
+                    >
+                      <Trash2 className="button-icon" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              (isEditing ? editableData.skills : parsedData.skills).join(' | ')
+            )}
+          </div>
+        ) : (
+          <div className="empty-section">
+            {isEditing ? 'No skills yet. Click "Add Skill" to add one.' : 'No skills information available.'}
+          </div>
+        )}
+      </div>
+
+      {/* Projects Section */}
+      <div className="resume-section">
+        <div className="section-header-with-actions">
+          <h2 className="resume-section-title" style={{ 
+            color: selectedColor, 
+            borderBottomColor: selectedColor 
+          }}>KEY PROJECTS</h2>
+          {isEditing && (
+            <button onClick={handleAddProject} className="add-item-button">
+              <Plus className="button-icon" />
+              Add Project
+            </button>
+          )}
+        </div>
+        {((isEditing ? editableData?.projects : parsedData?.projects) || []).length > 0 ? (
+          (isEditing ? editableData.projects : parsedData.projects).map((project, index) => (
+            <div key={index} className="resume-entry">
+              {isEditing && (
+                <div className="entry-actions">
+                  <button onClick={() => removeItem('projects', index)} className="remove-item-button">
+                    <Trash2 className="button-icon" />
+                  </button>
+                </div>
+              )}
+              <div className="resume-project-title">
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={editableData?.projects[index]?.title || ''}
+                    onChange={(e) => updateEditableData('projects', 'title', e.target.value, index)}
+                    className="editable-input project-title-input"
+                    placeholder="Project Title"
+                  />
+                ) : (
+                  <strong>{project.title || 'Project Title'}</strong>
+                )}
+              </div>
+              <div className="description-section">
+                {isEditing ? (
+                  <div className="description-inputs">
+                    {(editableData?.projects[index]?.description || []).map((desc, descIndex) => (
+                      <div key={descIndex} className="description-line">
+                        <input
+                          type="text"
+                          value={desc}
+                          onChange={(e) => updateDescriptionLine('projects', index, descIndex, e.target.value)}
+                          className="editable-input description-input"
+                          placeholder="Description line"
+                        />
+                        <button 
+                          onClick={() => removeDescriptionLine('projects', index, descIndex)}
+                          className="remove-line-button"
+                          disabled={(editableData?.projects[index]?.description || []).length <= 1}
+                        >
+                          <Trash2 className="button-icon" />
+                        </button>
+                      </div>
+                    ))}
+                    <button onClick={() => addDescriptionLine('projects', index)} className="add-line-button">
+                      <Plus className="button-icon" />
+                      Add Line
+                    </button>
+                  </div>
+                ) : (
+                  project.description && Array.isArray(project.description) && project.description.length > 0 && (
+                    <ul className="resume-bullet-list">
+                      {project.description.map((desc, descIndex) => (
+                        <li key={descIndex}>{desc}</li>
+                      ))}
+                    </ul>
+                  )
+                )}
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="empty-section">
+            {isEditing ? 'No projects yet. Click "Add Project" to add one.' : 'No projects information available.'}
+          </div>
+        )}
+      </div>
+
+      {/* Achievements Section */}
+      <div className="resume-section">
+        <div className="section-header-with-actions">
+          <h2 className="resume-section-title" style={{ 
+            color: selectedColor, 
+            borderBottomColor: selectedColor 
+          }}>ACHIEVEMENTS & AWARDS</h2>
+          {isEditing && (
+            <button onClick={handleAddAchievement} className="add-item-button">
+              <Plus className="button-icon" />
+              Add Achievement
+            </button>
+          )}
+        </div>
+        {((isEditing ? editableData?.achievements : parsedData?.achievements) || []).length > 0 ? (
+          (isEditing ? editableData.achievements : parsedData.achievements).map((achievement, index) => (
+            <div key={index} className="resume-entry">
+              {isEditing && (
+                <div className="entry-actions">
+                  <button onClick={() => removeItem('achievements', index)} className="remove-item-button">
+                    <Trash2 className="button-icon" />
+                  </button>
+                </div>
+              )}
+              <div className="resume-project-title">
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={editableData?.achievements[index]?.title || ''}
+                    onChange={(e) => updateEditableData('achievements', 'title', e.target.value, index)}
+                    className="editable-input achievement-title-input"
+                    placeholder="Achievement Title"
+                  />
+                ) : (
+                  <strong>{achievement.title || 'Achievement Title'}</strong>
+                )}
+              </div>
+              <div className="description-section">
+                {isEditing ? (
+                  <div className="description-inputs">
+                    {(editableData?.achievements[index]?.description || []).map((desc, descIndex) => (
+                      <div key={descIndex} className="description-line">
+                        <input
+                          type="text"
+                          value={desc}
+                          onChange={(e) => updateDescriptionLine('achievements', index, descIndex, e.target.value)}
+                          className="editable-input description-input"
+                          placeholder="Description line"
+                        />
+                        <button 
+                          onClick={() => removeDescriptionLine('achievements', index, descIndex)}
+                          className="remove-line-button"
+                          disabled={(editableData?.achievements[index]?.description || []).length <= 1}
+                        >
+                          <Trash2 className="button-icon" />
+                        </button>
+                      </div>
+                    ))}
+                    <button onClick={() => addDescriptionLine('achievements', index)} className="add-line-button">
+                      <Plus className="button-icon" />
+                      Add Line
+                    </button>
+                  </div>
+                ) : (
+                  achievement.description && Array.isArray(achievement.description) && achievement.description.length > 0 && (
+                    <ul className="resume-bullet-list">
+                      {achievement.description.map((desc, descIndex) => (
+                        <li key={descIndex}>{desc}</li>
+                      ))}
+                    </ul>
+                  )
+                )}
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="empty-section">
+            {isEditing ? 'No achievements yet. Click "Add Achievement" to add one.' : 'No achievements information available.'}
+          </div>
+        )}
+      </div>
+
+      {/* Certificates Section */}
+      <div className="resume-section">
+        <div className="section-header-with-actions">
+          <h2 className="resume-section-title" style={{ 
+            color: selectedColor, 
+            borderBottomColor: selectedColor 
+          }}>CERTIFICATIONS & COURSEWORK</h2>
+          {isEditing && (
+            <button onClick={handleAddCertificate} className="add-item-button">
+              <Plus className="button-icon" />
+              Add Certificate
+            </button>
+          )}
+        </div>
+        {((isEditing ? editableData?.certificates : parsedData?.certificates) || []).length > 0 ? (
+          <div className="resume-skills-text">
+            {isEditing ? (
+              <div className="certificates-inputs">
+                {(isEditing ? editableData.certificates : parsedData.certificates).map((cert, index) => (
+                  <div key={`cert-${index}-${cert.title}`} className="certificate-input">
+                    <input
+                      type="text"
+                      value={editableData?.certificates[index]?.title || ''}
+                      onChange={(e) => {
+                        console.log(`Updating cert title at index ${index} to:`, e.target.value);
+                        updateEditableData('certificates', 'title', e.target.value, index);
+                      }}
+                      onInput={(e) => {
+                        // Safari sometimes needs onInput for immediate updates
+                        console.log(`Input event - updating cert title at index ${index} to:`, e.target.value);
+                        updateEditableData('certificates', 'title', e.target.value, index);
+                      }}
+                      className="editable-input cert-title-input"
+                      placeholder="Certificate Title"
+                    />
+                    <span className="separator">(</span>
+                    <input
+                      type="text"
+                      value={editableData?.certificates[index]?.issuer || ''}
+                      onChange={(e) => {
+                        console.log(`Updating cert issuer at index ${index} to:`, e.target.value);
+                        updateEditableData('certificates', 'issuer', e.target.value, index);
+                      }}
+                      onInput={(e) => {
+                        // Safari sometimes needs onInput for immediate updates
+                        console.log(`Input event - updating cert issuer at index ${index} to:`, e.target.value);
+                        updateEditableData('certificates', 'issuer', e.target.value, index);
+                      }}
+                      className="editable-input cert-issuer-input"
+                      placeholder="Issuer"
+                    />
+                    <span className="separator">)</span>
+                    <button 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('Remove certificate button clicked for index:', index);
+                        handleRemoveCertificate(index);
+                      }}
+                      onMouseDown={(e) => {
+                        // Safari-specific event handling
+                        e.preventDefault();
+                        console.log('Mouse down on remove certificate button for index:', index);
+                      }}
+                      className="remove-cert-button"
+                      type="button"
+                      style={{
+                        // Safari-specific styles
+                        WebkitAppearance: 'none',
+                        WebkitUserSelect: 'none',
+                        WebkitTapHighlightColor: 'transparent',
+                        WebkitTouchCallout: 'none',
+                        WebkitTransform: 'translateZ(0)',
+                        transform: 'translateZ(0)',
+                        position: 'relative',
+                        zIndex: 1
+                      }}
+                    >
+                      <Trash2 className="button-icon" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              (isEditing ? editableData.certificates : parsedData.certificates).map(cert => `${cert.title} (${cert.issuer || 'Provider'})`).join(' | ')
+            )}
+          </div>
+        ) : (
+          <div className="empty-section">
+            {isEditing ? 'No certificates yet. Click "Add Certificate" to add one.' : 'No certificates information available.'}
+          </div>
+        )}
+      </div>
+
+      {/* Additional Information Section */}
+      <div className="resume-section">
+        <div className="section-header-with-actions">
+          <h2 className="resume-section-title" style={{ 
+            color: selectedColor, 
+            borderBottomColor: selectedColor 
+          }}>ADDITIONAL INFORMATION</h2>
+          {isEditing && (
+            <button onClick={handleAddAdditionalInfo} className="add-item-button">
+              <Plus className="button-icon" />
+              Add Info
+            </button>
+          )}
+        </div>
+        {((isEditing ? editableData?.additionalInformation : parsedData?.additionalInformation) || []).length > 0 ? (
+          <div className="resume-skills-text">
+            {isEditing ? (
+              <div className="additional-info-inputs">
+                {(isEditing ? editableData.additionalInformation : parsedData.additionalInformation).map((info, index) => (
+                  <div key={index} className="additional-info-input">
+                    <input
+                      type="text"
+                      value={info}
+                      onChange={(e) => {
+                        setEditableData(prev => {
+                          const newData = JSON.parse(JSON.stringify(prev));
+                          newData.additionalInformation[index] = e.target.value;
+                          return newData;
+                        });
+                      }}
+                      className="editable-input additional-info-input-field"
+                      placeholder="Additional information"
+                    />
+                    <button 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('Remove additional info button clicked for index:', index);
+                        handleRemoveAdditionalInfo(index);
+                      }}
+                      onMouseDown={(e) => {
+                        // Safari-specific event handling
+                        e.preventDefault();
+                        console.log('Mouse down on remove additional info button for index:', index);
+                      }}
+                      className="remove-info-button"
+                      type="button"
+                      style={{
+                        // Safari-specific styles
+                        WebkitAppearance: 'none',
+                        WebkitUserSelect: 'none',
+                        WebkitTapHighlightColor: 'transparent',
+                        WebkitTouchCallout: 'none',
+                        WebkitTransform: 'translateZ(0)',
+                        transform: 'translateZ(0)',
+                        position: 'relative',
+                        zIndex: 1
+                      }}
+                    >
+                      <Trash2 className="button-icon" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              (isEditing ? editableData.additionalInformation : parsedData.additionalInformation).join(' | ')
+            )}
+          </div>
+        ) : (
+          <div className="empty-section">
+            {isEditing ? 'No additional information yet. Click "Add Info" to add one.' : 'No additional information available.'}
+          </div>
+        )}
+      </div>
+    </div>
+  )}
+</div>
 
             {/* Action Buttons - Download and Save to Database */}
             <div className="resume-actions">
