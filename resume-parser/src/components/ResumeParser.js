@@ -1,6 +1,8 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { Upload, Download, Eye, Menu, X, Edit3, Save, Plus, Trash2, FileText, RefreshCw, Database, CheckCircle, User, Star, Calendar, Award, Shield, Camera } from 'lucide-react';
 import apiService from '../services/api';
+import TemplateSelector from './TemplateSelector';
+import { generateClassicTemplate, generateModernTemplate, generateExecutiveTemplate } from './ResumeTemplateGenerators';
 
 const ResumeParser = ({ editorIntent, clearIntent, isAuthenticated }) => {
 
@@ -22,6 +24,7 @@ const ResumeParser = ({ editorIntent, clearIntent, isAuthenticated }) => {
   const [cameraStream, setCameraStream] = useState(null);
   const [cameraAvailable, setCameraAvailable] = useState(true);
   const videoRef = useRef(null);
+  const [selectedTemplate, setSelectedTemplate] = useState('classic');
   const canvasRef = useRef(null);
   const colorOptions = [
   { name: 'Blue', value: '#4285f4' },
@@ -49,6 +52,11 @@ const ResumeParser = ({ editorIntent, clearIntent, isAuthenticated }) => {
   
   // Safari detection
   const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+  const handleTemplateChange = (templateId) => {
+    setSelectedTemplate(templateId);
+    console.log('Template changed to:', templateId);
+  };
 
   const checkDatabaseStatus = async () => {
     try {
@@ -1680,43 +1688,59 @@ Return only this JSON format:
   }, []);
 
   const downloadPDF = async () => {
-    if (!parsedData) {
-      alert('No resume data available to download.');
+  if (!parsedData) {
+    alert('No resume data available to download.');
+    return;
+  }
+  
+  try {
+    let resumeHtml;
+    
+    // Generate HTML based on selected template
+    switch (selectedTemplate) {
+      case 'modern':
+        resumeHtml = generateModernTemplate(parsedData, selectedColor);
+        break;
+      case 'executive':
+        resumeHtml = generateExecutiveTemplate(parsedData, selectedColor);
+        break;
+      case 'classic':
+      default:
+        resumeHtml = generateClassicTemplate(parsedData, selectedColor);
+        break;
+    }
+    
+    const blob = new Blob([resumeHtml], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    
+    const printWindow = window.open(url, '_blank', 'width=800,height=600');
+    
+    if (!printWindow) {
+      const a = document.createElement('a');
+      a.href = url;
+      const templateName = selectedTemplate.charAt(0).toUpperCase() + selectedTemplate.slice(1);
+      a.download = `${parsedData.personalInfo?.name || 'Resume'}_${templateName}.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      alert('Resume downloaded as HTML. Open the file and use your browser\'s print function to save as PDF.');
       return;
     }
     
-    try {
-      const resumeHtml = generateTraditionalResumeTemplate(parsedData, selectedColor);
-      const blob = new Blob([resumeHtml], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      
-      const printWindow = window.open(url, '_blank', 'width=800,height=600');
-      
-      if (!printWindow) {
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${parsedData.personalInfo?.name || 'Resume'}_Professional.html`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        
-        alert('Resume downloaded as HTML. Open the file and use your browser\'s print function to save as PDF.');
-        return;
-      }
-      
-      printWindow.onload = () => {
-        setTimeout(() => {
-          printWindow.print();
-        }, 1000);
-      };
-      
-    } catch (err) {
-      console.error('Error generating PDF:', err);
-      const errorMsg = err && typeof err.message === 'string' ? err.message : 'Unknown download error';
-      alert(`Failed to generate PDF: ${errorMsg}. Please try again.`);
-    }
-  };
+    printWindow.onload = () => {
+      setTimeout(() => {
+        printWindow.print();
+      }, 1000);
+    };
+    
+  } catch (err) {
+    console.error('Error generating PDF:', err);
+    const errorMsg = err && typeof err.message === 'string' ? err.message : 'Unknown download error';
+    alert(`Failed to generate PDF: ${errorMsg}. Please try again.`);
+  }
+};
 
   const downloadTemplate = () => {
     downloadPDF();
@@ -2659,6 +2683,13 @@ useEffect(() => {
               )}
             </div>
 
+            <TemplateSelector
+              selectedTemplate={selectedTemplate}
+              onTemplateChange={handleTemplateChange}
+              selectedColor={selectedColor}
+              onDownload={downloadPDF}
+            />
+
             <div className="color-selection-section">
               <h3 className="color-selection-title">Resume Color Theme</h3>
               <div className="color-options">
@@ -3586,17 +3617,20 @@ useEffect(() => {
 
             {/* Action Buttons - Download and Save to Database */}
             <div className="resume-actions">
-              <div className="view-actions">
-                <button onClick={downloadTemplate} className="download-button">
-                  <Download className="button-icon" />
-                  Download PDF
-                </button>
-                
-                
-              </div>
-              
-              
-            </div>
+      <div className="template-info-banner">
+        <span className="current-template-label">
+          Current Template: <strong>{selectedTemplate.charAt(0).toUpperCase() + selectedTemplate.slice(1)}</strong>
+        </span>
+        <span className="template-color-preview" style={{ backgroundColor: selectedColor }}></span>
+      </div>
+      
+      <div className="view-actions">
+        <button onClick={downloadPDF} className="download-button">
+          <Download className="button-icon" />
+          Download {selectedTemplate.charAt(0).toUpperCase() + selectedTemplate.slice(1)} PDF
+        </button>
+      </div>
+      </div>
           </div>
         )}
       </div>
