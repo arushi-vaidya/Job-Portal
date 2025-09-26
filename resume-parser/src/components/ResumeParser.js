@@ -175,9 +175,51 @@ const ResumeParser = ({ editorIntent, clearIntent, isAuthenticated }) => {
   const timeoutId = setTimeout(autoSave, 2000); // Increased debounce time
   return () => clearTimeout(timeoutId);
 }, [parsedData, editableData, isEditing, dbStatus, isSaving]);
-
+const validateRequiredFields = (data) => {
+  const errors = [];
+  
+  if (!data.personalInfo?.name?.trim()) {
+    errors.push('Name is required');
+  }
+  
+  if (!data.personalInfo?.email?.trim()) {
+    errors.push('Email is required');
+  }
+  
+  if (!data.personalInfo?.phone?.trim()) {
+    errors.push('Phone number is required');
+  }
+  
+  if (!data.personalInfo?.salaryExpectation?.trim()) {
+    errors.push('Salary expectation is required');
+  }
+  
+  if (!data.personalInfo?.currentLocation?.trim()) {
+    errors.push('Current location is required');
+  }
+  
+  if (!data.education || data.education.length === 0) {
+    errors.push('At least one education entry is required');
+  } else {
+    data.education.forEach((edu, index) => {
+      if (!edu.degree?.trim()) {
+        errors.push(`Education entry ${index + 1}: Degree is required`);
+      }
+      if (!edu.institution?.trim()) {
+        errors.push(`Education entry ${index + 1}: Institution is required`);
+      }
+    });
+  }
+  
+  return errors;
+};
 
   const handleSaveChanges = async () => {
+    const validationErrors = validateRequiredFields(editableData);
+  if (validationErrors.length > 0) {
+    alert('Please fill in all required fields:\n' + validationErrors.join('\n'));
+    return;
+  }
   // First update parsedData to trigger auto-save
   setParsedData(editableData);
   
@@ -298,6 +340,19 @@ const ResumeParser = ({ editorIntent, clearIntent, isAuthenticated }) => {
   };
 
   const handleAdditionalInfoSubmit = useCallback(() => {
+    const errors = [];
+  if (!additionalInfo.salaryExpectation?.trim()) {
+    errors.push('Salary expectation is required');
+  }
+  if (!additionalInfo.currentLocation?.trim()) {
+    errors.push('Current location is required');
+  }
+  
+  if (errors.length > 0) {
+    alert('Please fill in required fields:\n' + errors.join('\n'));
+    return;
+  }
+  
   // Check if AI processing is still in progress
   if (isAiProcessing) {
     setShowAdditionalInfoPopup(false);
@@ -663,30 +718,29 @@ const ResumeParser = ({ editorIntent, clearIntent, isAuthenticated }) => {
 
   // Create empty resume structure for manual entry
   const createEmptyResume = () => {
-    return {
-      personalInfo: { 
-        name: '', 
-        email: '', 
-        phone: '', 
-        location: '',
-        // New fields
-        currentSalary: '',
-        linkedinLink: '',
-        githubLink: '',
-        salaryExpectation: '',
-        hometown: '',
-        currentLocation: '',
-        hobbies: []
-      },
-      experience: [],
-      education: [],
-      projects: [],
-      achievements: [],
-      certificates: [],
-      skills: [],
-      additionalInformation: []
-    };
+  return {
+    personalInfo: { 
+      name: '', // Required
+      email: '', // Required
+      phone: '', // Required
+      location: '',
+      currentSalary: '',
+      linkedinLink: '',
+      githubLink: '',
+      salaryExpectation: '', // Required
+      hometown: '',
+      currentLocation: '', // Required
+      hobbies: []
+    },
+    experience: [],
+    education: [{ degree: '', institution: '', year: '', description: [''] }], // Required - at least one
+    projects: [],
+    achievements: [],
+    certificates: [],
+    skills: [],
+    additionalInformation: []
   };
+};
 
   // Handle manual resume entry
   const handleManualEntry = () => {

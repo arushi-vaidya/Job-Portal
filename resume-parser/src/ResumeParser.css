@@ -7195,3 +7195,39 @@ body {
   width: 16px;
   height: 16px;
 }
+
+/* Required field styles */
+.required-field {
+  border: 2px solid #ef4444 !important;
+  background: #fef2f2 !important;
+}
+
+.required-field:focus {
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+}
+
+.required-label::after {
+  content: ' *';
+  color: #ef4444;
+  font-weight: bold;
+}
+
+.validation-error {
+  color: #ef4444;
+  font-size: 0.8rem;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.field-required-notice {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 16px;
+  color: #991b1b;
+  font-size: 0.9rem;
+}

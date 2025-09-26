@@ -177,7 +177,6 @@ resumeSchema.index({ user: 1 }, { unique: true, sparse: true });
 
 const Resume = mongoose.model('Resume', resumeSchema);
 
-// Helper functions (keeping existing validation)
 const validateResumeData = [
   body('personalInfo.name')
     .notEmpty()
@@ -191,14 +190,30 @@ const validateResumeData = [
     .normalizeEmail(),
   
   body('personalInfo.phone')
-    .optional()
-    .isLength({ max: 20 })
-    .withMessage('Phone number too long'),
+    .notEmpty()
+    .withMessage('Phone number is required')
+    .isLength({ min: 10, max: 20 })
+    .withMessage('Phone number must be between 10 and 20 characters'),
   
-  body('personalInfo.location')
-    .optional()
-    .isLength({ max: 200 })
-    .withMessage('Location too long')
+  body('personalInfo.salaryExpectation')
+    .notEmpty()
+    .withMessage('Salary expectation is required'),
+    
+  body('personalInfo.currentLocation')
+    .notEmpty()
+    .withMessage('Current location is required'),
+    
+  body('education')
+    .isArray({ min: 1 })
+    .withMessage('At least one education entry is required'),
+    
+  body('education.*.degree')
+    .notEmpty()
+    .withMessage('Degree is required for each education entry'),
+    
+  body('education.*.institution')
+    .notEmpty()
+    .withMessage('Institution is required for each education entry')
 ];
 
 const cleanResumeData = (data) => {
