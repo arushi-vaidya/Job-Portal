@@ -17,7 +17,7 @@ const ResumeParser = ({ editorIntent, clearIntent, isAuthenticated }) => {
   const [isAiProcessing, setIsAiProcessing] = useState(false);
   const [aiProcessingComplete, setAiProcessingComplete] = useState(false);
   const [aiProcessingError, setAiProcessingError] = useState(null);
-  const [setExtractedText] = useState('');
+  const [extractedText, setExtractedText] = useState('');
   const [showProcessingPopup, setShowProcessingPopup] = useState(false);
   const [selectedColor, setSelectedColor] = useState('#4285f4');
   const [isCameraOpen, setIsCameraOpen] = useState(false);
@@ -995,60 +995,91 @@ const extractTextFromPPT = async (file) => {
   };
 
   // Extract text from image files using OCR-like approach with AI
-  const extractTextFromImage = async (file) => {
-    return new Promise((resolve, reject) => {
-      try {
-        // Convert image to base64 for AI processing
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-          try {
-            const base64Image = e.target.result;
-            const img = new Image();
-            img.onload = () => {
-              try {
-                const placeholderText = `[Image Resume Uploaded]
-                
-This appears to be a resume image. To extract text from this image, please ensure:
-1. The image is clear and high resolution
-2. Text is readable and not blurry
-3. The resume is properly oriented
-
-For best results with image resumes, consider:
-- Using a PDF version if available
-- Ensuring good lighting when photographing
-- Keeping the camera steady and focused
-
-The AI will attempt to process this as a resume, but manual entry may be required for optimal results.`;
-
-                resolve(placeholderText);
-              } catch (canvasError) {
-                console.error('Canvas processing error:', canvasError);
-                reject(new Error('Failed to process image. Please try a different image or use a PDF version.'));
-              }
-            };
-            
-            img.onerror = () => {
-              reject(new Error('Failed to load image. Please ensure the file is a valid image.'));
-            };
-            
-            img.src = base64Image;
-          } catch (processingError) {
-            console.error('Image processing error:', processingError);
-            reject(new Error('Failed to process image. Please try again.'));
+  // Replace the existing extractTextFromImage function with this:
+const extractTextFromImage = async (file) => {
+  return new Promise((resolve, reject) => {
+    try {
+      // Load Tesseract.js from CDN
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js';
+      
+      script.onload = async () => {
+        try {
+          console.log('Tesseract.js loaded, processing image...');
+          
+          if (!window.Tesseract) {
+            throw new Error('Tesseract.js failed to load properly');
           }
-        };
-        
-        reader.onerror = () => {
-          reject(new Error('Failed to read image file. Please try again.'));
-        };
-        
-        reader.readAsDataURL(file);
-      } catch (setupError) {
-        console.error('Image setup error:', setupError);
-        reject(new Error(`Image processing setup failed: ${setupError?.message || 'Unknown error'}`));
+          
+          // Create file URL for Tesseract
+          const imageUrl = URL.createObjectURL(file);
+          
+          // Initialize Tesseract worker
+          const { createWorker } = window.Tesseract;
+          const worker = await createWorker();
+          
+          try {
+            // Configure worker for better resume text recognition
+            await worker.loadLanguage('eng');
+            await worker.initialize('eng');
+            await worker.setParameters({
+              tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,!?@#$%^&*()_+-=[]{}|;:\'",.<>/?`~ ',
+              tessedit_pageseg_mode: '6', // Uniform block of text
+            });
+            
+            console.log('Starting OCR recognition...');
+            
+            // Perform OCR
+            const { data: { text, confidence } } = await worker.recognize(imageUrl);
+            
+            console.log(`OCR completed with confidence: ${confidence}%`);
+            console.log('Extracted text length:', text.length);
+            
+            // Clean up
+            await worker.terminate();
+            URL.revokeObjectURL(imageUrl);
+            
+            if (!text || text.trim().length < 10) {
+              reject(new Error('Could not extract readable text from the image. Please ensure the image is clear and contains text.'));
+              return;
+            }
+            
+            if (confidence < 30) {
+              console.warn('Low OCR confidence, text may be inaccurate');
+            }
+            
+            resolve(cleanExtractedText(text));
+            
+          } catch (ocrError) {
+            await worker.terminate();
+            URL.revokeObjectURL(imageUrl);
+            throw ocrError;
+          }
+          
+        } catch (processingError) {
+          console.error('Image processing error:', processingError);
+          reject(new Error(`Image processing failed: ${processingError?.message || 'Unknown error'}`));
+        }
+      };
+      
+      script.onerror = () => {
+        reject(new Error('Failed to load OCR library. Please check your internet connection.'));
+      };
+      
+      // Add script to document if not already loaded
+      if (!document.head.querySelector('script[src*="tesseract"]')) {
+        document.head.appendChild(script);
+      } else {
+        // Library already loaded, trigger onload
+        script.onload();
       }
-    });
-  };
+      
+    } catch (setupError) {
+      console.error('Image OCR setup error:', setupError);
+      reject(new Error(`Image OCR setup failed: ${setupError?.message || 'Unknown error'}`));
+    }
+  });
+};
 
   // Camera functions for resume capture
   const openCamera = async () => {
@@ -1489,9 +1520,9 @@ Return only this JSON format:
       console.log('Extracting text from PowerPoint...');
       text = await extractTextFromPPT(uploadedFile);
     } else if (uploadedFile.type.startsWith('image/') || 
-               uploadedFile.name?.toLowerCase().match(/\.(jpg|jpeg|png|gif|bmp|webp)$/)) {
-      console.log('Processing image file...');
-      text = await extractTextFromImage(uploadedFile);
+           uploadedFile.name?.toLowerCase().match(/\.(jpg|jpeg|png|gif|bmp|webp|tiff|tif)$/)) {
+  console.log('Processing image file with OCR...');
+  text = await extractTextFromImage(uploadedFile);
     } else {
       throw new Error('Unsupported file type. Please upload a PDF, DOCX, PowerPoint (PPT/PPTX), or image file.');
     }
@@ -2509,7 +2540,7 @@ useEffect(() => {
                   <p className="upload-formats">Supports PDF, DOCX, PowerPoint (PPT/PPTX), and image files (JPG, PNG, GIF, BMP, WEBP)</p>
                   <input
                     type="file"
-                    accept=".pdf,.docx,.pptx,.ppt,.jpg,.jpeg,.png,.gif,.bmp,.webp,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.ms-powerpoint,image/jpeg,image/png,image/gif,image/bmp,image/webp"
+                    accept=".pdf,.docx,.pptx,.ppt,.jpg,.jpeg,.png,.gif,.bmp,.webp,.tiff,.tif,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.ms-powerpoint,image/jpeg,image/png,image/gif,image/bmp,image/webp,image/tiff"
                     onChange={(e) => e.target.files[0] && handleFileUpload(e.target.files[0])}
                     className="file-input"
                     id="file-upload"
