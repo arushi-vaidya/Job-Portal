@@ -198,38 +198,39 @@ const App = () => {
     
     return (
     <div className="app-container">
-      <div className="nav-content" style={{ paddingTop: 16 }}>
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginLeft: 'auto' }}>
+      <nav className="navbar">
+        <div className="navbar-left">
+          <div className="logo">
+            <span>JobPortal.ai</span>
+          </div>       
+        </div>
+        <div className="nav-right">
           {currentUser && (
-            <div className="user-profile-info">
-              <div className="user-id-badge">
-                <User className="user-icon" />
-                <span className="user-id-text">ID: {currentUser.userId}</span>
-          </div>
-              <div className="user-name-text">{currentUser.name}</div>
-              <div className="verification-debug" style={{fontSize: '12px', color: '#666'}}>
-                {isProfileAuthenticated ? '✅ Verified' : '❌ Not Verified'}
-              </div>
-              </div>
-          )}
-          <ViewInfoButton onOpen={async () => {
-            // Load full resume before navigating to view page
-            try {
-              const list = await apiService.getResumes({ limit: 1 });
-              const items = list?.data || [];
-              if (items.length > 0) {
-                const resume = items[0];
-                const id = resume._id || resume.id;
-                if (id) {
-                  const full = await apiService.getResumeById(id);
-                  setAccountResume(full?.data || resume);
-                  setActivePage('view-info');
+            <div className="user-profile-info" onClick={async () => {
+              // Load full resume before navigating to view page
+              try {
+                const list = await apiService.getResumes({ limit: 1 });
+                const items = list?.data || [];
+                if (items.length > 0) {
+                  const resume = items[0];
+                  const id = resume._id || resume.id;
+                  if (id) {
+                    const full = await apiService.getResumeById(id);
+                    setAccountResume(full?.data || resume);
+                    setActivePage('view-info');
+                  }
                 }
+              } catch (error) {
+                console.error('Failed to load resume:', error);
               }
-    } catch (error) {
-              console.error('Failed to load resume:', error);
-            }
-          }} />
+            }}>
+              <div className="user-name-display">
+                <span className="user-name-text">{currentUser.name}</span>
+                {isProfileAuthenticated && <span className="verified-tick">✓</span>}
+                <span className="user-id-hover">ID: {currentUser.userId}</span>
+              </div>
+            </div>
+          )}
             <button
             className="profile-button"
             onClick={() => setActivePage('profile')}
@@ -245,10 +246,15 @@ const App = () => {
           >
             Logout
             </button>
-          </div>
         </div>
+        <div className="hamburger" onClick={() => {}}>
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </nav>
 
-            <ResumeParser
+        <ResumeParser
               editorIntent={editorIntent}
               clearIntent={clearEditorIntent}
               isAuthenticated={isProfileAuthenticated}

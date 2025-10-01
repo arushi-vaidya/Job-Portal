@@ -2,7 +2,7 @@
 # Start backend
 cd "resume-parser/backend" && npm run dev &
 
-# Start auth page (this one is working correctly)
+# Start auth page 
 npx serve "auth" -l 5173 &
 
 # Start frontend

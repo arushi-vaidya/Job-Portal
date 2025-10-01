@@ -64,13 +64,13 @@ const userSchema = new mongoose.Schema({
     joinedDate: { type: Date, default: Date.now },
     lastLoginDate: { type: Date, default: Date.now },
     resumeCount: { type: Number, default: 0 },
-    profileCompleteness: { type: Number, default: 0 } // Percentage
+    profileCompleteness: { type: Number, default: 0 } 
   },
   // Verification information
   verification: {
     isVerified: { type: Boolean, default: false },
     verifiedAt: { type: Date, default: null },
-    verificationMethod: { type: String, default: null }, // 'photo_aadhar', 'email', etc.
+    verificationMethod: { type: String, default: null }, 
     aadharNumber: { type: String, default: null },
     verificationPhoto: { 
       data: { type: Buffer, default: null },
@@ -100,7 +100,7 @@ userSchema.pre('save', function(next) {
 
 const User = mongoose.model('User', userSchema);
 
-// Resume Schema (keeping existing structure)
+// Resume Schema 
 const resumeSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', unique: true, sparse: true },
   personalInfo: {
@@ -335,7 +335,6 @@ const cleanResumeData = (data) => {
   if (resume?.achievements?.length >= 1) sections.additional.items.push({ name: 'Achievements', completed: true });
   else sections.additional.items.push({ name: 'Achievements', completed: false });
 
-  // Add salary expectation to additional section
   if (resume?.personalInfo?.salaryExpectation && resume.personalInfo.salaryExpectation.trim().length > 0) {
     sections.additional.items.push({ name: 'Salary Expectation', completed: true });
   } else {
@@ -352,7 +351,7 @@ const cleanResumeData = (data) => {
     const partial = section.items.filter(item => item.partial).length;
     const total = section.items.length;
     
-    // Calculate section percentage (partial items count as 0.5)
+    // Calculate section percentage 
     const sectionPercentage = total > 0 ? ((completed + (partial * 0.5)) / total) * 100 : 0;
     const weightedScore = (sectionPercentage / 100) * section.weight;
     
@@ -399,7 +398,6 @@ const authMiddleware = (req, res, next) => {
 };
 
 // Routes
-// Updated register route
 app.post('/api/auth/register', [
   body('name').isLength({ min: 2 }).withMessage('Name is required'),
   body('email').isEmail().withMessage('Valid email is required').normalizeEmail(),
@@ -426,7 +424,7 @@ app.post('/api/auth/register', [
         joinedDate: new Date(),
         lastLoginDate: new Date(),
         resumeCount: 0,
-        profileCompleteness: 20 // Basic completion for name + email
+        profileCompleteness: 20 
       }
     });
     
@@ -451,7 +449,7 @@ app.post('/api/auth/register', [
   }
 });
 
-// Updated login route
+//login route
 app.post('/api/auth/login', [
   body('email').isEmail().withMessage('Valid email is required').normalizeEmail(),
   body('password').notEmpty().withMessage('Password is required'),
@@ -469,7 +467,7 @@ app.post('/api/auth/login', [
     const match = await bcrypt.compare(password, user.passwordHash);
     if (!match) return res.status(401).json({ success: false, message: 'Invalid credentials' });
     
-    // Update last login date
+    //last login date
     user.profileInfo.lastLoginDate = new Date();
     await user.save();
     
@@ -527,7 +525,7 @@ app.get('/api/auth/me', authMiddleware, async (req, res) => {
   }
 });
 
-// Health check (existing)
+// Health check
 app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'ok', 
@@ -537,7 +535,7 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Updated save resume route with profile completeness update
+//save resume route with profile completeness update
 app.post('/api/resumes', authMiddleware, validateResumeData, async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -636,7 +634,7 @@ app.post('/api/resumes', authMiddleware, validateResumeData, async (req, res) =>
   }
 });
 
-// Get all resumes (existing - keeping same functionality)
+// Get all resumes 
 app.get('/api/resumes', authMiddleware, async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -689,7 +687,7 @@ app.get('/api/resumes', authMiddleware, async (req, res) => {
   }
 });
 
-// Get single resume by ID (existing)
+// Get single resume by ID 
 app.get('/api/resumes/:id', authMiddleware, async (req, res) => {
   try {
     const resume = await Resume.findOne({ _id: req.params.id, user: req.user.id });
@@ -724,7 +722,7 @@ app.get('/api/resumes/:id', authMiddleware, async (req, res) => {
   }
 });
 
-// Delete resume by ID (existing)
+// Delete resume by ID
 app.delete('/api/resumes/:id', authMiddleware, async (req, res) => {
   try {
     const resume = await Resume.findOneAndDelete({ _id: req.params.id, user: req.user.id });
@@ -770,7 +768,7 @@ app.delete('/api/resumes/:id', authMiddleware, async (req, res) => {
   }
 });
 
-// New route: Get user profile
+//Get user profile
 app.get('/api/profile', authMiddleware, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('userId name email profileInfo');
@@ -812,7 +810,6 @@ app.get('/api/profile/verification', authMiddleware, async (req, res) => {
       });
     }
 
-    // Don't send the actual photo data in the verification status response
     const verificationData = {
       ...user.verification.toObject(),
       verificationPhoto: user.verification.verificationPhoto?.data ? {
@@ -1027,17 +1024,17 @@ const getNextSteps = (sections) => {
   return suggestions.sort((a, b) => {
     const priorityOrder = { high: 3, medium: 2, low: 1 };
     return priorityOrder[b.priority] - priorityOrder[a.priority];
-  }).slice(0, 5); // Top 5 suggestions
+  }).slice(0, 5); 
 };
 
-// Analytics endpoint (updated with user-specific data)
+// Analytics endpoint
 app.get('/api/analytics', authMiddleware, async (req, res) => {
   try {
     // Get user-specific stats
     const userResume = await Resume.findOne({ user: req.user.id });
     const user = await User.findById(req.user.id);
     
-    // Global stats (admin-level, optional)
+    // Global stats 
     const totalUsers = await User.countDocuments();
     const totalResumes = await Resume.countDocuments();
     const resumesThisMonth = await Resume.countDocuments({

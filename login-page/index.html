@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Portal AI </title>
+    <link rel="stylesheet" href="styles.css" id="theme-link">
+</head>
+
+<body>
+
+    <div class="announcement-bar">
+        Integrated with AI-powered tools to supercharge your job search.
+        <a href="#">Read more →</a>
+        <button class="close-btn" onclick="this.parentElement.style.display='none'">×</button>
+    </div>
+
+    <nav class="navbar" id="navbar">
+        <div class="logo">
+            <span>Job Portal.AI</span>
+        </div>       
+        <div class="nav-center">
+            <a href="#top">Home</a>
+            <a href="#how-it-works">How it Works</a>
+            <a href="#why-us">Why us</a>
+            <a href="about-us.html">About us</a>
+        </div>
+        <div class="nav-right">
+            <button class="cta-nav" onclick="scrollToSection('login-section')">Get Started →</button>
+        </div>
+        <div class="hamburger" onclick="toggleMenu()">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </nav>
+
+    <section class="hero-section" id="top">
+        <div class="hero-content">
+            <h1>JobPortal.ai</h1>
+            <h1>The intelligent way <span class="highlight">to hire </span> and <span class="highlight">get hired.</span></h1>
+            <p class="hero-description">Find talent. Find work. Find success. AI-powered matching connects professionals, employers, and freelancers faster than ever before.</p>
+        </div>
+        <div class="hero-visual">
+            <div class="visual-3d">
+                <!-- Orbital Rings -->
+                <div class="orbital-ring ring-outer"></div>
+                <div class="orbital-ring ring-middle"></div>
+                <div class="orbital-ring ring-inner"></div>
+                <!-- Resume/Document Stack -->
+                <div class="floating-element resume-1">
+                    <div class="resume-icon">
+                        <div class="resume-header"></div>
+                        <div class="resume-lines"></div>
+                        <div class="resume-lines"></div>
+                        <div class="resume-lines short"></div>
+                    </div>
+                </div>
+                <div class="floating-element resume-2">
+                    <div class="resume-icon">
+                        <div class="resume-header"></div>
+                        <div class="resume-lines"></div>
+                        <div class="resume-lines"></div>
+                        <div class="resume-lines short"></div>
+                    </div>
+                </div>
+                <!-- User Profile Cards -->
+                <div class="floating-element profile-card profile-1">
+                    <div class="profile-avatar"></div>
+                    <div class="profile-bar"></div>
+                    <div class="profile-bar short"></div>
+                </div>
+                <div class="floating-element profile-card profile-2">
+                    <div class="profile-avatar"></div>
+                    <div class="profile-bar"></div>
+                    <div class="profile-bar short"></div>
+                </div>
+                <!-- Building/Company Icon -->
+                <div class="floating-element building">
+                    <div class="building-icon">
+                        <div class="building-window"></div>
+                        <div class="building-window"></div>
+                        <div class="building-window"></div>
+                        <div class="building-window"></div>
+                    </div>
+                </div>
+                <!-- Chart/Analytics -->
+                <div class="floating-element chart">
+                    <div class="chart-container">
+                        <div class="chart-bar bar-1"></div>
+                        <div class="chart-bar bar-2"></div>
+                        <div class="chart-bar bar-3"></div>
+                        <div class="chart-bar bar-4"></div>
+                    </div>
+                </div>
+                <!-- Connection Particles -->
+                <div class="particle particle-1"></div>
+                <div class="particle particle-2"></div>
+                <div class="particle particle-3"></div>
+                <div class="particle particle-4"></div>
+                <div class="particle particle-5"></div>
+                <div class="particle particle-6"></div>
+                <div class="particle particle-7"></div>
+                <div class="particle particle-8"></div>
+                <!-- Connection Lines SVG -->
+                <svg class="connection-svg" width="500" height="500" viewBox="0 0 500 500">
+                    <defs>
+                        <linearGradient id="lineGradient1" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:var(--border-color);stop-opacity:0" />
+                            <stop offset="50%" style="stop-color:var(--border-color);stop-opacity:0.6" />
+                            <stop offset="100%" style="stop-color:var(--border-color);stop-opacity:0" />
+                        </linearGradient>
+                    </defs>
+                    <path class="connect-path path-1" d="M 100,100 Q 200,150 250,250" fill="none" stroke="url(#lineGradient1)" stroke-width="1.5"/>
+                    <path class="connect-path path-2" d="M 400,120 Q 320,180 250,250" fill="none" stroke="url(#lineGradient1)" stroke-width="1.5"/>
+                    <path class="connect-path path-3" d="M 100,380 Q 180,310 250,250" fill="none" stroke="url(#lineGradient1)" stroke-width="1.5"/>
+                    <path class="connect-path path-4" d="M 390,390 Q 320,320 250,250" fill="none" stroke="url(#lineGradient1)" stroke-width="1.5"/>
+                </svg>
+                <!-- Center AI Hub -->
+                <div class="center-element">
+                    <div class="ai-hub">
+                        <div class="hub-ring"></div>
+                        <div class="hub-core">
+                            <div class="core-pulse"></div>
+                            <div class="core-dot"></div>
+                        </div>
+                        <div class="hub-glow"></div>
+                    </div>
+                </div>
+               <!-- Minimal Job Tags -->
+                <div class="minimal-tag tag-1">
+                    <div class="tag-dot"></div>
+                    <span>Remote</span>
+                </div>
+                <div class="minimal-tag tag-2">
+                    <div class="tag-dot"></div>
+                    <span>Full-time</span>
+                </div>
+                <div class="minimal-tag tag-3">
+                    <div class="tag-dot"></div>
+                    <span>Hybrid</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="login-section" id="login-section">
+        <div class="section-header">
+            <h2>Choose Your Path</h2>
+            <p>Select your role to get started</p>
+        </div>
+        <div class="login-cards">
+            <div class="login-card">
+                <div class="card-icon">
+                    <img src="job_seeker.jpg" alt="Job Seeker">
+                </div>
+                <h3>Job Seeker</h3>
+                <p>Find jobs, optimize your resume with AI, and get personalized recommendations tailored to your skills.</p>
+                <button class="login-btn">Get Started</button>
+            </div>
+            <div class="login-card">
+                <div class="card-icon">
+                    <img src="recruiter.jpg" alt="Recruiter">
+                </div>
+                <h3>Recruiter</h3>
+                <p>Post jobs, discover top talent with AI filtering, and streamline your entire hiring process.</p>
+                <button class="login-btn">Get Started</button>
+            </div>
+            <div class="login-card">
+                <div class="card-icon">
+                    <img src="free.jpeg" alt="Freelancer">
+                </div>
+                <h3>Freelancer</h3>
+                <p>Showcase your portfolio, bid on exciting projects, and grow your freelance business.</p>
+                <button class="login-btn">Get Started</button>
+            </div>
+        </div>
+    </section>
+
+    <section class="partners-section" id="how-it-works">
+        <h2>How it Works</h2>
+        <p class="partners-description">Our platform simplifies hiring and job search with role-based dashboards, smart resume tools, and AI-powered integrations that keep everyone connected.</p>
+        <div class="partners-grid">
+            <div class="partner-card">
+                <h4>1. Easy Onboarding</h4>
+                <p class="card-description">Sign up as a job seeker, recruiter, or freelancer with quick social login and role-based access.</p>
+            </div>
+            <div class="partner-card">
+                <h4>2. Tailored Dashboards</h4>
+                <p class="card-description">Each role gets a dedicated dashboard with tools designed for their needs—applications, hiring, or freelancing.</p>
+            </div>
+            <div class="partner-card">
+                <h4>3. Resume & Skill Hub</h4>
+                <p class="card-description">Resumes are auto-formatted, ATS-scored, and skills extracted to power job matches, career goals, and recruiter filters.</p>
+            </div>
+            <div class="partner-card">
+                <h4>4. Connected AI Workflows</h4>
+                <p class="card-description">AI links recruiters, seekers, and freelancers—syncing job postings, trends, and notifications across the platform.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="services-section" id="why-us">
+        <h2>Why us</h2>
+        <div class="services-header">
+            <p class="services-description">The future of jobs—where AI, transparency, and opportunity come together in one platform.</p>
+        </div>
+
+        <div class="services-grid">
+            <div class="service-card">
+                <span class="service-number">01</span>
+                <div class="service-icon icon-1">
+                    <div class="icon-camera"></div>
+                </div>
+                <h3>1. AI-Powered Advantage</h3>
+                <p class="service-description">Smarter job matches, resume insights, and hiring tools driven by advanced AI.</p>
+            </div>
+
+            <div class="service-card">
+                <span class="service-number">02</span>
+                <div class="service-icon icon-2">
+                    <div class="icon-gear"></div>
+                    <div class="icon-stack"></div>
+                </div>
+                <h3>2. Transparency & Trust</h3>
+                <p class="service-description">Clear application tracking and recruiter pipelines ensure no hidden steps.</p>
+            </div>
+
+            <div class="service-card">
+                <span class="service-number">03</span>
+                <div class="service-icon icon-3">
+                    <div class="icon-shield"></div>
+                </div>
+                <h3>3. All-in-One Platform</h3>
+                <p class="service-description">Job seekers, recruiters, and freelancers connect seamlessly in a single ecosystem.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="stats-section">
+        <div class="stats-grid">
+            <div class="stat-item">
+                <span class="stat-number">50K+</span>
+                <span class="stat-label">Active Job Seekers</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number">5K+</span>
+                <span class="stat-label">Companies Hiring</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number">95%</span>
+                <span class="stat-label">Success Rate</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number">24/7</span>
+                <span class="stat-label">AI Support</span>
+            </div>
+        </div>
+    </section>
+        <footer class="footer">
+        <div class="footer-bottom">
+            <p>&copy; 2024 Job Portal.AI. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -74,7 +74,6 @@
         token = r?.data?.token;
       }
       if (token) setToken(token);
-      // Redirect back to app with token in URL hash so different origins can read it
       const redirectTo = window.AUTH_REDIRECT_URL || 'http://localhost:3000';
       const url = `${redirectTo}#token=${encodeURIComponent(token || '')}`;
       window.location.href = url;
