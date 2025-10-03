@@ -1,6 +1,5 @@
 /* ===== ROOT VARIABLES ===== */
 :root {
-    /* Light Theme */
     --bg-primary: #f5f5f0;
     --bg-secondary: #ffffff;
     --bg-dark: #1a1a1a;
@@ -12,20 +11,6 @@
     --border-color: #d0d0d0;
     --shadow-light: rgba(0, 0, 0, 0.1);
     --shadow-medium: rgba(0, 0, 0, 0.15);
-}
-
-[data-theme="dark"] {
-    --bg-primary: #1a1a1a;
-    --bg-secondary: #2a2a2a;
-    --bg-dark: #0f0f0f;
-    --text-primary: #f5f5f0;
-    --text-secondary: #a0a0a0;
-    --accent-primary: #f5f5f0;
-    --accent-yellow: #f4d03f;
-    --accent-orange: #ff8c42;
-    --border-color: #3a3a3a;
-    --shadow-light: rgba(255, 255, 255, 0.05);
-    --shadow-medium: rgba(255, 255, 255, 0.1);
 }
 
 * {
@@ -113,19 +98,6 @@ body {
     cursor: pointer;
 }
 
-.logo-icon {
-    width: 36px;
-    height: 36px;
-    background: var(--accent-primary);
-    color: var(--bg-secondary);
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    font-size: 14px;
-}
-
 .nav-center {
     display: flex;
     gap: 40px;
@@ -150,55 +122,6 @@ body {
     display: flex;
     gap: 16px;
     align-items: center;
-}
-
-.theme-toggle {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    background: var(--bg-primary);
-    border: none;
-    padding: 8px 16px;
-    border-radius: 50px;
-    cursor: pointer;
-    font-size: 14px;
-    color: var(--text-primary);
-    font-weight: 500;
-    transition: all 0.3s;
-}
-
-.theme-toggle:hover {
-    transform: scale(1.05);
-}
-
-.toggle-switch {
-    display: flex;
-    background: var(--bg-secondary);
-    border-radius: 20px;
-    padding: 4px;
-    gap: 4px;
-}
-
-.toggle-option {
-    padding: 6px 12px;
-    border-radius: 16px;
-    font-size: 12px;
-    transition: all 0.3s;
-}
-
-.toggle-option:first-child {
-    background: var(--accent-primary);
-    color: var(--bg-secondary);
-}
-
-[data-theme="dark"] .toggle-option:first-child {
-    background: transparent;
-    color: var(--text-secondary);
-}
-
-[data-theme="dark"] .toggle-option:last-child {
-    background: var(--accent-primary);
-    color: var(--bg-dark);
 }
 
 .cta-nav {

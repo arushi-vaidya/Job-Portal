@@ -1,6 +1,4 @@
-/* ===== ROOT VARIABLES - MATCHING LOGIN PAGE ===== */
 :root {
-    /* Light Theme - Matching Login Page */
     --bg-primary: #f5f5f0;
     --bg-secondary: #ffffff;
     --bg-dark: #1a1a1a;
@@ -13,7 +11,6 @@
     --shadow-light: rgba(0, 0, 0, 0.1);
     --shadow-medium: rgba(0, 0, 0, 0.15);
     
-    /* Additional Variables */
     --success-green: #10b981;
     --warning-orange: #f59e0b;
     --info-blue: #3b82f6;
@@ -30,20 +27,6 @@
     --spacing-2xl: 48px;
 }
 
-[data-theme="dark"] {
-    --bg-primary: #1a1a1a;
-    --bg-secondary: #2a2a2a;
-    --bg-dark: #0f0f0f;
-    --text-primary: #f5f5f0;
-    --text-secondary: #a0a0a0;
-    --accent-primary: #f5f5f0;
-    --accent-yellow: #f4d03f;
-    --accent-orange: #ff8c42;
-    --border-color: #3a3a3a;
-    --shadow-light: rgba(255, 255, 255, 0.05);
-    --shadow-medium: rgba(255, 255, 255, 0.1);
-}
-
 * {
     margin: 0;
     padding: 0;
@@ -58,24 +41,23 @@ body {
     overflow-x: hidden;
 }
 
-/* ===== NAVBAR - MATCHING LOGIN PAGE ===== */
+/* ===== NAVBAR ===== */
 .navbar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 20px 80px;
+    padding: 24px 80px;
     background: var(--bg-secondary);
     position: sticky;
     top: 0;
     z-index: 100;
     border-bottom: 1px solid var(--border-color);
     transition: all 0.3s ease;
-    box-shadow: 0 2px 8px var(--shadow-light);
 }
 
 .navbar.scrolled {
-    padding: 14px 80px;
-    box-shadow: 0 4px 20px var(--shadow-medium);
+    padding: 16px 80px;
+    box-shadow: 0 4px 20px var(--shadow-light);
 }
 
 .navbar-left {
@@ -88,15 +70,34 @@ body {
     display: flex;
     align-items: center;
     gap: 12px;
-    font-size: 22px;
+    font-size: 20px;
     font-weight: 700;
     color: var(--text-primary);
     cursor: pointer;
-    transition: transform 0.3s ease;
 }
 
 .logo:hover {
     transform: scale(1.05);
+}
+
+.nav-center {
+    display: flex;
+    gap: 40px;
+    background: var(--bg-primary);
+    padding: 12px 32px;
+    border-radius: 50px;
+}
+
+.nav-center a {
+    color: var(--text-primary);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 15px;
+    transition: opacity 0.3s;
+}
+
+.nav-center a:hover {
+    opacity: 0.6;
 }
 
 .nav-right {
@@ -165,7 +166,7 @@ body {
     transform: translateY(0);
 }
 
-/* ===== BUTTONS - MATCHING LOGIN PAGE STYLE ===== */
+/* ===== BUTTONS ===== */
 .profile-button,
 .logout-button,
 .view-info-button,

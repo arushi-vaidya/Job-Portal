@@ -201,7 +201,7 @@ const App = () => {
       <nav className="navbar">
         <div className="navbar-left">
           <div className="logo">
-            <span>JobPortal.ai</span>
+            <span>Job Portal.AI</span>
           </div>       
         </div>
         <div className="nav-right">
@@ -253,6 +253,8 @@ const App = () => {
           <span></span>
         </div>
       </nav>
+
+      
 
         <ResumeParser
               editorIntent={editorIntent}
