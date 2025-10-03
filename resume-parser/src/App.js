@@ -156,16 +156,66 @@ const App = () => {
 
   if (activePage === 'profile') {
     return (
-      <ProfilePage
-        user={currentUser}
-        profile={userProfile}
-        onBack={() => setActivePage('app')}
-        onViewResume={handleViewResume}
-        onRefresh={handleRefreshProfile}
-        onAuthenticate={() => setActivePage('profile-auth')}
-        isAuthenticated={isProfileAuthenticated}
-        onVerificationCheck={updateVerificationStatus}
-      />
+      <div className="app-container">
+        <nav className="navbar">
+          <div className="navbar-left">
+            <div className="logo">
+              <span>Job Portal.AI</span>
+            </div>       
+          </div>
+          <div class="nav-center">
+              <a href="#" title="Home">Home</a>
+              <a href="#" title="Your AI job scout - Jobs tailored just for you" className="nav-tooltip">Recommendations</a>
+              <a href="#" title="AI Resume Analyzer - One click to a perfect, ATS-friendly resume. " className="nav-tooltip" onClick={(e) => { e.preventDefault(); setActivePage('app'); }}>ParsePort</a>
+              <a href="#" title="Level up with personalized growth paths. Courses & certifications that unlock your next job" className="nav-tooltip">Career Copilot</a>
+          </div>
+          <div className="nav-right">
+            {currentUser && (
+              <div className="profile-button-container">
+                <button className="profile-button-main">
+                  <User className="button-icon" />
+                  <span className="profile-name">{currentUser.name}</span>
+                  {isProfileAuthenticated ? (
+                    <span className="verified-tick">✓</span>
+                  ) : (
+                    <span className="unverified-cross">✗</span>
+                  )}
+                </button>
+                <div className="profile-dropdown">
+                  <div className="dropdown-item">
+                    <span className="dropdown-label">ID:</span>
+                    <span className="dropdown-value">{currentUser.userId}</span>
+                  </div>
+                  <div className="dropdown-item" onClick={handleViewResume}>
+                    <span className="dropdown-label">View Info</span>
+                  </div>
+                  <div className="dropdown-item" onClick={() => setActivePage('profile')}>
+                    <span className="dropdown-label">Profile</span>
+                  </div>
+                  <div className="dropdown-item logout-item" onClick={handleLogout}>
+                    <span className="dropdown-label">Logout</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="hamburger" onClick={() => {}}>
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </nav>
+        <ProfilePage
+          user={currentUser}
+          profile={userProfile}
+          onBack={() => setActivePage('app')}
+          onViewResume={handleViewResume}
+          onRefresh={handleRefreshProfile}
+          onAuthenticate={() => setActivePage('profile-auth')}
+          isAuthenticated={isProfileAuthenticated}
+          onVerificationCheck={updateVerificationStatus}
+        />
+      </div>
     );
   }
 
@@ -187,12 +237,62 @@ const App = () => {
 
   if (activePage === 'view-info') {
     return (
-      <AccountViewPage 
-        resume={accountResume}
-        onBack={() => setActivePage('app')}
-        onEdit={handleEditResume}
-        isAuthenticated={isProfileAuthenticated}
-      />
+      <div className="app-container">
+        <nav className="navbar">
+          <div className="navbar-left">
+            <div className="logo">
+              <span>Job Portal.AI</span>
+            </div>       
+          </div>
+          <div class="nav-center">
+              <a href="#" title="Home">Home</a>
+              <a href="#" title="Your AI job scout - Jobs tailored just for you" className="nav-tooltip">Recommendations</a>
+              <a href="#" title="AI Resume Analyzer - One click to a perfect, ATS-friendly resume. " className="nav-tooltip" onClick={(e) => { e.preventDefault(); setActivePage('app'); }}>ParsePort</a>
+              <a href="#" title="Level up with personalized growth paths. Courses & certifications that unlock your next job" className="nav-tooltip">Career Copilot</a>
+          </div>
+          <div className="nav-right">
+            {currentUser && (
+              <div className="profile-button-container">
+                <button className="profile-button-main">
+                  <User className="button-icon" />
+                  <span className="profile-name">{currentUser.name}</span>
+                  {isProfileAuthenticated ? (
+                    <span className="verified-tick">✓</span>
+                  ) : (
+                    <span className="unverified-cross">✗</span>
+                  )}
+                </button>
+                <div className="profile-dropdown">
+                  <div className="dropdown-item">
+                    <span className="dropdown-label">ID:</span>
+                    <span className="dropdown-value">{currentUser.userId}</span>
+                  </div>
+                  <div className="dropdown-item" onClick={handleViewResume}>
+                    <span className="dropdown-label">View Info</span>
+                  </div>
+                  <div className="dropdown-item" onClick={() => setActivePage('profile')}>
+                    <span className="dropdown-label">Profile</span>
+                  </div>
+                  <div className="dropdown-item logout-item" onClick={handleLogout}>
+                    <span className="dropdown-label">Logout</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="hamburger" onClick={() => {}}>
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </nav>
+        <AccountViewPage 
+          resume={accountResume}
+          onBack={() => setActivePage('app')}
+          onEdit={handleEditResume}
+          isAuthenticated={isProfileAuthenticated}
+        />
+      </div>
     );
   }
     
@@ -204,48 +304,44 @@ const App = () => {
             <span>Job Portal.AI</span>
           </div>       
         </div>
+        <div class="nav-center">
+            <a href="#" title="Home">Home</a>
+            <a href="#" title="Your AI job scout - Jobs tailored just for you" className="nav-tooltip">Recommendations</a>
+            <a href="#" title="AI Resume Analyzer - One click to a perfect, ATS-friendly resume. " className="nav-tooltip" onClick={(e) => { e.preventDefault(); setActivePage('app'); }}>ParsePort</a>
+            <a href="#" title="Level up with personalized growth paths. Courses & certifications that unlock your next job" className="nav-tooltip">Career Copilot</a>
+        </div>
         <div className="nav-right">
           {currentUser && (
-            <div className="user-profile-info" onClick={async () => {
-              // Load full resume before navigating to view page
-              try {
-                const list = await apiService.getResumes({ limit: 1 });
-                const items = list?.data || [];
-                if (items.length > 0) {
-                  const resume = items[0];
-                  const id = resume._id || resume.id;
-                  if (id) {
-                    const full = await apiService.getResumeById(id);
-                    setAccountResume(full?.data || resume);
-                    setActivePage('view-info');
-                  }
-                }
-              } catch (error) {
-                console.error('Failed to load resume:', error);
-              }
-            }}>
-              <div className="user-name-display">
-                <span className="user-name-text">{currentUser.name}</span>
-                {isProfileAuthenticated && <span className="verified-tick">✓</span>}
-                <span className="user-id-hover">ID: {currentUser.userId}</span>
+            <div className="profile-button-container">
+              <button class="cta-nav" >
+                <span className="profile-name">{currentUser.name}</span>
+                {isProfileAuthenticated ? (
+                  <span className="verified-tick">  ✓</span>
+                ) : (
+                  <span className="unverified-cross"> ✗</span>
+                )}
+              </button>
+              <div className="profile-dropdown">
+                <div className="dropdown-item">
+                  <span className="dropdown-label">ID:</span>
+                  <span className="dropdown-value">{currentUser.userId}</span>
+                </div>
+
+                <div className="dropdown-item" onClick={handleViewResume}>
+                  <span className="dropdown-label">View Info</span>
+                </div>
+
+                <div className="dropdown-item" onClick={() => setActivePage('profile')}>
+                  <span className="dropdown-label">Profile</span>
+                </div>
+
+                <div className="dropdown-item logout-item" onClick={handleLogout}>
+                  <span className="dropdown-label">Logout</span>
+                </div>
               </div>
+
             </div>
           )}
-            <button
-            className="profile-button"
-            onClick={() => setActivePage('profile')}
-            title="View Profile"
-          >
-            <User className="button-icon" />
-            Profile
-            </button>
-            <button
-            className="logout-button"
-            onClick={handleLogout}
-            title="Logout"
-          >
-            Logout
-            </button>
         </div>
         <div className="hamburger" onClick={() => {}}>
           <span></span>

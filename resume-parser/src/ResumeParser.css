@@ -14,6 +14,8 @@
     --success-green: #6b7280;
     --warning-orange: #f59e0b;
     --info-blue: #3b82f6;
+    --error-red: #ef4444;
+    --border-light: #e5e5e5;
     --border-radius-sm: 8px;
     --border-radius-md: 12px;
     --border-radius-lg: 16px;
@@ -66,6 +68,64 @@ body {
     gap: var(--spacing-xl);
 }
 
+.nav-center {
+    display: flex;
+    gap: 40px;
+    background: var(--bg-primary);
+    padding: 12px 32px;
+    border-radius: 50px;
+}
+
+.nav-center a {
+    color: var(--text-primary);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 15px;
+    transition: opacity 0.3s;
+}
+
+.nav-center a:hover {
+    opacity: 0.6;
+}
+
+.nav-center a.nav-tooltip {
+    position: relative;
+}
+
+.nav-center a.nav-tooltip:hover::after {
+    content: attr(title);
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-dark);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    min-width: 250px;
+    max-width: 500px;
+    width: auto;
+    white-space: normal;
+    text-align: center;
+    box-shadow: 0 4px 12px var(--shadow-medium);
+    z-index: 1000;
+    margin-top: 8px;
+    pointer-events: none;
+}
+
+.nav-center a.nav-tooltip:hover::before {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-bottom-color: var(--bg-dark);
+    z-index: 1000;
+    margin-top: 3px;
+}
+
 .logo {
     display: flex;
     align-items: center;
@@ -106,69 +166,117 @@ body {
     align-items: center;
 }
 
-/* ===== USER PROFILE DISPLAY ===== */
-.user-profile-info {
-    cursor: pointer;
-    padding: 10px 20px;
-    border-radius: 50px;
-    transition: all 0.3s ease;
+/* ===== PROFILE BUTTON ===== */
+.profile-button-container {
     position: relative;
-    background: var(--bg-primary);
-    border: 1px solid var(--border-color);
 }
 
-.user-profile-info:hover {
-    background: var(--bg-secondary);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px var(--shadow-light);
-}
-
-.user-name-display {
+.profile-button-main {
+    background: var(--accent-primary);
+    color: var(--bg-secondary);
+    border: none;
+    padding: 8px 16px;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
     display: flex;
     align-items: center;
-    gap: 10px;
-    position: relative;
+    gap: 6px;
+    box-shadow: 0 2px 8px var(--shadow-light);
 }
 
-.user-name-text {
-    font-weight: 600;
-    color: var(--text-primary);
-    font-size: 15px;
+.profile-button-main:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px var(--shadow-medium);
+}
+
+.profile-name {
+    color: var(--bg-secondary);
 }
 
 .verified-tick {
     color: var(--success-green);
     font-weight: 700;
-    font-size: 18px;
+    font-size: 14px;
 }
 
-.user-id-hover {
+.unverified-cross {
+    color: var(--error-red);
+    font-weight: 700;
+    font-size: 14px;
+}
+
+.profile-dropdown {
     position: absolute;
     top: 100%;
-    left: 0;
-    background: var(--bg-dark);
-    color: white;
-    padding: 6px 12px;
-    border-radius: 8px;
-    font-size: 12px;
-    white-space: nowrap;
+    right: 0;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 8px 0;
+    min-width: 200px;
+    box-shadow: 0 8px 24px var(--shadow-medium);
     opacity: 0;
     visibility: hidden;
-    transform: translateY(-8px);
+    transform: translateY(-10px);
     transition: all 0.3s ease;
     z-index: 1000;
     margin-top: 8px;
 }
 
-.user-profile-info:hover .user-id-hover {
+.profile-button-container:hover .profile-dropdown {
     opacity: 1;
     visibility: visible;
     transform: translateY(0);
 }
 
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.dropdown-item:hover {
+    background: var(--bg-primary);
+}
+
+.dropdown-item.logout-item:hover {
+    background: var(--text-secondary);
+    color: white;
+}
+
+.dropdown-label {
+    font-weight: 500;
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.dropdown-value {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text-primary);
+}
+
+.logout-item .dropdown-label {
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.logout-item:hover .dropdown-label {
+    color: white;
+}
+
 /* ===== BUTTONS ===== */
-.profile-button,
-.logout-button,
 .view-info-button,
 .cta-nav {
     background: var(--accent-primary);
@@ -179,15 +287,9 @@ body {
     font-weight: 600;
     font-size: 14px;
     cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    box-shadow: 0 4px 12px var(--shadow-light);
+    transition: all 0.3s;
 }
 
-.profile-button:hover,
-.logout-button:hover,
 .view-info-button:hover,
 .cta-nav:hover {
     transform: translateY(-2px);
@@ -1495,23 +1597,25 @@ html {
 /* ===== ACCOUNT VIEW PAGE ===== */
 .account-page,
 .profile-page {
-    background: var(--bg-secondary);
-    border-radius: var(--border-radius-2xl);
-    padding: 50px 40px;
-    margin: 0 auto;
-    max-width: 1200px;
-    box-shadow: 0 12px 40px var(--shadow-light);
-    border: 2px solid var(--border-color);
+    background: var(--bg-primary);
+    min-height: 100vh;
+    padding: 0;
+    margin: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
 }
 
 .account-header,
 .profile-header {
+    background: var(--bg-secondary);
+    padding: 32px 48px;
+    border-bottom: 1px solid var(--border-light);
+    box-shadow: 0 2px 8px var(--shadow-light);
     display: flex;
     align-items: center;
     gap: 24px;
-    margin-bottom: 50px;
-    padding-bottom: 24px;
-    border-bottom: 2px solid var(--border-color);
+    margin-bottom: 0;
     flex-wrap: wrap;
 }
 
@@ -1544,30 +1648,55 @@ html {
     flex: 1;
 }
 
+.profile-content,
+.account-content {
+    flex: 1;
+    padding: 48px;
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.profile-loading,
+.account-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    text-align: center;
+    padding: 48px;
+}
+
 /* ===== ACCOUNT CONTENT ===== */
 .account-content,
 .profile-content {
-    display: grid;
-    gap: 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
 }
 
 .account-section,
-.profile-section {
-    background: var(--bg-primary);
-    border-radius: var(--border-radius-xl);
+.profile-section,
+.profile-main-card {
+    background: var(--bg-secondary);
+    border-radius: var(--border-radius-lg);
     padding: 32px;
-    border: 2px solid var(--border-color);
+    box-shadow: 0 4px 16px var(--shadow-light);
+    border: 1px solid var(--border-light);
     transition: all 0.3s ease;
 }
 
 .account-section:hover,
-.profile-section:hover {
-    transform: translateY(-4px);
+.profile-section:hover,
+.profile-main-card:hover {
     box-shadow: 0 16px 48px var(--shadow-medium);
+    transform: translateY(-2px);
 }
 
 .account-section h3,
-.profile-section h3 {
+.profile-section h3,
+.profile-main-card h3 {
     font-size: 24px;
     font-weight: 700;
     color: var(--text-primary);
@@ -1927,9 +2056,7 @@ html {
 }
 
 .profile-name {
-    font-size: 28px;
-    font-weight: 700;
-    color: var(--text-primary);
+    color: white;
     margin-bottom: 8px;
 }
 
@@ -3727,8 +3854,18 @@ html {
     .account-page,
     .profile-page,
     .profile-auth-container {
-        padding: 32px 24px;
-        margin: 0 16px;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .account-header,
+    .profile-header {
+        padding: 24px 20px;
+    }
+    
+    .profile-content,
+    .account-content {
+        padding: 24px 20px;
     }
 
     .kv {
@@ -3822,8 +3959,18 @@ html {
     .account-page,
     .profile-page,
     .profile-auth-container {
-        padding: 24px 20px;
+        padding: 0;
         margin: 0;
+    }
+    
+    .account-header,
+    .profile-header {
+        padding: 20px 16px;
+    }
+    
+    .profile-content,
+    .account-content {
+        padding: 20px 16px;
     }
 
     .account-header h2,
