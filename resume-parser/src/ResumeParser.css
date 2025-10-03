@@ -11,7 +11,7 @@
     --shadow-light: rgba(0, 0, 0, 0.1);
     --shadow-medium: rgba(0, 0, 0, 0.15);
     
-    --success-green: #10b981;
+    --success-green: #6b7280;
     --warning-orange: #f59e0b;
     --info-blue: #3b82f6;
     --border-radius-sm: 8px;
@@ -1221,7 +1221,7 @@ html {
 }
 
 .save-status-icon.success {
-    background: rgba(16, 185, 129, 0.1);
+    background: rgba(107, 114, 128, 0.1);
     color: var(--success-green);
 }
 
@@ -1703,7 +1703,7 @@ html {
 
 /* ===== VERIFICATION SECTION ===== */
 .verification-section {
-    background: linear-gradient(135deg, var(--bg-primary) 0%, rgba(16, 185, 129, 0.05) 100%);
+    background: linear-gradient(135deg, var(--bg-primary) 0%, rgba(107, 114, 128, 0.05) 100%);
     border: 2px solid var(--success-green);
 }
 
@@ -1733,6 +1733,29 @@ html {
     font-size: 16px;
     font-weight: 600;
     color: var(--text-primary);
+}
+
+.personal-info-layout {
+    display: flex;
+    align-items: flex-start;
+    gap: 30px;
+}
+
+.personal-info-content {
+    flex: 1;
+}
+
+.personal-info-content h3 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.verification-photo-section {
+    flex-shrink: 0;
+    min-width: 280px;
 }
 
 .verification-photo-section h4 {
@@ -1820,7 +1843,7 @@ html {
     border-radius: 50px;
     font-size: 13px;
     font-weight: 600;
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
 }
 
 .auth-status-badge .icon {
@@ -2683,9 +2706,9 @@ html {
 }
 
 .success-message {
-    background: #f0fdf4;
-    color: #16a34a;
-    border: 2px solid #bbf7d0;
+    background: #f9fafb;
+    color: #6b7280;
+    border: 2px solid #d1d5db;
 }
 
 .error-message .icon,
@@ -2710,7 +2733,7 @@ html {
 .auth-step.success-step {
     text-align: center;
     border-color: var(--success-green);
-    background: linear-gradient(135deg, var(--bg-primary) 0%, rgba(16, 185, 129, 0.05) 100%);
+    background: linear-gradient(135deg, var(--bg-primary) 0%, rgba(107, 114, 128, 0.05) 100%);
 }
 
 .step-header {
@@ -3609,7 +3632,7 @@ html {
     border-radius: 50px;
     font-size: 12px;
     font-weight: 600;
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
 }
 
 /* ===== HAMBURGER MENU ===== */

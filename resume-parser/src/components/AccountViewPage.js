@@ -77,19 +77,11 @@ const AccountViewPage = ({ resume, onBack, onEdit, isAuthenticated }) => {
         <div className="account-empty">No resume found for this account.</div>
       ) : (
         <div className="account-content">
-          {/* Verification Photo Section */}
-          {isAuthenticated && (
-            <section className="account-section verification-section">
-              <h3>Verification</h3>
-              <div className="verification-info">
-                <div className="verification-status">
-                  <CheckCircle className="icon verified" />
-                  <span>Profile Verified</span>
-                </div>
-                
-                {/* Verification Photo */}
+          <section className="account-section personal-info-section">
+            <div className="personal-info-layout">
+              {/* Verification Photo on the left */}
+              {isAuthenticated && (
                 <div className="verification-photo-section">
-                  <h4>Verification Photo</h4>
                   {photoLoading ? (
                     <div className="photo-loading">
                       <Camera className="icon" />
@@ -106,10 +98,6 @@ const AccountViewPage = ({ resume, onBack, onEdit, isAuthenticated }) => {
                           setVerificationPhoto(null);
                         }}
                       />
-                      <div className="photo-info">
-                        <Camera className="icon" />
-                        <span>Identity verification photo</span>
-                      </div>
                     </div>
                   ) : (
                     <div className="no-photo">
@@ -118,12 +106,11 @@ const AccountViewPage = ({ resume, onBack, onEdit, isAuthenticated }) => {
                     </div>
                   )}
                 </div>
-              </div>
-            </section>
-          )}
-
-          <section className="account-section">
-            <h3>Personal Info</h3>
+              )}
+              
+              {/* Personal Info wrapped around the photo */}
+              <div className="personal-info-content">
+                <h3>Personal Info</h3>
             <div className="kv"><span>Name</span><span>{data.personalInfo.name}</span></div>
             <div className="kv"><span>Email</span><span>{data.personalInfo.email}</span></div>
             <div className="kv"><span>Phone</span><span>{data.personalInfo.phone}</span></div>
@@ -138,6 +125,8 @@ const AccountViewPage = ({ resume, onBack, onEdit, isAuthenticated }) => {
             {data.personalInfo.hobbies.length > 0 && (
               <div className="kv"><span>Hobbies</span><span>{data.personalInfo.hobbies.join(', ')}</span></div>
             )}
+              </div>
+            </div>
           </section>
 
           <section className="account-section">

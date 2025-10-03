@@ -2517,23 +2517,7 @@ useEffect(() => {
             <p className="app-subtitle">Transform your resume into a professional format with AI-powered analysis or manual entry</p>
           </div>
         )}
-
-        {/* Authentication Status */}
-        {isAuthenticated !== undefined && (
-          <div className={`resume-auth-status ${isAuthenticated ? '' : 'not-verified'}`}>
-            {isAuthenticated ? (
-              <>
-                <CheckCircle className="icon" />
-                <span>Profile Verified - Your resume is authenticated</span>
-              </>
-            ) : (
-              <>
-                <Shield className="icon" />
-                <span>Profile Not Verified - Complete authentication for full access</span>
-              </>
-            )}
-          </div>
-        )}
+        
 
         <div className="nav-buttons">
           <div className="nav-container">
@@ -2733,7 +2717,6 @@ useEffect(() => {
                   </button>
                 ))}
               </div>
-              <p className="color-selection-label">Selected: {colorOptions.find(c => c.value === selectedColor)?.name}</p>
             </div>
 
             {/* Resume Preview - Formatted like template */}
