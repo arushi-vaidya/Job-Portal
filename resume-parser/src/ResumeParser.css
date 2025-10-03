@@ -1643,7 +1643,7 @@ html {
     background: var(--accent-primary);
     color: var(--bg-secondary);
     border: none;
-    padding: 16px 36px;
+    padding: 10px 20px;
     border-radius: 12px;
     font-weight: 600;
     font-size: 15px;
@@ -1680,7 +1680,7 @@ html {
 
 .account-header h2,
 .profile-header h2 {
-    font-size: 36px;
+    font-size: 18px;
     font-weight: 800;
     color: var(--text-primary);
     margin: 0;
@@ -4202,6 +4202,420 @@ textarea:focus-visible,
     }
 }
 
+/* ===== VIEW ACCOUNT ===== */
+
+.profile-card-exact {
+  background: white;
+  border-radius: 24px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  margin-bottom: 32px;
+  overflow: hidden;
+  width: 100%;
+  max-width: 100%;
+}
+
+.profile-card-header {
+  background: #f5f5f0; /* Beige background */
+  padding: 60px 40px 40px;
+  text-align: center;
+  position: relative;
+  border-bottom: 2px solid #1a1a1a; /* Black border */
+}
+
+.profile-avatar-circle {
+  width: 120px;
+  height: 120px;
+  margin: 0 auto 20px;
+  background: white;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 4px solid #1a1a1a; /* Black border */
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-image-exact {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-placeholder-exact {
+  width: 100%;
+  height: 100%;
+  background: #f5f5f0; /* Beige */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-icon-exact {
+  width: 60px;
+  height: 60px;
+  color: #4a4a4a; /* Dark gray */
+}
+
+.profile-name-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.profile-display-name {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1a1a1a; /* Black */
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+.verification-badge-inline {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.verification-badge-inline.verified {
+  background: #6b7280; /* Success green background */
+}
+
+.verification-badge-inline.unverified {
+  background: #ef4444; /* Error red background */
+}
+
+.verify-icon-inline {
+  width: 18px;
+  height: 18px;
+  color: white;
+}
+
+.profile-email-display {
+  font-size: 16px;
+  color: #4a4a4a; /* Dark gray */
+  font-weight: 500;
+}
+
+.profile-sections-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  border-top: 1px solid #d0d0d0; /* Light gray border */
+}
+
+.profile-bottom-grid {
+  border-top: 1px solid #d0d0d0;
+}
+
+.profile-details-column {
+  padding: 40px;
+  border-right: 1px solid #d0d0d0;
+  background: white;
+}
+
+.profile-details-column:last-child {
+  border-right: none;
+}
+
+.profile-sections-grid .profile-details-column:nth-child(2) {
+  border-right: none;
+}
+
+.column-heading {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a1a1a; /* Black */
+  margin: 0 0 28px 0;
+  padding: 0;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 14px 0;
+  border-bottom: 1px solid #f5f5f0; /* Beige border */
+  gap: 20px;
+}
+
+.detail-row:last-child {
+  border-bottom: none;
+}
+
+.detail-label {
+  font-size: 14px;
+  color: #4a4a4a; /* Dark gray */
+  font-weight: 500;
+  flex-shrink: 0;
+  min-width: 150px;
+}
+
+.detail-value {
+  font-size: 14px;
+  color: #1a1a1a; /* Black */
+  font-weight: 600;
+  text-align: right;
+  word-break: break-word;
+}
+
+.detail-verified {
+  color: #6b7280; /* Success green */
+  background: rgba(107, 114, 128, 0.1);
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+}
+
+.detail-unverified {
+  color: #ef4444; /* Error red */
+  background: rgba(239, 68, 68, 0.1);
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+}
+
+.detail-enabled {
+  color: #1a1a1a; /* Black */
+  background: #f5f5f0; /* Beige */
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+}
+
+/* Full Width Container */
+.account-content-full {
+  max-width: 100%;
+  width: 100%;
+  padding: 0;
+}
+
+/* Full Width Sections */
+.account-section-full {
+  background: white;
+  border-radius: 20px;
+  padding: 40px;
+  margin-bottom: 32px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid #d0d0d0;
+  width: 100%;
+}
+
+.account-section-full h3 {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a1a1a; /* Black */
+  margin-bottom: 24px;
+}
+
+/* Two Column Layout */
+.two-column-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  margin-bottom: 32px;
+}
+
+.account-section-half {
+  background: white;
+  border-radius: 20px;
+  padding: 40px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid #d0d0d0;
+}
+
+.account-section-half h3 {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a1a1a; /* Black */
+  margin-bottom: 24px;
+}
+
+/* Entry Styles */
+.entry {
+  background: #f5f5f0; /* Beige background */
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 20px;
+  border: 1px solid #d0d0d0;
+  transition: all 0.3s ease;
+}
+
+.entry:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  border-color: #1a1a1a; /* Black border on hover */
+}
+
+.entry:last-child {
+  margin-bottom: 0;
+}
+
+.entry-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.entry-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a1a1a; /* Black */
+  flex: 1;
+}
+
+.entry-sub {
+  font-size: 14px;
+  color: #4a4a4a; /* Dark gray */
+  font-weight: 600;
+  background: rgba(26, 26, 26, 0.08);
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+
+.entry-subtitle {
+  font-size: 15px;
+  color: #4a4a4a; /* Dark gray */
+  font-weight: 500;
+  margin-bottom: 8px;
+  font-style: italic;
+}
+
+.entry ul {
+  margin: 16px 0 0 24px;
+  padding: 0;
+}
+
+.entry li {
+  font-size: 15px;
+  color: #4a4a4a; /* Dark gray */
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
+
+/* Chips (Skills) Styling */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.chip {
+  background: #1a1a1a; /* Black background */
+  color: white;
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(26, 26, 26, 0.2);
+}
+
+.chip:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(26, 26, 26, 0.3);
+  background: #4a4a4a; /* Lighter on hover */
+}
+
+/* Empty state styling */
+.empty {
+  text-align: center;
+  color: #4a4a4a; /* Dark gray */
+  font-style: italic;
+  padding: 40px;
+  background: #f5f5f0; /* Beige */
+  border-radius: 12px;
+  border: 2px dashed #d0d0d0;
+}
+
+/* Detail Link Styling */
+.detail-link {
+  color: #1a1a1a; /* Black */
+  text-decoration: underline;
+  font-weight: 600;
+  transition: opacity 0.2s ease;
+}
+
+.detail-link:hover {
+  opacity: 0.7;
+}
+
+/* Responsive */
+@media (max-width: 968px) {
+  .profile-sections-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .profile-details-column {
+    border-right: none;
+    border-bottom: 1px solid #d0d0d0;
+  }
+  
+  .profile-details-column:last-child {
+    border-bottom: none;
+  }
+  
+  .profile-card-header {
+    padding: 40px 24px 30px;
+  }
+  
+  .profile-display-name {
+    font-size: 24px;
+  }
+  
+  .detail-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .detail-label {
+    min-width: auto;
+  }
+  
+  .detail-value {
+    text-align: left;
+  }
+
+  .two-column-layout {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  
+  .account-section-full,
+  .account-section-half {
+    padding: 30px 24px;
+  }
+}
+
+@media (max-width: 640px) {
+  .profile-details-column {
+    padding: 24px 20px;
+  }
+  
+  .profile-avatar-circle {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .avatar-icon-exact {
+    width: 50px;
+    height: 50px;
+  }
+
+  .account-section-full,
+  .account-section-half {
+    padding: 24px 20px;
+  }
+}
 /* ===== ADDITIONAL UTILITY CLASSES ===== */
 .text-center {
     text-align: center;

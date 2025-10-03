@@ -2513,7 +2513,7 @@ useEffect(() => {
         {/* Only show header section on upload and processing views, not on results */}
         {activeView !== 'results' && (
           <div className="header-section">
-            <h1 className="app-title">Smart Resume Parser</h1>
+            <h1 className="app-title">ParsePort</h1>
             <p className="app-subtitle">Transform your resume into a professional format with AI-powered analysis or manual entry</p>
           </div>
         )}

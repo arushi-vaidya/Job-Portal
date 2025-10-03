@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, Shield, User, Camera } from 'lucide-react';
+import { CheckCircle, XCircle, User, Camera } from 'lucide-react';
 import apiService from '../services/api';
 
 const AccountViewPage = ({ resume, onBack, onEdit, isAuthenticated }) => {
@@ -17,7 +17,6 @@ const AccountViewPage = ({ resume, onBack, onEdit, isAuthenticated }) => {
           const verificationResponse = await apiService.getVerificationStatus();
           setVerificationData(verificationResponse.data?.verification);
           
-          // If user has a verification photo, fetch it
           if (verificationResponse.data?.verification?.verificationPhoto?.hasPhoto) {
             try {
               const photoResponse = await apiService.getVerificationPhoto();
@@ -46,6 +45,12 @@ const AccountViewPage = ({ resume, onBack, onEdit, isAuthenticated }) => {
       }
     };
   }, [verificationPhoto]);
+
+  // Helper to display value or placeholder
+  const displayValue = (value) => {
+    return (value && value !== '-') ? value : 'Not provided';
+  };
+
   return (
     <div className="account-page">
       <div className="account-header">
@@ -56,158 +61,257 @@ const AccountViewPage = ({ resume, onBack, onEdit, isAuthenticated }) => {
         </div>
       </div>
 
-      {/* Authentication Status */}
-      {isAuthenticated !== undefined && (
-        <div className={`resume-auth-status ${isAuthenticated ? '' : 'not-verified'}`}>
-          {isAuthenticated ? (
-            <>
-              <CheckCircle className="icon" />
-              <span>Profile Verified - This data is authenticated</span>
-            </>
-          ) : (
-            <>
-              <Shield className="icon" />
-              <span>Profile Not Verified - Complete authentication for verified data</span>
-            </>
-          )}
-        </div>
-      )}
-
       {!data ? (
         <div className="account-empty">No resume found for this account.</div>
       ) : (
-        <div className="account-content">
-          <section className="account-section personal-info-section">
-            <div className="personal-info-layout">
-              {/* Verification Photo on the left */}
-              {isAuthenticated && (
-                <div className="verification-photo-section">
-                  {photoLoading ? (
-                    <div className="photo-loading">
-                      <Camera className="icon" />
-                      <span>Loading verification photo...</span>
-                    </div>
-                  ) : verificationPhoto ? (
-                    <div className="verification-photo-container">
-                      <img 
-                        src={verificationPhoto} 
-                        alt="Verification Photo" 
-                        className="verification-photo"
-                        onError={() => {
-                          console.error('Failed to load verification photo');
-                          setVerificationPhoto(null);
-                        }}
-                      />
-                    </div>
+        <div className="account-content-full">
+          {/* Profile Card - Full Width with Your Data */}
+          <section className="profile-card-exact">
+            <div className="profile-card-header">
+              <div className="profile-avatar-circle">
+                {photoLoading ? (
+                  <div className="avatar-loading">
+                    <div className="spinner"></div>
+                  </div>
+                ) : isAuthenticated && verificationPhoto ? (
+                  <img 
+                    src={verificationPhoto} 
+                    alt="Profile" 
+                    className="avatar-image-exact"
+                    onError={() => {
+                      console.error('Failed to load verification photo');
+                      setVerificationPhoto(null);
+                    }}
+                  />
+                ) : (
+                  <div className="avatar-placeholder-exact">
+                    <User className="avatar-icon-exact" />
+                  </div>
+                )}
+              </div>
+              <div className="profile-name-section">
+                <h1 className="profile-display-name">{data.personalInfo.name}</h1>
+                <div className={`verification-badge-inline ${isAuthenticated ? 'verified' : 'unverified'}`}>
+                  {isAuthenticated ? (
+                    <CheckCircle className="verify-icon-inline" />
                   ) : (
-                    <div className="no-photo">
-                      <User className="icon" />
-                      <span>No verification photo available</span>
-                    </div>
+                    <XCircle className="verify-icon-inline" />
                   )}
                 </div>
-              )}
-              
-              {/* Personal Info wrapped around the photo */}
-              <div className="personal-info-content">
-                <h3>Personal Info</h3>
-            <div className="kv"><span>Name</span><span>{data.personalInfo.name}</span></div>
-            <div className="kv"><span>Email</span><span>{data.personalInfo.email}</span></div>
-            <div className="kv"><span>Phone</span><span>{data.personalInfo.phone}</span></div>
-            <div className="kv"><span>Location</span><span>{data.personalInfo.location}</span></div>
-            <div className="kv"><span>Bio</span><span>{data.personalInfo.bio}</span></div>
-            <div className="kv"><span>Current Salary</span><span>{data.personalInfo.currentSalary}</span></div>
-            <div className="kv"><span>Salary Expectation</span><span>{data.personalInfo.salaryExpectation}</span></div>
-            <div className="kv"><span>LinkedIn</span><span>{data.personalInfo.linkedinLink}</span></div>
-            <div className="kv"><span>GitHub</span><span>{data.personalInfo.githubLink}</span></div>
-            <div className="kv"><span>Hometown</span><span>{data.personalInfo.hometown}</span></div>
-            <div className="kv"><span>Current Location</span><span>{data.personalInfo.currentLocation}</span></div>
-            {data.personalInfo.hobbies.length > 0 && (
-              <div className="kv"><span>Hobbies</span><span>{data.personalInfo.hobbies.join(', ')}</span></div>
-            )}
+              </div>
+              <div className="profile-email-display">{data.personalInfo.email}</div>
+            </div>
+
+            <div className="profile-sections-grid">
+              {/* Personal Details Column */}
+              <div className="profile-details-column">
+                <h3 className="column-heading">Personal details</h3>
+                
+                <div className="detail-row">
+                  <span className="detail-label">Full name:</span>
+                  <span className="detail-value">{displayValue(data.personalInfo.name)}</span>
+                </div>
+
+                <div className="detail-row">
+                  <span className="detail-label">Email:</span>
+                  <span className="detail-value">{displayValue(data.personalInfo.email)}</span>
+                </div>
+
+                <div className="detail-row">
+                  <span className="detail-label">Phone:</span>
+                  <span className="detail-value">{displayValue(data.personalInfo.phone)}</span>
+                </div>
+
+                <div className="detail-row">
+                  <span className="detail-label">Location:</span>
+                  <span className="detail-value">{displayValue(data.personalInfo.location)}</span>
+                </div>
+
+                <div className="detail-row">
+                  <span className="detail-label">Bio:</span>
+                  <span className="detail-value">{displayValue(data.personalInfo.bio)}</span>
+                </div>
+
+                <div className="detail-row">
+                  <span className="detail-label">Current Salary:</span>
+                  <span className="detail-value">{displayValue(data.personalInfo.currentSalary)}</span>
+                </div>
+
+                <div className="detail-row">
+                  <span className="detail-label">Salary Expectation:</span>
+                  <span className="detail-value">{displayValue(data.personalInfo.salaryExpectation)}</span>
+                </div>
+              </div>
+
+              {/* Additional Information Column */}
+              <div className="profile-details-column">
+                <h3 className="column-heading">Additional Information</h3>
+                
+                <div className="detail-row">
+                  <span className="detail-label">LinkedIn:</span>
+                  <span className="detail-value">
+                    {data.personalInfo.linkedinLink && data.personalInfo.linkedinLink !== '-' ? (
+                      <a href={data.personalInfo.linkedinLink} target="_blank" rel="noopener noreferrer" className="detail-link">
+                        View Profile
+                      </a>
+                    ) : 'Not provided'}
+                  </span>
+                </div>
+
+                <div className="detail-row">
+                  <span className="detail-label">GitHub:</span>
+                  <span className="detail-value">
+                    {data.personalInfo.githubLink && data.personalInfo.githubLink !== '-' ? (
+                      <a href={data.personalInfo.githubLink} target="_blank" rel="noopener noreferrer" className="detail-link">
+                        View Profile
+                      </a>
+                    ) : 'Not provided'}
+                  </span>
+                </div>
+
+                <div className="detail-row">
+                  <span className="detail-label">Hometown:</span>
+                  <span className="detail-value">{displayValue(data.personalInfo.hometown)}</span>
+                </div>
+
+                <div className="detail-row">
+                  <span className="detail-label">Current Location:</span>
+                  <span className="detail-value">{displayValue(data.personalInfo.currentLocation)}</span>
+                </div>
+
+                <div className="detail-row">
+                  <span className="detail-label">Hobbies:</span>
+                  <span className="detail-value">
+                    {data.personalInfo.hobbies.length > 0 
+                      ? data.personalInfo.hobbies.join(', ') 
+                      : 'Not provided'}
+                  </span>
+                </div>
+
+                <div className="detail-row">
+                  <span className="detail-label">Profile Status:</span>
+                  <span className={`detail-value ${isAuthenticated ? 'detail-verified' : 'detail-unverified'}`}>
+                    {isAuthenticated ? 'Verified' : 'Not Verified'}
+                  </span>
+                </div>
               </div>
             </div>
           </section>
 
-          <section className="account-section">
-            <h3>Experience</h3>
-            {data.experience.length === 0 ? <div className="empty">No entries</div> : data.experience.map((e, i) => (
-              <div className="entry" key={`exp-${i}`}>
-                <div className="entry-header">
-                  <div className="entry-title">{e.position} @ {e.company}</div>
-                  <div className="entry-sub">{e.duration}</div>
+          {/* Experience Section */}
+          <section className="account-section-full">
+            <h3>Professional Experience</h3>
+            {data.experience.length === 0 ? (
+              <div className="empty">No experience entries</div>
+            ) : (
+              data.experience.map((e, i) => (
+                <div className="entry" key={`exp-${i}`}>
+                  <div className="entry-header">
+                    <div className="entry-title">{e.position} @ {e.company}</div>
+                    <div className="entry-sub">{e.duration}</div>
+                  </div>
+                  {e.description?.length > 0 && (
+                    <ul>{e.description.map((d, idx) => <li key={idx}>{d}</li>)}</ul>
+                  )}
                 </div>
-                {e.description?.length > 0 && (
-                  <ul>{e.description.map((d, idx) => <li key={idx}>{d}</li>)}</ul>
-                )}
-              </div>
-            ))}
+              ))
+            )}
           </section>
 
-          <section className="account-section">
-            <h3>Education</h3>
-            {data.education.length === 0 ? <div className="empty">No entries</div> : data.education.map((ed, i) => (
-              <div className="entry" key={`edu-${i}`}>
-                <div className="entry-header">
-                  <div className="entry-title">{ed.degree} • {ed.institution}</div>
-                  <div className="entry-sub">{ed.year}</div>
-                </div>
-                {ed.description?.length > 0 && (
-                  <ul>{ed.description.map((d, idx) => <li key={idx}>{d}</li>)}</ul>
-                )}
-              </div>
-            ))}
-          </section>
+          {/* Two Column Layout for Education & Projects */}
+          <div className="two-column-layout">
+            <section className="account-section-half">
+              <h3>Education</h3>
+              {data.education.length === 0 ? (
+                <div className="empty">No education entries</div>
+              ) : (
+                data.education.map((ed, i) => (
+                  <div className="entry" key={`edu-${i}`}>
+                    <div className="entry-header">
+                      <div className="entry-title">{ed.degree}</div>
+                      <div className="entry-sub">{ed.year}</div>
+                    </div>
+                    <div className="entry-subtitle">{ed.institution}</div>
+                    {ed.description?.length > 0 && (
+                      <ul>{ed.description.map((d, idx) => <li key={idx}>{d}</li>)}</ul>
+                    )}
+                  </div>
+                ))
+              )}
+            </section>
 
-          <section className="account-section">
-            <h3>Projects</h3>
-            {data.projects.length === 0 ? <div className="empty">No entries</div> : data.projects.map((p, i) => (
-              <div className="entry" key={`proj-${i}`}>
-                <div className="entry-title">{p.title}</div>
-                {p.description?.length > 0 && (
-                  <ul>{p.description.map((d, idx) => <li key={idx}>{d}</li>)}</ul>
-                )}
-              </div>
-            ))}
-          </section>
+            <section className="account-section-half">
+              <h3>Projects</h3>
+              {data.projects.length === 0 ? (
+                <div className="empty">No project entries</div>
+              ) : (
+                data.projects.map((p, i) => (
+                  <div className="entry" key={`proj-${i}`}>
+                    <div className="entry-title">{p.title}</div>
+                    {p.description?.length > 0 && (
+                      <ul>{p.description.map((d, idx) => <li key={idx}>{d}</li>)}</ul>
+                    )}
+                  </div>
+                ))
+              )}
+            </section>
+          </div>
 
-          <section className="account-section">
-            <h3>Achievements</h3>
-            {data.achievements.length === 0 ? <div className="empty">No entries</div> : data.achievements.map((a, i) => (
-              <div className="entry" key={`ach-${i}`}>
-                <div className="entry-title">{a.title}</div>
-                {a.description?.length > 0 && (
-                  <ul>{a.description.map((d, idx) => <li key={idx}>{d}</li>)}</ul>
-                )}
-              </div>
-            ))}
-          </section>
+          {/* Two Column Layout for Achievements & Certificates */}
+          <div className="two-column-layout">
+            <section className="account-section-half">
+              <h3>Achievements</h3>
+              {data.achievements.length === 0 ? (
+                <div className="empty">No achievement entries</div>
+              ) : (
+                data.achievements.map((a, i) => (
+                  <div className="entry" key={`ach-${i}`}>
+                    <div className="entry-title">{a.title}</div>
+                    {a.description?.length > 0 && (
+                      <ul>{a.description.map((d, idx) => <li key={idx}>{d}</li>)}</ul>
+                    )}
+                  </div>
+                ))
+              )}
+            </section>
 
-          <section className="account-section">
-            <h3>Certificates</h3>
-            {data.certificates.length === 0 ? <div className="empty">No entries</div> : data.certificates.map((c, i) => (
-              <div className="entry" key={`cert-${i}`}>
-                <div className="entry-header">
-                  <div className="entry-title">{c.title}</div>
-                  <div className="entry-sub">{c.issuer} • {c.year}</div>
-                </div>
-                {c.description?.length > 0 && (
-                  <ul>{c.description.map((d, idx) => <li key={idx}>{d}</li>)}</ul>
-                )}
-              </div>
-            ))}
-          </section>
+            <section className="account-section-half">
+              <h3>Certificates</h3>
+              {data.certificates.length === 0 ? (
+                <div className="empty">No certificate entries</div>
+              ) : (
+                data.certificates.map((c, i) => (
+                  <div className="entry" key={`cert-${i}`}>
+                    <div className="entry-header">
+                      <div className="entry-title">{c.title}</div>
+                      <div className="entry-sub">{c.year}</div>
+                    </div>
+                    <div className="entry-subtitle">{c.issuer}</div>
+                    {c.description?.length > 0 && (
+                      <ul>{c.description.map((d, idx) => <li key={idx}>{d}</li>)}</ul>
+                    )}
+                  </div>
+                ))
+              )}
+            </section>
+          </div>
 
-          <section className="account-section">
+          {/* Skills Section - Full Width */}
+          <section className="account-section-full">
             <h3>Skills</h3>
-            {data.skills.length === 0 ? <div className="empty">No entries</div> : (
+            {data.skills.length === 0 ? (
+              <div className="empty">No skills listed</div>
+            ) : (
               <div className="chips">{data.skills.map((s, i) => <span className="chip" key={`skill-${i}`}>{s}</span>)}</div>
             )}
           </section>
 
-          <section className="account-section">
+          {/* Additional Information Section - Full Width */}
+          <section className="account-section-full">
             <h3>Additional Information</h3>
-            {data.additionalInformation.length === 0 ? <div className="empty">No entries</div> : (
+            {data.additionalInformation.length === 0 ? (
+              <div className="empty">No additional information</div>
+            ) : (
               <ul>{data.additionalInformation.map((d, i) => <li key={`add-${i}`}>{d}</li>)}</ul>
             )}
           </section>
@@ -231,7 +335,7 @@ function normalizeAccountResume(r) {
       hometown: r?.personalInfo?.hometown || '-',
       currentLocation: r?.personalInfo?.currentLocation || '-',
       currentSalary: r?.personalInfo?.currentSalary || '-',
-      salaryExpectation: r?.personalInfo?.salaryExpectation || '-', // Add this new field
+      salaryExpectation: r?.personalInfo?.salaryExpectation || '-',
       hobbies: Array.isArray(r?.personalInfo?.hobbies) ? r.personalInfo.hobbies : []
     },
     experience: Array.isArray(r?.experience) ? r.experience : [],
