@@ -1604,19 +1604,38 @@ html {
     width: 100%;
     display: flex;
     flex-direction: column;
+    position: relative;
+    overflow-x: hidden;
+}
+
+.account-page::before,
+.profile-page::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        radial-gradient(circle at 20% 80%, rgba(102, 126, 234, 0.03) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 40% 40%, rgba(102, 126, 234, 0.02) 0%, transparent 50%);
+    pointer-events: none;
 }
 
 .account-header,
 .profile-header {
     background: var(--bg-secondary);
-    padding: 32px 48px;
+    padding: 40px 60px;
     border-bottom: 1px solid var(--border-light);
-    box-shadow: 0 2px 8px var(--shadow-light);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     display: flex;
     align-items: center;
-    gap: 24px;
+    gap: 32px;
     margin-bottom: 0;
     flex-wrap: wrap;
+    position: relative;
+    z-index: 10;
 }
 
 .back-button,
@@ -1624,37 +1643,60 @@ html {
     background: var(--accent-primary);
     color: var(--bg-secondary);
     border: none;
-    padding: 12px 28px;
-    border-radius: 50px;
+    padding: 16px 36px;
+    border-radius: 12px;
     font-weight: 600;
-    font-size: 14px;
+    font-size: 15px;
     cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 12px var(--shadow-light);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.back-button::before,
+.edit-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+    transform: translateX(-100%);
+    transition: transform 0.6s;
+}
+
+.back-button:hover::before,
+.edit-button:hover::before {
+    transform: translateX(100%);
 }
 
 .back-button:hover,
 .edit-button:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px var(--shadow-medium);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
 }
 
 .account-header h2,
 .profile-header h2 {
-    font-size: 32px;
-    font-weight: 700;
+    font-size: 36px;
+    font-weight: 800;
     color: var(--text-primary);
     margin: 0;
     flex: 1;
+    letter-spacing: -0.5px;
 }
 
 .profile-content,
 .account-content {
     flex: 1;
-    padding: 48px;
-    max-width: 1400px;
+    padding: 60px;
+    max-width: 1200px;
     margin: 0 auto;
     width: 100%;
+    position: relative;
+    z-index: 5;
 }
 
 .profile-loading,
@@ -1680,29 +1722,69 @@ html {
 .profile-section,
 .profile-main-card {
     background: var(--bg-secondary);
-    border-radius: var(--border-radius-lg);
-    padding: 32px;
-    box-shadow: 0 4px 16px var(--shadow-light);
+    border-radius: 20px;
+    padding: 48px;
+    box-shadow: 
+        0 10px 40px rgba(0, 0, 0, 0.08),
+        0 0 0 1px rgba(0, 0, 0, 0.05);
     border: 1px solid var(--border-light);
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.account-section::before,
+.profile-section::before,
+.profile-main-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--accent-primary);
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
 
 .account-section:hover,
 .profile-section:hover,
 .profile-main-card:hover {
-    box-shadow: 0 16px 48px var(--shadow-medium);
-    transform: translateY(-2px);
+    box-shadow: 
+        0 20px 60px rgba(0, 0, 0, 0.12),
+        0 0 0 1px rgba(0, 0, 0, 0.08);
+    transform: translateY(-4px);
+}
+
+.account-section:hover::before,
+.profile-section:hover::before,
+.profile-main-card:hover::before {
+    opacity: 1;
 }
 
 .account-section h3,
 .profile-section h3,
 .profile-main-card h3 {
-    font-size: 24px;
+    font-size: 26px;
     font-weight: 700;
     color: var(--text-primary);
-    margin-bottom: 24px;
-    border-bottom: 2px solid var(--accent-primary);
-    padding-bottom: 12px;
+    margin-bottom: 32px;
+    position: relative;
+    padding-bottom: 16px;
+    letter-spacing: -0.3px;
+}
+
+.account-section h3::after,
+.profile-section h3::after,
+.profile-main-card h3::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 50px;
+    height: 3px;
+    background: var(--accent-primary);
+    border-radius: 2px;
 }
 
 /* ===== KEY-VALUE PAIRS ===== */
@@ -1710,24 +1792,58 @@ html {
     display: grid;
     grid-template-columns: 1fr 2fr;
     gap: 24px;
-    padding: 16px 0;
-    border-bottom: 1px solid var(--border-color);
+    padding: 20px 0;
+    border-bottom: 1px solid var(--border-light);
+    transition: all 0.3s ease;
 }
 
 .kv:last-child {
     border-bottom: none;
 }
 
+.kv:hover {
+    background: rgba(0, 0, 0, 0.02);
+    border-radius: 12px;
+    padding: 20px 16px;
+    margin: 0 -16px;
+}
+
 .kv span:first-child {
     font-weight: 600;
-    color: var(--text-primary);
-    font-size: 15px;
+    color: var(--text-secondary);
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    position: relative;
+}
+
+.kv span:first-child::before {
+    content: '';
+    position: absolute;
+    left: -16px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 3px;
+    background: var(--accent-primary);
+    border-radius: 50%;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.kv:hover span:first-child::before {
+    opacity: 1;
 }
 
 .kv span:last-child {
-    color: var(--text-secondary);
+    color: var(--text-primary);
     font-size: 15px;
     word-break: break-word;
+    background: var(--bg-primary);
+    padding: 12px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--border-light);
+    line-height: 1.5;
 }
 
 /* ===== ENTRY STYLING ===== */
@@ -3860,12 +3976,19 @@ html {
     
     .account-header,
     .profile-header {
-        padding: 24px 20px;
+        padding: 32px 24px;
+        gap: 20px;
     }
     
     .profile-content,
     .account-content {
-        padding: 24px 20px;
+        padding: 32px 24px;
+    }
+    
+    .account-section,
+    .profile-section,
+    .profile-main-card {
+        padding: 32px 24px;
     }
 
     .kv {
@@ -3965,17 +4088,24 @@ html {
     
     .account-header,
     .profile-header {
-        padding: 20px 16px;
+        padding: 24px 20px;
+        gap: 16px;
     }
     
     .profile-content,
     .account-content {
-        padding: 20px 16px;
+        padding: 24px 20px;
     }
-
+    
+    .account-section,
+    .profile-section,
+    .profile-main-card {
+        padding: 24px 20px;
+    }
+    
     .account-header h2,
     .profile-header h2 {
-        font-size: 24px;
+        font-size: 28px;
     }
 
     .auth-header h1 {
