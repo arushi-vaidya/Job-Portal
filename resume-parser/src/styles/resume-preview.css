@@ -1,0 +1,587 @@
+/* ===== RESUME PREVIEW ===== */
+.resume-preview {
+    background: white;
+    border-radius: var(--border-radius-xl);
+    padding: 60px 50px;
+    box-shadow: 0 16px 50px var(--shadow-light);
+    border: 2px solid var(--border-color);
+    font-family: Arial, sans-serif;
+    width: 210mm;
+    min-height: 297mm;
+    max-width: 210mm;
+    margin: 0 auto 40px auto;
+}
+
+/* ===== EDIT MODE TOGGLE ===== */
+.edit-mode-toggle {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 40px;
+}
+
+.edit-button,
+.save-button,
+.cancel-button {
+    background: var(--accent-primary);
+    color: var(--bg-secondary);
+    border: none;
+    padding: 14px 32px;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 6px 20px var(--shadow-light);
+}
+
+.cancel-button {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 2px solid var(--border-color);
+}
+
+.edit-button:hover,
+.save-button:hover,
+.cancel-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px var(--shadow-medium);
+}
+
+.edit-controls {
+    display: flex;
+    gap: 16px;
+}
+
+/* ===== DOWNLOAD BUTTON ===== */
+.download-button {
+    background: var(--accent-primary);
+    color: var(--bg-secondary);
+    border: none;
+    padding: 16px 40px;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 8px 24px var(--shadow-light);
+}
+
+.download-button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 36px var(--shadow-medium);
+}
+
+/* ===== RESUME TEMPLATE SPECIFIC STYLES ===== */
+
+/* Classic Template */
+.resume-classic-layout {
+    /* Already defined in base preview styles */
+}
+
+.resume-header {
+    text-align: center;
+    margin-bottom: 32px;
+    padding-bottom: 24px;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.resume-name {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+    line-height: 1.2;
+}
+
+.resume-contact {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.contact-inputs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.contact-separator {
+    color: var(--text-secondary);
+    margin: 0 4px;
+}
+
+.resume-section {
+    margin-bottom: 32px;
+}
+
+.resume-section-title {
+    font-size: 1.1rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    border-bottom: 2px solid;
+    padding-bottom: 6px;
+    margin-bottom: 20px;
+    letter-spacing: 0.5px;
+}
+
+.resume-entry {
+    margin-bottom: 24px;
+    position: relative;
+}
+
+.resume-entry-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+    gap: 16px;
+}
+
+.resume-company-position {
+    font-size: 1rem;
+    color: #000;
+    flex: 1;
+}
+
+.resume-duration {
+    font-size: 0.9rem;
+    color: #666;
+    font-style: italic;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.resume-education-details {
+    font-size: 0.95rem;
+    color: #000;
+    margin-bottom: 8px;
+}
+
+.resume-bullet-list {
+    margin: 8px 0 0 20px;
+    padding: 0;
+}
+
+.resume-bullet-list li {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin-bottom: 6px;
+    color: #333;
+}
+
+.resume-skills-text,
+.resume-coursework-text {
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: #000;
+}
+
+.resume-project-title {
+    font-size: 1rem;
+    font-weight: bold;
+    color: #000;
+    margin-bottom: 8px;
+}
+
+/* Modern Template */
+.resume-modern-layout {
+    display: flex;
+    gap: 0;
+    min-height: 600px;
+    width: 100%;
+}
+
+.resume-sidebar {
+    width: 35%;
+    background: var(--bg-primary);
+    padding: 32px 24px;
+    border-right: 4px solid var(--accent-primary);
+    flex-shrink: 0;
+    box-sizing: border-box;
+}
+
+.resume-main-content {
+    width: 65%;
+    padding: 32px;
+    flex: 1;
+    box-sizing: border-box;
+}
+
+.sidebar-section {
+    margin-bottom: 28px;
+}
+
+.sidebar-title {
+    font-size: 0.95rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 16px;
+    border-bottom: 2px solid var(--accent-primary);
+    padding-bottom: 4px;
+}
+
+.sidebar-entry {
+    margin-bottom: 16px;
+}
+
+.sidebar-year {
+    font-size: 0.85rem;
+    color: var(--accent-primary);
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+.sidebar-degree {
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: #000;
+}
+
+.sidebar-institution {
+    font-size: 0.85rem;
+    color: #666;
+    margin-top: 4px;
+}
+
+.sidebar-cert {
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: #000;
+}
+
+.sidebar-issuer {
+    font-size: 0.85rem;
+    color: #666;
+    margin-top: 4px;
+}
+
+.exp-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 6px;
+}
+
+.exp-position {
+    font-size: 1rem;
+    font-weight: bold;
+    color: #000;
+}
+
+.exp-duration {
+    font-size: 0.85rem;
+    color: #666;
+    font-style: italic;
+}
+
+.exp-company {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.exp-list {
+    margin: 8px 0 0 18px;
+    padding: 0;
+}
+
+.exp-list li {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin-bottom: 6px;
+    color: #333;
+}
+
+/* Executive Template */
+.resume-executive-layout {
+    /* Uses base resume-preview styles */
+}
+
+.sub-title {
+    font-size: 1rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 16px;
+}
+
+.edu-entry,
+.cert-entry,
+.achievement-entry {
+    margin-bottom: 16px;
+}
+
+.edu-degree {
+    font-size: 1rem;
+    font-weight: bold;
+    color: #000;
+}
+
+.edu-institution {
+    font-size: 0.9rem;
+    font-style: italic;
+}
+
+.edu-year {
+    font-size: 0.85rem;
+    color: #666;
+}
+
+.cert-title {
+    font-weight: 600;
+}
+
+.skills-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.achievement-title {
+    font-size: 0.95rem;
+    font-weight: bold;
+    color: #000;
+    margin-bottom: 6px;
+}
+
+.achievement-desc {
+    font-size: 0.85rem;
+    color: #333;
+    line-height: 1.5;
+}
+
+.projects-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.project-card {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 16px;
+    border-left: 4px solid var(--accent-primary);
+}
+
+.project-title {
+    font-size: 1rem;
+    font-weight: bold;
+    color: #000;
+    margin-bottom: 8px;
+}
+
+.project-desc {
+    font-size: 0.85rem;
+    color: #333;
+    line-height: 1.5;
+}
+
+/* ===== EDITABLE INPUTS ===== */
+.editable-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 2px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    font-size: inherit;
+    font-family: inherit;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    transition: all 0.3s ease;
+}
+
+.editable-input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.1);
+    background: white;
+}
+
+.name-input {
+    font-size: 1.8rem;
+    font-weight: bold;
+    text-align: center;
+}
+
+.contact-input {
+    font-size: 10pt;
+}
+
+.position-input,
+.company-input {
+    font-size: 11pt;
+}
+
+.description-input {
+    font-size: 10pt;
+}
+
+/* ===== DESCRIPTION SECTION ===== */
+.description-section {
+    margin-top: 12px;
+}
+
+.description-inputs {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.description-line {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.add-line-button {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border: 2px solid var(--border-color);
+    padding: 8px 16px;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.add-line-button:hover {
+    background: var(--accent-primary);
+    color: var(--bg-secondary);
+    border-color: var(--accent-primary);
+}
+
+/* ===== ENTRY ACTIONS ===== */
+.entry-actions {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+/* ===== SKILLS INPUTS ===== */
+.skills-inputs {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+}
+
+.skill-input {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.skill-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: var(--bg-primary);
+    border-left: 3px solid var(--accent-primary);
+    border-radius: var(--border-radius-sm);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.skill-input-field {
+    flex: 1;
+}
+
+/* ===== HOBBIES ===== */
+.hobbies-inputs {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 12px;
+}
+
+.hobbies-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.hobby-tag {
+    display: inline-flex;
+    padding: 8px 16px;
+    background: var(--bg-primary);
+    border-left: 3px solid var(--accent-primary);
+    border-radius: var(--border-radius-sm);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* ===== CERTIFICATES INPUTS ===== */
+.certificates-inputs {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.certificate-input {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.separator {
+    color: var(--text-secondary);
+    margin: 0 4px;
+}
+
+/* ===== ADDITIONAL INFO INPUTS ===== */
+.additional-info-inputs {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.additional-info-input {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+/* ===== EMPTY SECTION ===== */
+.empty-section {
+    text-align: center;
+    padding: 40px 24px;
+    background: var(--bg-primary);
+    border-radius: var(--border-radius-lg);
+    border: 2px dashed var(--border-color);
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+/* ===== RESUME ACTIONS ===== */
+.resume-actions {
+    display: flex;
+    justify-content: center;
+    margin-top: 40px;
+}
+
+.view-actions {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+/* Add entrance animations */
+.resume-preview {
+    animation: fadeInUp 0.6s ease-out;
+}

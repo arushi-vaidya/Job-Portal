@@ -1,0 +1,359 @@
+/* ===== RESPONSIVE DESIGN ===== */
+@media (max-width: 1200px) {
+    .navbar {
+        padding: 16px 60px;
+    }
+
+    .app-content {
+        padding: 32px;
+    }
+}
+
+@media (max-width: 968px) {
+    .navbar {
+        padding: 16px 40px;
+    }
+
+    .nav-right {
+        display: none;
+    }
+
+    .hamburger {
+        display: flex;
+    }
+
+    .app-content {
+        padding: 24px;
+    }
+
+    .app-title {
+        font-size: 40px;
+    }
+
+    .app-subtitle {
+        font-size: 18px;
+    }
+
+    .upload-section {
+        padding: 40px 24px;
+    }
+
+    .upload-area {
+        padding: 60px 40px;
+    }
+
+    .template-grid {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .template-card {
+        min-width: 100%;
+        max-width: 100%;
+    }
+
+    .nav-container {
+        flex-direction: column;
+        border-radius: var(--border-radius-xl);
+        width: 100%;
+        padding: 16px;
+    }
+
+    .nav-button {
+        width: 100%;
+        justify-content: center;
+        padding: 16px;
+    }
+
+    .two-column-section {
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+
+    .account-page,
+    .profile-page,
+    .profile-auth-container {
+        padding: 0;
+        margin: 0;
+    }
+    
+    .account-header,
+    .profile-header {
+        padding: 32px 24px;
+        gap: 20px;
+    }
+    
+    .profile-content,
+    .account-content {
+        padding: 32px 24px;
+    }
+    
+    .account-section,
+    .profile-section,
+    .profile-main-card {
+        padding: 32px 24px;
+    }
+
+    .kv {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .personal-info-item {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .profile-main-card {
+        flex-direction: column;
+        text-align: center;
+        gap: 24px;
+    }
+
+    .profile-stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .auth-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .step-indicator {
+        align-self: center;
+    }
+
+    .profile-sections-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .profile-details-column {
+        border-right: none;
+        border-bottom: 1px solid #d0d0d0;
+    }
+    
+    .profile-details-column:last-child {
+        border-bottom: none;
+    }
+    
+    .profile-card-header {
+        padding: 40px 24px 30px;
+    }
+    
+    .profile-display-name {
+        font-size: 24px;
+    }
+    
+    .detail-row {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .detail-label {
+        min-width: auto;
+    }
+    
+    .detail-value {
+        text-align: left;
+    }
+
+    .two-column-layout {
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+    
+    .account-section-full,
+    .account-section-half {
+        padding: 30px 24px;
+    }
+}
+
+@media (max-width: 640px) {
+    .navbar {
+        padding: 12px 24px;
+    }
+
+    .logo {
+        font-size: 18px;
+    }
+
+    .app-content {
+        padding: 16px;
+    }
+
+    .app-title {
+        font-size: 32px;
+    }
+
+    .app-subtitle {
+        font-size: 16px;
+    }
+
+    .upload-section {
+        padding: 32px 20px;
+    }
+
+    .upload-area {
+        padding: 40px 24px;
+    }
+
+    .upload-title {
+        font-size: 24px;
+    }
+
+    .upload-icon {
+        width: 60px;
+        height: 60px;
+    }
+
+    .upload-buttons {
+        flex-direction: column;
+    }
+
+    .upload-button,
+    .camera-upload-button,
+    .manual-entry-button {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .color-option {
+        width: 60px;
+        height: 60px;
+    }
+
+    .resume-preview {
+        padding: 40px 24px;
+    }
+
+    .account-page,
+    .profile-page,
+    .profile-auth-container {
+        padding: 0;
+        margin: 0;
+    }
+    
+    .account-header,
+    .profile-header {
+        padding: 24px 20px;
+        gap: 16px;
+    }
+    
+    .profile-content,
+    .account-content {
+        padding: 24px 20px;
+    }
+    
+    .account-section,
+    .profile-section,
+    .profile-main-card {
+        padding: 24px 20px;
+    }
+    
+    .account-header h2,
+    .profile-header h2 {
+        font-size: 28px;
+    }
+
+    .auth-header h1 {
+        font-size: 28px;
+    }
+
+    .step-indicator .step {
+        width: 36px;
+        height: 36px;
+        font-size: 14px;
+    }
+
+    .step-icon {
+        width: 80px;
+        height: 80px;
+    }
+
+    .step-icon .icon {
+        width: 40px;
+        height: 40px;
+    }
+
+    .photo-preview img,
+    .camera-placeholder {
+        width: 200px;
+        height: 200px;
+    }
+
+    .camera-video {
+        height: 300px;
+    }
+
+    .popup-content {
+        padding: 32px 24px;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .status-indicator-minimal {
+        bottom: 16px;
+        right: 16px;
+    }
+
+    .toggle-status-btn {
+        padding: 14px;
+    }
+
+    .toggle-icon {
+        width: 20px;
+        height: 20px;
+    }
+
+    .profile-details-column {
+        padding: 24px 20px;
+    }
+    
+    .profile-avatar-circle {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .avatar-icon-exact {
+        width: 50px;
+        height: 50px;
+    }
+
+    .account-section-full,
+    .account-section-half {
+        padding: 24px 20px;
+    }
+}
+
+/* ===== PRINT STYLES ===== */
+@media print {
+    .navbar,
+    .nav-buttons,
+    .template-selector-section,
+    .color-selection-section,
+    .resume-actions,
+    .upload-section,
+    .processing-section,
+    .edit-mode-toggle {
+        display: none !important;
+    }
+
+    .resume-preview {
+        box-shadow: none !important;
+        border: none !important;
+        border-radius: 0 !important;
+        padding: 0.5in !important;
+        width: 8.5in !important;
+        min-height: 11in !important;
+        max-width: none !important;
+        margin: 0 !important;
+        background: white !important;
+        page-break-inside: avoid !important;
+    }
+
+    body {
+        background: white !important;
+    }
+}

@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/rules-of-hooks */
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { User } from 'lucide-react';
-import './ResumeParser.css';
+import './styles/main.css';
 import apiService from './services/api';
 
 // Import extracted components

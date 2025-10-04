@@ -1,0 +1,129 @@
+:root {
+    --bg-primary: #f5f5f0;
+    --bg-secondary: #ffffff;
+    --bg-dark: #1a1a1a;
+    --text-primary: #1a1a1a;
+    --text-secondary: #4a4a4a;
+    --accent-primary: #1a1a1a;
+    --accent-yellow: #f4d03f;
+    --accent-orange: #ff8c42;
+    --border-color: #d0d0d0;
+    --shadow-light: rgba(0, 0, 0, 0.1);
+    --shadow-medium: rgba(0, 0, 0, 0.15);
+    
+    --success-green: #6b7280;
+    --warning-orange: #f59e0b;
+    --info-blue: #3b82f6;
+    --error-red: #ef4444;
+    --border-light: #e5e5e5;
+    --border-radius-sm: 8px;
+    --border-radius-md: 12px;
+    --border-radius-lg: 16px;
+    --border-radius-xl: 20px;
+    --border-radius-2xl: 24px;
+    --spacing-xs: 8px;
+    --spacing-sm: 12px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+    --spacing-2xl: 48px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    transition: background 0.3s ease, color 0.3s ease;
+    overflow-x: hidden;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+/* ===== SMOOTH ANIMATIONS ===== */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes popupIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(100px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* ===== SMOOTH SCROLLBAR ===== */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 10px;
+    transition: background 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-primary);
+}
+
+/* ===== SELECTION STYLING ===== */
+::selection {
+    background: var(--accent-primary);
+    color: var(--bg-secondary);
+}
+
+::-moz-selection {
+    background: var(--accent-primary);
+    color: var(--bg-secondary);
+}
+
+/* ===== FOCUS STATES FOR ACCESSIBILITY ===== */
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+.template-card:focus-visible,
+.color-option:focus-visible {
+    outline: 3px solid var(--accent-primary);
+    outline-offset: 3px;
+}
