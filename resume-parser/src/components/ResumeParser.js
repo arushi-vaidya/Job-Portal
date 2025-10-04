@@ -2513,8 +2513,84 @@ useEffect(() => {
         {/* Only show header section on upload and processing views, not on results */}
         {activeView !== 'results' && (
           <div className="header-section">
-            <h1 className="app-title">ParsePort</h1>
-            <p className="app-subtitle">Transform your resume into a professional format with AI-powered analysis or manual entry</p>
+            <div className="header-content">
+              <div className="header-text">
+                <h1 className="app-title">ParsePort</h1>
+                <p className="app-subtitle">Transform your resume into a professional format with AI-powered analysis or manual entry</p>
+              </div>
+              <div className="header-visual">
+                <div className="visual-3d">
+                  {/* Beautiful Orbital Rings */}
+                  <div className="orbital-ring ring-outer"></div>
+                  <div className="orbital-ring ring-middle"></div>
+                  <div className="orbital-ring ring-inner"></div>
+                  
+                  {/* Beautiful Resume/Document Stack */}
+                  <div className="floating-element resume-1">
+                    <div className="resume-icon">
+                      <div className="resume-header"></div>
+                      <div className="resume-lines"></div>
+                      <div className="resume-lines"></div>
+                      <div className="resume-lines short"></div>
+                    </div>
+                  </div>
+                  <div className="floating-element resume-2">
+                    <div className="resume-icon">
+                      <div className="resume-header"></div>
+                      <div className="resume-lines"></div>
+                      <div className="resume-lines"></div>
+                      <div className="resume-lines short"></div>
+                    </div>
+                  </div>
+                  
+                  {/* Beautiful AI Processing Elements */}
+                  <div className="floating-element ai-processor">
+                    <div className="ai-icon">
+                      <div className="ai-core"></div>
+                      <div className="ai-ring"></div>
+                    </div>
+                  </div>
+                  
+                  {/* Beautiful Transform Icons */}
+                  <div className="floating-element transform-icon">
+                    <div className="transform-arrow">→</div>
+                  </div>
+                  
+                  {/* Beautiful Particles */}
+                  <div className="particle particle-1"></div>
+                  <div className="particle particle-2"></div>
+                  <div className="particle particle-3"></div>
+                  <div className="particle particle-4"></div>
+                  
+                  {/* Beautiful Connection Lines */}
+                  <svg className="connection-svg" width="400" height="400" viewBox="0 0 400 400">
+                    <defs>
+                      <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style={{stopColor: 'var(--border-color)', stopOpacity: 0}} />
+                        <stop offset="50%" style={{stopColor: 'var(--border-color)', stopOpacity: 0.6}} />
+                        <stop offset="100%" style={{stopColor: 'var(--border-color)', stopOpacity: 0}} />
+                      </linearGradient>
+                    </defs>
+                    <path className="connect-path path-1" d="M 80,80 Q 160,120 200,200" fill="none" stroke="url(#lineGradient)" strokeWidth="1.5"/>
+                    <path className="connect-path path-2" d="M 320,100 Q 260,160 200,200" fill="none" stroke="url(#lineGradient)" strokeWidth="1.5"/>
+                    <path className="connect-path path-3" d="M 80,320 Q 140,260 200,200" fill="none" stroke="url(#lineGradient)" strokeWidth="1.5"/>
+                    <path className="connect-path path-4" d="M 320,320 Q 260,280 200,200" fill="none" stroke="url(#lineGradient)" strokeWidth="1.5"/>
+                  </svg>
+                  
+                  {/* Beautiful Center AI Hub */}
+                  <div className="center-element">
+                    <div className="ai-hub">
+                      <div className="hub-ring"></div>
+                      <div className="hub-core">
+                        <div className="core-pulse"></div>
+                        <div className="core-dot"></div>
+                      </div>
+                      <div className="hub-glow"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
         
